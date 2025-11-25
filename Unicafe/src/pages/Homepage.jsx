@@ -116,8 +116,14 @@ const Homepage = () => {
       </section>
       <br></br>
       {/* Featured Products Section */}
-      <section className="py-40 px-4 md:py-52">
-        <div className="w-full max-w-[1600px] mx-auto px-8">
+      <section
+        className="py-40 px-4 md:py-52"
+        style={{ display: "flex", justifyContent: "center" }}
+      >
+        <div
+          className="w-full max-w-[1600px] mx-auto px-8"
+          style={{ maxWidth: "1200px", margin: "0 auto" }}
+        >
           <div className="text-center mb-24">
             <h2 className="text-4xl md:text-5xl font-bold text-amber-900 mb-8">
               Our Featured Drinks
@@ -160,7 +166,10 @@ const Homepage = () => {
           <br></br>
           <br></br>
           {/* Products Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-12">
+          <div
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-12"
+            style={{ maxWidth: "1100px", margin: "0 auto" }}
+          >
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
@@ -194,8 +203,14 @@ const Homepage = () => {
       <br></br>
       <br></br>
       {/* About Section */}
-      <section className="py-40 px-4 md:py-52 bg-white">
-        <div className="w-full max-w-[1600px] mx-auto px-8">
+      <section
+        className="py-40 px-4 md:py-52 bg-white"
+        style={{ display: "flex", justifyContent: "center" }}
+      >
+        <div
+          className="w-full max-w-[1600px] mx-auto px-8"
+          style={{ maxWidth: "1200px", margin: "0 auto" }}
+        >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
             <div>
               <h2 className="text-4xl md:text-5xl font-bold text-amber-900 mb-12">
@@ -247,8 +262,14 @@ const Homepage = () => {
       </section>
       <br></br>
       {/* Why Choose Us Section */}
-      <section className="py-40 px-4 md:py-52 bg-amber-50">
-        <div className="w-full max-w-[1600px] mx-auto px-8">
+      <section
+        className="py-40 px-4 md:py-52 bg-amber-50"
+        style={{ display: "flex", justifyContent: "center" }}
+      >
+        <div
+          className="w-full max-w-[1600px] mx-auto px-8"
+          style={{ maxWidth: "1200px", margin: "0 auto" }}
+        >
           <div className="text-center mb-24">
             <h2 className="text-4xl md:text-5xl font-bold text-amber-900 mb-8">
               Why Choose UniCafé?
@@ -256,7 +277,10 @@ const Homepage = () => {
           </div>
           <br></br>
           <br></br>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-14">
+          <div
+            className="grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-14"
+            style={{ maxWidth: "1100px", margin: "0 auto" }}
+          >
             <div className="feature-card bg-white p-12 rounded-2xl shadow-lg text-center transform transition-all duration-300 hover:scale-105">
               <div className="bg-amber-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8">
                 <svg
@@ -337,7 +361,10 @@ const Homepage = () => {
       <br></br>
       {/* CTA Section */}
       <section className="py-40 px-4 md:py-52 bg-linear-to-br from-amber-700 via-amber-600 to-orange-600 flex items-center justify-center">
-        <div className="w-full max-w-[1400px] mx-auto text-center px-8">
+        <div
+          className="w-full max-w-[1400px] mx-auto text-center px-8"
+          style={{ maxWidth: "900px", margin: "0 auto" }}
+        >
           <br></br>
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-12">
             Ready to Experience the Best Coffee?

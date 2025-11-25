@@ -11,7 +11,7 @@ const NavBar = () => {
   return (
     <nav className="bg-linear-to-r from-amber-900 to-amber-800 shadow-lg fixed w-full z-50 top-0">
       <div className="w-full mx-auto px-8 sm:px-12 lg:px-16">
-        <div className="flex justify-between items-center h-20">
+        <div className="flex items-center h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 group">
             <div className="bg-amber-600 p-2 rounded-full group-hover:bg-amber-500 transition-colors duration-300">
@@ -29,7 +29,10 @@ const NavBar = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
+          <div
+            className="hidden md:flex items-center gap-8 flex-1 justify-center"
+            style={{ marginLeft: "-10px" }}
+          >
             <nav className="flex items-center gap-10">
               <Link
                 to="/"
@@ -56,7 +59,9 @@ const NavBar = () => {
                 Contact
               </Link>
             </nav>
+          </div>
 
+          <div className="hidden md:flex items-center gap-4">
             {/* Cart Icon */}
             <button className="relative p-3 text-amber-100 hover:text-white transition-colors duration-300">
               <svg
@@ -77,9 +82,9 @@ const NavBar = () => {
               </span>
             </button>
 
-            {/* Order Now Button */}
-            <Link to="/order" className="order-now-btn">
-              Order Now
+            {/* Login Button */}
+            <Link to="/login" className="order-now-btn">
+              Login
             </Link>
           </div>
 
@@ -147,11 +152,11 @@ const NavBar = () => {
               Contact
             </Link>
             <Link
-              to="/order"
+              to="/login"
               className="block px-4 py-4 bg-amber-600 text-white rounded-lg font-semibold text-center hover:bg-amber-500 transition-colors duration-300 mt-4"
               onClick={() => setIsMenuOpen(false)}
             >
-              Order Now
+              Login
             </Link>
           </div>
         </div>
