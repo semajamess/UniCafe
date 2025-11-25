@@ -88,7 +88,7 @@ const Homepage = () => {
             quality, comfort, and community.
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <button className="bg-amber-600 hover:bg-amber-500 text-white px-10 py-4 rounded-full font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-xl min-w-[200px]">
+            <button className="bg-amber-600 hover:bg-amber-500 text-white px-10 py-6 rounded-full font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-xl min-w-[200px]">
               Order Now
             </button>
             <button className="bg-white hover:bg-amber-50 text-amber-900 px-10 py-4 rounded-full font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-xl min-w-[200px]">
