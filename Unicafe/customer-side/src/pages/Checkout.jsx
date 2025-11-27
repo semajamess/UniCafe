@@ -1,20 +1,31 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { CreditCard, User, Phone, MapPin, Mail } from 'lucide-react'
+import { CreditCard, User, Mail } from 'lucide-react'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
 
 const Checkout = () => {
   const navigate = useNavigate()
   const { cart, getTotalPrice, clearCart } = useCart()
+  const { user, isAuthenticated } = useAuth()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone: '',
-    address: '',
     paymentMethod: 'cash'
   })
+
+  // Auto-fill form if user is logged in
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.username || '',
+        email: user.email || ''
+      }))
+    }
+  }, [isAuthenticated, user])
 
   const handleInputChange = (e) => {
     setFormData({
@@ -31,8 +42,6 @@ const Checkout = () => {
       const orderData = {
         customer_name: formData.name,
         customer_email: formData.email,
-        customer_phone: formData.phone,
-        delivery_address: formData.address,
         payment_method: formData.paymentMethod,
         items: cart.map(item => ({
           product_id: item.id,
@@ -129,38 +138,6 @@ const Checkout = () => {
                     required
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
                     placeholder="john@example.com"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">
-                    <Phone className="w-5 h-5 inline mr-2" />
-                    Phone Number *
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="+63 912 345 6789"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">
-                    <MapPin className="w-5 h-5 inline mr-2" />
-                    Delivery Address *
-                  </label>
-                  <textarea
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    required
-                    rows="3"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="123 University Ave, Building A, Room 101"
                   />
                 </div>
 

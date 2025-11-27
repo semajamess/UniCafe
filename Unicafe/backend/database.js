@@ -43,13 +43,16 @@ export const initDatabase = async () => {
       )
     `);
 
-    // Customers table
+    // Users table (for both registered users and guests)
     await db.runAsync(`
-      CREATE TABLE IF NOT EXISTS customers (
+      CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
+        username TEXT,
         email TEXT UNIQUE NOT NULL,
-        phone TEXT,
+        password TEXT,
+        google_id TEXT UNIQUE,
+        profile_image TEXT,
+        is_guest BOOLEAN DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -58,14 +61,13 @@ export const initDatabase = async () => {
     await db.runAsync(`
       CREATE TABLE IF NOT EXISTS orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        customer_id INTEGER,
+        user_id INTEGER,
         customer_name TEXT,
         customer_email TEXT,
-        customer_phone TEXT,
         total REAL NOT NULL,
         status TEXT DEFAULT 'pending',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (customer_id) REFERENCES customers(id)
+        FOREIGN KEY (user_id) REFERENCES users(id)
       )
     `);
 

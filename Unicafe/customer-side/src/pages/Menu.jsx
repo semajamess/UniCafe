@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Search, Coffee, ShoppingCart, Filter } from 'lucide-react'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
+import { useNavigate } from 'react-router-dom'
 import AnimatedBackground from '../components/AnimatedBackground'
 import FloatingCart from '../components/FloatingCart'
 
@@ -75,11 +77,35 @@ const Menu = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const { addToCart } = useCart()
+  const { user, isAuthenticated } = useAuth()
+  const navigate = useNavigate()
+  const [showModal, setShowModal] = useState(false)
+
+  // Google-only users have google_id and no local password
+  const isGoogleOnly = user && user.google_id && (!user.password || user.password === '')
 
   const handleAddToCart = useCallback((product) => {
-    console.log('Menu - Adding product:', product.name, 'ID:', product.id)
+    console.log('Menu - Add attempt:', product.name, 'ID:', product.id)
+    if (!isAuthenticated) {
+      setShowModal(true)
+      setTimeout(() => {
+        setShowModal(false)
+        navigate('/login')
+      }, 1400)
+      return
+    }
+
+    if (isGoogleOnly) {
+      setShowModal(true)
+      setTimeout(() => {
+        setShowModal(false)
+        navigate('/complete-signup')
+      }, 1400)
+      return
+    }
+
     addToCart(product)
-  }, [addToCart])
+  }, [addToCart, isAuthenticated, isGoogleOnly, navigate])
 
   useEffect(() => {
     fetchProducts()
@@ -129,6 +155,14 @@ const Menu = () => {
 
   return (
     <div className="min-h-screen">
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-6 text-center">
+            <h2 className="text-lg font-bold mb-1">{!isAuthenticated ? 'Please sign up first!' : 'Please complete your signup first!'}</h2>
+            <p className="text-sm text-gray-600">{!isAuthenticated ? 'You must log in to add items.' : 'Finish signup to start ordering.'}</p>
+          </div>
+        </div>
+      )}
       <FloatingCart />
       
       <section className="bg-white shadow-sm sticky top-16 z-40">
@@ -198,11 +232,10 @@ const Menu = () => {
                   <ProductCard 
                     key={product.id} 
                     product={product}
-                    onAddToCart={(prod) => {
-                      addToCart(prod)
-                    }}
+                    onAddToCart={(prod) => handleAddToCart(prod)}
                   />
-                ))}\n              </div>
+                ))}
+              </div>
             </>
           )}
         </div>

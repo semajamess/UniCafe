@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Coffee, ShoppingCart, Menu, X } from 'lucide-react'
+import { Coffee, ShoppingCart, Menu, X, User, LogOut } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { getTotalItems } = useCart()
+  const { user, logout, isAuthenticated } = useAuth()
   const location = useLocation()
 
   useEffect(() => {
@@ -73,6 +75,29 @@ export default function Navbar() {
                 </motion.span>
               )}
             </Link>
+            
+            {isAuthenticated ? (
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-700">
+                  Hi, <span className="font-semibold text-amber-600">{user?.username}</span>
+                </span>
+                <button
+                  onClick={logout}
+                  className="flex items-center space-x-1 text-gray-700 hover:text-amber-600 transition-colors"
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center space-x-1 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-amber-600 hover:to-orange-700 transition-all"
+              >
+                <User className="h-5 w-5" />
+                <span>Login</span>
+              </Link>
+            )}
           </div>
 
           <button
@@ -119,6 +144,31 @@ export default function Navbar() {
                   </span>
                 )}
               </Link>
+              
+              {isAuthenticated ? (
+                <>
+                  <div className="py-2 px-4 text-sm text-gray-700">
+                    Hi, <span className="font-semibold text-amber-600">{user?.username}</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      logout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left py-2 px-4 rounded-lg text-gray-700 hover:bg-amber-50"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="block py-2 px-4 rounded-lg bg-amber-600 text-white text-center font-semibold"
+                >
+                  Login
+                </Link>
+              )}
             </div>
           </motion.div>
         )}

@@ -56,7 +56,7 @@ router.get('/:id', async (req, res) => {
 // Create new order (CUSTOMER CAN CREATE ORDERS)
 router.post('/', async (req, res) => {
   try {
-    const { customer_name, customer_email, customer_phone, items } = req.body;
+    const { customer_name, customer_email, items } = req.body;
 
     // Calculate total
     let total = 0;
@@ -73,9 +73,9 @@ router.post('/', async (req, res) => {
 
     // Create order
     const orderResult = await db.runAsync(
-      `INSERT INTO orders (customer_name, customer_email, customer_phone, total, status) 
-       VALUES (?, ?, ?, ?, ?)`,
-      [customer_name, customer_email, customer_phone, total.toFixed(2), 'pending']
+      `INSERT INTO orders (customer_name, customer_email, total, status) 
+       VALUES (?, ?, ?, ?)`,
+      [customer_name, customer_email, total.toFixed(2), 'pending']
     );
 
     const orderId = orderResult.lastID;
@@ -93,7 +93,6 @@ router.post('/', async (req, res) => {
       id: orderId, 
       customer_name, 
       customer_email, 
-      customer_phone, 
       total: total.toFixed(2), 
       status: 'pending',
       message: 'Order created successfully' 

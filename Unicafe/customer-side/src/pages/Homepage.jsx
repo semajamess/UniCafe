@@ -4,11 +4,18 @@ import { motion } from 'framer-motion'
 import { Coffee, ShoppingCart, Star, ArrowRight, Sparkles } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import AnimatedBackground from '../components/AnimatedBackground'
+import { useAuth } from '../context/AuthContext'
+import { useNavigate } from 'react-router-dom'
 
 const Homepage = () => {
   const [featuredProducts, setFeaturedProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const { addToCart } = useCart()
+  const { user, isAuthenticated } = useAuth()
+  const navigate = useNavigate()
+  const [showModal, setShowModal] = useState(false)
+
+  const isGoogleOnly = user && user.google_id && (!user.password || user.password === '')
 
   useEffect(() => {
     fetchFeaturedProducts()
@@ -33,6 +40,22 @@ const Homepage = () => {
   }
 
   const handleAddToCart = (product) => {
+    if (!isAuthenticated) {
+      setShowModal(true)
+      setTimeout(() => {
+        setShowModal(false)
+        navigate('/login')
+      }, 1400)
+      return
+    }
+    if (isGoogleOnly) {
+      setShowModal(true)
+      setTimeout(() => {
+        setShowModal(false)
+        navigate('/complete-signup')
+      }, 1400)
+      return
+    }
     addToCart(product)
   }
 
@@ -123,15 +146,25 @@ const Homepage = () => {
           </motion.div>
 
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="bg-gray-200 h-64 rounded-2xl mb-4"></div>
-                  <div className="bg-gray-200 h-6 rounded w-3/4 mb-2"></div>
-                  <div className="bg-gray-200 h-4 rounded w-1/2"></div>
+            <>
+              {showModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+                  <div className="bg-white rounded-2xl shadow-xl p-6 text-center">
+                    <h2 className="text-lg font-bold mb-1">{!isAuthenticated ? 'Please sign up first!' : 'Please complete your signup first!'}</h2>
+                    <p className="text-sm text-gray-600">{!isAuthenticated ? 'You must log in to add items.' : 'Finish signup to start ordering.'}</p>
+                  </div>
                 </div>
-              ))}
-            </div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="bg-gray-200 h-64 rounded-2xl mb-4"></div>
+                    <div className="bg-gray-200 h-6 rounded w-3/4 mb-2"></div>
+                    <div className="bg-gray-200 h-4 rounded w-1/2"></div>
+                  </div>
+                ))}
+              </div>
+            </>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {featuredProducts.map((product, index) => (

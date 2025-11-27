@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -10,82 +10,66 @@ import {
   Truck,
   CheckCircle,
   XCircle,
+  Loader,
 } from "lucide-react";
 import { format } from "date-fns";
+
+const API_URL = 'http://localhost:3000/api';
 
 const Orders = () => {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Mock orders data
-  const [orders, setOrders] = useState([
-    {
-      id: "#ORD-1234",
-      customer: { name: "John Doe", email: "john@example.com", phone: "+1 234 567 8900" },
-      items: [
-        { name: "Cappuccino", quantity: 2, price: 4.50 },
-        { name: "Croissant", quantity: 1, price: 3.50 },
-      ],
-      total: 12.50,
-      status: "pending",
-      paymentMethod: "Credit Card",
-      date: new Date(2024, 10, 25, 10, 30),
-      notes: "Extra foam please",
-    },
-    {
-      id: "#ORD-1233",
-      customer: { name: "Jane Smith", email: "jane@example.com", phone: "+1 234 567 8901" },
-      items: [
-        { name: "Latte", quantity: 1, price: 4.79 },
-        { name: "Espresso", quantity: 2, price: 2.99 },
-      ],
-      total: 10.77,
-      status: "processing",
-      paymentMethod: "Cash",
-      date: new Date(2024, 10, 25, 10, 15),
-      notes: "",
-    },
-    {
-      id: "#ORD-1232",
-      customer: { name: "Bob Johnson", email: "bob@example.com", phone: "+1 234 567 8902" },
-      items: [
-        { name: "Iced Latte", quantity: 2, price: 4.99 },
-        { name: "Muffin", quantity: 2, price: 3.00 },
-      ],
-      total: 15.98,
-      status: "completed",
-      paymentMethod: "Debit Card",
-      date: new Date(2024, 10, 25, 9, 45),
-      notes: "No sugar",
-    },
-    {
-      id: "#ORD-1231",
-      customer: { name: "Alice Brown", email: "alice@example.com", phone: "+1 234 567 8903" },
-      items: [
-        { name: "Americano", quantity: 3, price: 3.99 },
-      ],
-      total: 11.97,
-      status: "ready",
-      paymentMethod: "Mobile Pay",
-      date: new Date(2024, 10, 25, 9, 20),
-      notes: "",
-    },
-    {
-      id: "#ORD-1230",
-      customer: { name: "Charlie Wilson", email: "charlie@example.com", phone: "+1 234 567 8904" },
-      items: [
-        { name: "Caramel Macchiato", quantity: 1, price: 5.49 },
-        { name: "Cookie", quantity: 3, price: 2.50 },
-      ],
-      total: 12.99,
-      status: "cancelled",
-      paymentMethod: "Credit Card",
-      date: new Date(2024, 10, 25, 8, 50),
-      notes: "Customer cancelled",
-    },
-  ]);
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      fetchOrders();
+    }, 500);
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchTerm, selectedStatus]);
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      
+      if (selectedStatus !== 'all') {
+        params.append('status', selectedStatus);
+      }
+      
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
+      
+      const response = await fetch(`${API_URL}/orders?${params.toString()}`);
+      const data = await response.json();
+      
+      // Transform backend data to match frontend structure
+      const transformedOrders = data.map(order => ({
+        id: `#ORD-${order.id}`,
+        customer: { 
+          name: order.customer_name, 
+          email: order.customer_email
+        },
+        items: order.items || [],
+        total: parseFloat(order.total),
+        status: order.status,
+        paymentMethod: order.payment_method || "N/A",
+        date: new Date(order.created_at),
+        notes: order.notes || "",
+      }));
+      
+      setOrders(transformedOrders);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const statusConfig = {
     all: { label: "All Orders", color: "slate", icon: Package },
@@ -108,26 +92,56 @@ const Orders = () => {
     return colorClasses[config.color];
   };
 
-  const handleStatusChange = (orderId, newStatus) => {
-    setOrders(
-      orders.map((order) =>
-        order.id === orderId ? { ...order, status: newStatus } : order
-      )
-    );
+  const handleStatusChange = async (orderId, newStatus) => {
+    try {
+      // Extract numeric ID from "#ORD-123" format
+      const numericId = orderId.replace('#ORD-', '');
+      
+      const response = await fetch(`${API_URL}/orders/${numericId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      
+      if (response.ok) {
+        // Update local state
+        setOrders(
+          orders.map((order) =>
+            order.id === orderId ? { ...order, status: newStatus } : order
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error updating order status:', error);
+    }
   };
 
-  const handleViewOrder = (order) => {
-    setSelectedOrder(order);
-    setShowOrderDetails(true);
+  const handleViewOrder = async (order) => {
+    try {
+      // Extract numeric ID from "#ORD-123" format
+      const numericId = order.id.replace('#ORD-', '');
+      
+      // Fetch full order details with items
+      const response = await fetch(`${API_URL}/orders/${numericId}`);
+      const orderDetails = await response.json();
+      
+      // Transform to match frontend structure
+      const transformedOrder = {
+        ...order,
+        items: orderDetails.items || [],
+      };
+      
+      setSelectedOrder(transformedOrder);
+      setShowOrderDetails(true);
+    } catch (error) {
+      console.error('Error fetching order details:', error);
+      // Fallback to showing order without items
+      setSelectedOrder(order);
+      setShowOrderDetails(true);
+    }
   };
-
-  const filteredOrders = orders.filter((order) => {
-    const matchesSearch =
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = selectedStatus === "all" || order.status === selectedStatus;
-    return matchesSearch && matchesStatus;
-  });
 
   const orderStats = {
     total: orders.length,
@@ -245,7 +259,7 @@ const Orders = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredOrders.map((order) => (
+              {orders.map((order) => (
                 <tr key={order.id} className="hover:bg-slate-50 transition-colors">
                   <td className="py-4 px-6">
                     <span className="font-medium text-slate-900">{order.id}</span>
@@ -310,12 +324,16 @@ const Orders = () => {
           </table>
         </div>
 
-        {filteredOrders.length === 0 && (
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader className="w-12 h-12 text-amber-500 animate-spin" />
+          </div>
+        ) : orders.length === 0 ? (
           <div className="text-center py-12">
             <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <p className="text-slate-500">No orders found</p>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Order Details Modal */}
@@ -348,10 +366,6 @@ const Orders = () => {
                     <span className="text-slate-500">Email:</span>{" "}
                     <span className="font-medium text-slate-900">{selectedOrder.customer.email}</span>
                   </p>
-                  <p className="text-sm">
-                    <span className="text-slate-500">Phone:</span>{" "}
-                    <span className="font-medium text-slate-900">{selectedOrder.customer.phone}</span>
-                  </p>
                 </div>
               </div>
 
@@ -359,15 +373,22 @@ const Orders = () => {
               <div>
                 <h3 className="text-lg font-semibold text-slate-900 mb-3">Order Items</h3>
                 <div className="space-y-2">
-                  {selectedOrder.items.map((item, index) => (
-                    <div key={index} className="flex justify-between items-center bg-slate-50 rounded-lg p-3">
-                      <div>
-                        <p className="font-medium text-slate-900">{item.name}</p>
-                        <p className="text-sm text-slate-500">Qty: {item.quantity}</p>
+                  {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                    selectedOrder.items.map((item, index) => (
+                      <div key={index} className="flex justify-between items-center bg-slate-50 rounded-lg p-3">
+                        <div>
+                          <p className="font-medium text-slate-900">{item.product_name || item.name}</p>
+                          <p className="text-sm text-slate-500">Qty: {item.quantity}</p>
+                        </div>
+                        <p className="font-semibold text-slate-900">${(item.price * item.quantity).toFixed(2)}</p>
                       </div>
-                      <p className="font-semibold text-slate-900">${(item.price * item.quantity).toFixed(2)}</p>
+                    ))
+                  ) : (
+                    <div className="bg-slate-50 rounded-lg p-4 text-center">
+                      <Package className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                      <p className="text-sm text-slate-500">No items in this order</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
 

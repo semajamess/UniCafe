@@ -86,10 +86,6 @@ const OrderConfirmation = () => {
                 <span className="font-semibold text-gray-800">{orderData.customer_email}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Phone</span>
-                <span className="font-semibold text-gray-800">{orderData.customer_phone}</span>
-              </div>
-              <div className="flex justify-between">
                 <span className="text-gray-600">Payment Method</span>
                 <span className="font-semibold text-gray-800 capitalize">
                   {orderData.payment_method}
