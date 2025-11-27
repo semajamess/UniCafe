@@ -37,9 +37,9 @@ const ProductCard = ({ product, onAddToCart }) => {
               <Coffee className="w-20 h-20 text-primary-600 group-hover:scale-110 transition-transform duration-300" />
             </div>
           )}
-          {product.category_name && (
+          {(product.category || product.category_name) && (
             <div className="absolute top-3 left-3 bg-white/90 px-3 py-1 rounded-full text-xs font-semibold text-gray-700">
-              {product.category_name}
+              {product.category || product.category_name}
             </div>
           )}
         </div>
@@ -96,11 +96,14 @@ const Menu = () => {
     }
 
     if (isGoogleOnly) {
+      // Allow Google-only users to add to cart, but encourage completion
+      console.log('Google-only user adding to cart; prompting to complete signup')
+      addToCart(product)
       setShowModal(true)
+      // keep modal short and do not navigate automatically to avoid disrupting flow
       setTimeout(() => {
         setShowModal(false)
-        navigate('/complete-signup')
-      }, 1400)
+      }, 1600)
       return
     }
 
@@ -156,12 +159,26 @@ const Menu = () => {
   return (
     <div className="min-h-screen">
       {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-          <div className="bg-white rounded-2xl shadow-xl p-6 text-center">
-            <h2 className="text-lg font-bold mb-1">{!isAuthenticated ? 'Please sign up first!' : 'Please complete your signup first!'}</h2>
-            <p className="text-sm text-gray-600">{!isAuthenticated ? 'You must log in to add items.' : 'Finish signup to start ordering.'}</p>
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+            <div className="bg-white rounded-2xl shadow-xl p-6 text-center">
+              {!isAuthenticated ? (
+                <>
+                  <h2 className="text-lg font-bold mb-1">Please sign up first!</h2>
+                  <p className="text-sm text-gray-600">You must log in to add items.</p>
+                </>
+              ) : isGoogleOnly ? (
+                <>
+                  <h2 className="text-lg font-bold mb-1">Signed in with Google</h2>
+                  <p className="text-sm text-gray-600">You're signed in via Google. Items were added to your cart — complete your profile for faster checkout.</p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-lg font-bold mb-1">Please complete your signup first!</h2>
+                  <p className="text-sm text-gray-600">Finish signup to start ordering.</p>
+                </>
+              )}
+            </div>
           </div>
-        </div>
       )}
       <FloatingCart />
       

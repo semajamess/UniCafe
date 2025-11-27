@@ -7,7 +7,8 @@ export const seedDrinkProducts = async () => {
     const response = await fetch('https://www.thecocktaildb.com/api/json/v1/1/filter.php?a=Non_Alcoholic');
     const data = await response.json();
     
-    const categoryId = await db.getAsync('SELECT id FROM categories WHERE name = ?', ['Drinks']);
+    // We'll store category as the enum string 'Drinks'
+    const category = 'Drinks';
     
     // Get detailed info for each drink (limit to 25)
     const drinks = [];
@@ -29,10 +30,10 @@ export const seedDrinkProducts = async () => {
     
     for (const drink of drinks) {
       await db.runAsync(
-        `INSERT OR IGNORE INTO products (category_id, name, description, price, stock, image_url, is_available) 
+        `INSERT OR IGNORE INTO products (category, name, description, price, stock, image_url, is_available) 
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
-          categoryId.id,
+          category,
           drink.name,
           drink.description,
           drink.price,
@@ -53,7 +54,8 @@ export const seedDrinkProducts = async () => {
 // Seed food from TheMealDB API (Multiple categories)
 export const seedPastryProducts = async () => {
   try {
-    const categoryId = await db.getAsync('SELECT id FROM categories WHERE name = ?', ['Food']);
+    // We'll store category as the enum string 'Food'
+    const category = 'Food';
     
     // Fetch from multiple food categories
     const categories = ['Breakfast', 'Dessert', 'Pasta', 'Vegetarian'];
@@ -85,10 +87,10 @@ export const seedPastryProducts = async () => {
     
     for (const food of foods) {
       await db.runAsync(
-        `INSERT OR IGNORE INTO products (category_id, name, description, price, stock, image_url, is_available) 
+        `INSERT OR IGNORE INTO products (category, name, description, price, stock, image_url, is_available) 
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
-          categoryId.id,
+          category,
           food.name,
           food.description,
           food.price,

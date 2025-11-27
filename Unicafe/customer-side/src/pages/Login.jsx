@@ -21,6 +21,9 @@ const Login = () => {
   const googleButtonRef = useRef(null);
 
   useEffect(() => {
+    // Only initialize Google Sign-In in Sign In mode.
+    if (!isLogin) return
+
     // Initialize Google Sign-In when the GSI script is available.
     // The script is loaded async, so poll briefly until `window.google` exists.
     let mounted = true
@@ -426,17 +429,20 @@ const Login = () => {
               </button>
             </form>
 
-            {/* Divider */}
-            <div className="flex items-center my-6">
-              <div className="flex-1 border-t border-slate-200"></div>
-              <span className="px-4 text-sm text-slate-500 font-medium">OR</span>
-              <div className="flex-1 border-t border-slate-200"></div>
-            </div>
+            {/* Divider and Google Login Button (only for Sign In) */}
+            {isLogin && (
+              <>
+                <div className="flex items-center my-6">
+                  <div className="flex-1 border-t border-slate-200"></div>
+                  <span className="px-4 text-sm text-slate-500 font-medium">OR</span>
+                  <div className="flex-1 border-t border-slate-200"></div>
+                </div>
 
-            {/* Google Login Button */}
-            <div className="flex justify-center">
-              <div ref={googleButtonRef}></div>
-            </div>
+                <div className="flex justify-center">
+                  <div ref={googleButtonRef} aria-label="Sign in with Google"></div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </motion.div>

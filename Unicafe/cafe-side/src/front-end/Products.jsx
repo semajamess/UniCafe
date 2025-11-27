@@ -35,7 +35,7 @@ const Products = () => {
 
   const [formData, setFormData] = useState({
     name: "",
-    category_id: "",
+    category: "",
     price: "",
     stock: "",
     description: "",
@@ -58,6 +58,14 @@ const Products = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showAutocomplete]);
+
+  // Clear autocomplete suggestions when modal mode changes (only used in add)
+  useEffect(() => {
+    if (modalMode !== 'add') {
+      setShowAutocomplete(false);
+      setAutocompleteSuggestions([]);
+    }
+  }, [modalMode]);
 
   const fetchProducts = async () => {
     try {
@@ -85,6 +93,13 @@ const Products = () => {
   const handleNameChange = async (value) => {
     setFormData({ ...formData, name: value });
     
+    // Only fetch recommendations/autocomplete when adding a new product
+    if (modalMode !== 'add') {
+      setShowAutocomplete(false);
+      setAutocompleteSuggestions([]);
+      return;
+    }
+
     if (value.length >= 1) {
       try {
         // First, get deactivated products
@@ -94,7 +109,7 @@ const Products = () => {
         console.log('Deactivated products response:', deactivatedProducts);
         
         // Then get API suggestions
-        const categoryName = categories.find(c => c.id === formData.category_id)?.name || '';
+        const categoryName = formData.category || '';
         console.log('Fetching API suggestions for:', value, 'category:', categoryName);
         const apiResponse = await fetch(`${API_URL}/products/autocomplete?q=${value}&type=${categoryName}`);
         const apiSuggestions = await apiResponse.json();
@@ -134,7 +149,7 @@ const Products = () => {
       setFormData({
         ...formData,
         name: suggestion.name,
-        category_id: suggestion.category_id || '',
+        category: suggestion.category || suggestion.category_name || '',
         description: suggestion.description || '',
         price: suggestion.price || '',
         stock: suggestion.stock || '',
@@ -146,7 +161,7 @@ const Products = () => {
       setFormData({
         ...formData,
         name: suggestion.name,
-        category_id: suggestion.category_id || '',
+        category: suggestion.category || suggestion.category_name || '',
         description: suggestion.description || '',
         image_url: suggestion.image_url || '',
         price: '',
@@ -162,7 +177,7 @@ const Products = () => {
     setSelectedProduct(null);
     setFormData({
       name: "",
-      category_id: "",
+      category: "",
       price: "",
       stock: "",
       description: "",
@@ -177,7 +192,7 @@ const Products = () => {
     setSelectedProduct(product);
     setFormData({
       name: product.name,
-      category_id: product.category_id,
+      category: product.category || product.category_name || '',
       price: product.price,
       stock: product.stock || 0,
       description: product.description || "",
@@ -345,7 +360,8 @@ const Products = () => {
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || product.category_name === selectedCategory;
+    const prodCategory = product.category || product.category_name || '';
+    const matchesCategory = selectedCategory === "all" || prodCategory.toLowerCase() === selectedCategory.toLowerCase();
     const isActive = product.is_available === 1; // Only show active products
     return matchesSearch && matchesCategory && isActive;
   });
@@ -416,7 +432,7 @@ const Products = () => {
                   )}
                   <div>
                     <h3 className="font-bold text-lg text-slate-900">{product.name}</h3>
-                    <span className="text-sm text-amber-600 font-semibold">{product.category_name}</span>
+                    <span className="text-sm text-amber-600 font-semibold">{product.category || product.category_name}</span>
                   </div>
                 </div>
                 <div className="flex space-x-2">
@@ -490,7 +506,7 @@ const Products = () => {
                   className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                   placeholder="e.g., Cappuccino"
                 />
-                {showAutocomplete && autocompleteSuggestions.length > 0 && (
+                {modalMode === 'add' && showAutocomplete && autocompleteSuggestions.length > 0 && (
                   <div className="absolute z-50 w-full mt-1 bg-white border-2 border-amber-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
                     {autocompleteSuggestions.map((suggestion, index) => (
                       <div
@@ -524,14 +540,14 @@ const Products = () => {
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Category (Auto-filled from API)</label>
                 <select
                   required
-                  value={formData.category_id}
-                  onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-slate-50"
                   disabled={modalMode === "add"}
                 >
-                  <option value="">Auto-detected</option>
+                  {modalMode === 'add' && <option value="">Auto-detected</option>}
                   {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    <option key={cat.id} value={cat.name || cat.id}>{cat.name}</option>
                   ))}
                 </select>
               </div>

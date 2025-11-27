@@ -15,7 +15,7 @@ db.all('SELECT COUNT(*) as count FROM products', (err, rows) => {
     } else {
       console.log('\nFirst 5 products:');
       products.forEach(p => {
-        console.log(`- ${p.name} (₱${p.price}) - ${p.category_id}`);
+        console.log(`- ${p.name} (₱${p.price}) - ${p.category || p.category_id || ''}`);
       });
     }
     db.close();

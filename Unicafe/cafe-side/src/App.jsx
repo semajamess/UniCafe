@@ -5,6 +5,7 @@ import Login from "./front-end/Login";
 import Dashboard from "./front-end/Dashboard";
 import Products from "./front-end/Products";
 import Orders from "./front-end/Orders";
+import Payments from "./front-end/Payments";
 import Customers from "./front-end/Customers";
 import Settings from "./front-end/Settings";
 
@@ -21,6 +22,7 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="products" element={<Products />} />
           <Route path="orders" element={<Orders />} />
+          <Route path="payments" element={<Payments />} />
           <Route path="customers" element={<Customers />} />
           <Route path="settings" element={<Settings />} />
         </Route>

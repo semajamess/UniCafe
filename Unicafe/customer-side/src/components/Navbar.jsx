@@ -60,21 +60,23 @@ export default function Navbar() {
                 )}
               </Link>
             ))}
-            <Link
-              to="/cart"
-              className="relative p-2 text-gray-700 hover:text-amber-600 transition-colors"
-            >
-              <ShoppingCart className="h-6 w-6" />
-              {getTotalItems() > 0 && (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 bg-amber-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"
-                >
-                  {getTotalItems()}
-                </motion.span>
-              )}
-            </Link>
+            {isAuthenticated && (
+              <Link
+                to="/cart"
+                className="relative p-2 text-gray-700 hover:text-amber-600 transition-colors"
+              >
+                <ShoppingCart className="h-6 w-6" />
+                {getTotalItems() > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1 -right-1 bg-amber-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"
+                  >
+                    {getTotalItems()}
+                  </motion.span>
+                )}
+              </Link>
+            )}
             
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
@@ -132,18 +134,20 @@ export default function Navbar() {
                   {link.name}
                 </Link>
               ))}
-              <Link
-                to="/cart"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center justify-between py-2 px-4 rounded-lg text-gray-700 hover:bg-amber-50"
-              >
-                <span>Cart</span>
-                {getTotalItems() > 0 && (
-                  <span className="bg-amber-600 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
-                    {getTotalItems()}
-                  </span>
-                )}
-              </Link>
+              {isAuthenticated && (
+                <Link
+                  to="/cart"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-between py-2 px-4 rounded-lg text-gray-700 hover:bg-amber-50"
+                >
+                  <span>Cart</span>
+                  {getTotalItems() > 0 && (
+                    <span className="bg-amber-600 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
+                      {getTotalItems()}
+                    </span>
+                  )}
+                </Link>
+              )}
               
               {isAuthenticated ? (
                 <>

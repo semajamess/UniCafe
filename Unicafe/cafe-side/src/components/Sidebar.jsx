@@ -7,6 +7,7 @@ import {
   Settings,
   Coffee,
   X,
+  CreditCard,
 } from "lucide-react";
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
@@ -14,6 +15,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Products", href: "/products", icon: Package },
     { name: "Orders", href: "/orders", icon: ShoppingCart },
+    { name: "Payments", href: "/payments", icon: CreditCard },
     { name: "Customers", href: "/customers", icon: Users },
     { name: "Settings", href: "/settings", icon: Settings },
   ];

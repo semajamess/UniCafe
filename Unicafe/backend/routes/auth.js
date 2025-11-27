@@ -12,6 +12,8 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 router.post('/register', async (req, res) => {
   try {
     const { username, email, password } = req.body
+    // Diagnostic logs (avoid logging passwords)
+    console.log('[auth:register] incoming:', { username, email, ip: req.ip })
 
     if (!username || !email || !password) {
       return res.status(400).json({ error: 'Username, email, and password are required' })
@@ -34,6 +36,7 @@ router.post('/register', async (req, res) => {
       'SELECT * FROM users WHERE email = ? OR username = ?',
       [email, username]
     )
+    console.log('[auth:register] existingUser:', existingUser)
 
     if (existingUser) {
       if (existingUser.email === email) return res.status(400).json({ error: 'Email already registered' })
@@ -46,6 +49,11 @@ router.post('/register', async (req, res) => {
       'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
       [username, email, hashedPassword]
     )
+    console.log('[auth:register] insert result:', result)
+
+    if (!result || typeof result.lastID === 'undefined') {
+      throw new Error('Failed to create user');
+    }
 
     const token = jwt.sign({ id: result.lastID, email, username }, JWT_SECRET, { expiresIn: '7d' })
 
@@ -102,6 +110,9 @@ function authenticateToken(req, res, next) {
   })
 }
 
+// Export middleware for reuse in other route modules
+export { authenticateToken }
+
 // Get user profile (requires authentication)
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
@@ -138,6 +149,11 @@ router.post('/google', async (req, res) => {
 
     if (!user) {
       const result = await db.runAsync('INSERT INTO users (username, email, password, google_id, profile_image) VALUES (?, ?, ?, ?, ?)', [name, email, '', googleId, picture])
+
+      if (!result || typeof result.lastID === 'undefined') {
+        throw new Error('Failed to create user from Google login');
+      }
+
       user = await db.getAsync('SELECT * FROM users WHERE id = ?', [result.lastID])
     }
 

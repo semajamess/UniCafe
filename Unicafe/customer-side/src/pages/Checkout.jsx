@@ -2,14 +2,18 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { CreditCard, User, Mail } from 'lucide-react'
+import Receipt from '../components/Receipt'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 
 const Checkout = () => {
   const navigate = useNavigate()
   const { cart, getTotalPrice, clearCart } = useCart()
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, token } = useAuth()
   const [loading, setLoading] = useState(false)
+  const [otpModal, setOtpModal] = useState({ open: false, requestId: null })
+  const [otpValue, setOtpValue] = useState('')
+  const [successModal, setSuccessModal] = useState({ open: false, orderData: null, orderId: null })
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -26,6 +30,14 @@ const Checkout = () => {
       }))
     }
   }, [isAuthenticated, user])
+
+  // Require authentication to place orders (standard practice)
+  useEffect(() => {
+    if (!isAuthenticated) {
+      // Redirect user to login and return back to checkout after auth
+      navigate('/login', { state: { returnTo: window.location.pathname } })
+    }
+  }, [isAuthenticated, navigate])
 
   const handleInputChange = (e) => {
     setFormData({
@@ -53,26 +65,62 @@ const Checkout = () => {
         status: 'pending'
       }
 
-      const response = await fetch('http://localhost:3000/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderData)
-      })
-
-      if (response.ok) {
-        clearCart()
-        navigate('/order-confirmation', { 
-          state: { 
-            orderData: {
-              ...orderData,
-              orderNumber: Math.floor(Math.random() * 1000000)
-            }
-          } 
+      if (formData.paymentMethod === 'cash') {
+        // Cash: create order directly
+        const response = await fetch('http://localhost:3000/api/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({ ...orderData })
         })
+
+        if (response.ok) {
+          const data = await response.json()
+          console.log('Create order response (cash):', data)
+          const orderData = data.order || data
+          // Navigate to confirmation first, then clear the cart so this component
+          // doesn't redirect to /cart during the navigation render.
+          navigate('/order-confirmation', {
+            state: { orderData, orderId: (data.order && data.order.id) || data.id }
+          })
+        } else {
+          let msg = 'Failed to place order. Please try again.'
+          try {
+            const err = await response.json()
+            if (err && err.error) msg = err.error
+          } catch (e) {}
+          if (response.status === 401) {
+            alert(msg + ' Please log in again.')
+            navigate('/login')
+          } else {
+            alert(msg)
+          }
+        }
       } else {
-        alert('Failed to place order. Please try again.')
+        // Non-cash: use OTP-backed initiation so DB insert happens after OTP confirmation
+        const returnUrl = window.location.origin + '/order-confirmation'
+        const initiateResp = await fetch('http://localhost:3000/api/payments/initiate-otp', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({ items: orderData.items, return_url: returnUrl, method_hint: formData.paymentMethod })
+        })
+
+        if (!initiateResp.ok) {
+          let msg = 'Failed to initiate payment. Please try again.'
+          try { const err = await initiateResp.json(); if (err && err.error) msg = err.error } catch (e) {}
+          alert(msg)
+          setLoading(false)
+          return
+        }
+
+        const initData = await initiateResp.json()
+        // show OTP modal to the user
+        setOtpModal({ open: true, requestId: initData.requestId })
       }
     } catch (error) {
       console.error('Error placing order:', error)
@@ -80,6 +128,102 @@ const Checkout = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleOtpSubmit = async (e) => {
+    e.preventDefault()
+    if (!otpModal.requestId) return
+    setLoading(true)
+    try {
+      const resp = await fetch('http://localhost:3000/api/payments/confirm-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ requestId: otpModal.requestId, otp: otpValue })
+      })
+
+        if (!resp.ok) {
+        let msg = 'Invalid OTP or confirmation failed.'
+        try { const err = await resp.json(); if (err && err.error) msg = err.error } catch(e){}
+        alert(msg)
+        setLoading(false)
+        return
+      }
+
+      const data = await resp.json()
+      console.log('Confirm OTP response:', data)
+      // Accept multiple response shapes: { order }, { orderData }, or direct order
+      let orderData = data.order || data.orderData || (typeof data === 'object' && Object.keys(data).length ? data : null)
+
+      // If backend returned only an orderId, fetch canonical order before navigating
+      const resolvedOrderId = data.orderId || (orderData && (orderData.id || orderData.orderNumber))
+      if (!orderData && resolvedOrderId) {
+        try {
+          const fetchResp = await fetch(`http://localhost:3000/api/orders/${resolvedOrderId}`, {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
+            }
+          })
+          if (fetchResp.ok) {
+            const fetched = await fetchResp.json()
+            console.log('Fetched canonical order for receipt fallback:', fetched)
+            // Build a lightweight shape matching OrderConfirmation expectations
+            const items = fetched.items || []
+            const subtotal = items.reduce((s, i) => s + ((Number(i.price) || 0) * (Number(i.quantity) || 0)), 0)
+            const total = parseFloat(fetched.total || subtotal)
+            orderData = {
+              orderNumber: fetched.id,
+              id: fetched.id,
+              customer_name: fetched.customer_name || fetched.username || 'Guest',
+              customer_email: fetched.customer_email || fetched.user_email || '',
+              payment_method: (fetched.payment && fetched.payment.method) || fetched.payment_method || 'N/A',
+              items,
+              subtotal,
+              tax: fetched.tax || 0,
+              total
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to fetch order for receipt fallback:', e)
+        }
+      }
+
+      // Close OTP modal
+      setOtpModal({ open: false, requestId: null })
+      setOtpValue('')
+
+      // Persist the order receipt in sessionStorage as a durable fallback
+      try {
+        if (orderData) sessionStorage.setItem('latestOrder', JSON.stringify(orderData))
+        else if (resolvedOrderId) sessionStorage.removeItem('latestOrder')
+      } catch (e) {
+        console.warn('sessionStorage not available for receipt fallback', e)
+      }
+
+      // Close OTP modal and navigate directly to the full receipt page so the
+      // user sees the Order Confirmation (receipt) immediately.
+      setOtpModal({ open: false, requestId: null })
+      setOtpValue('')
+      navigate('/order-confirmation', { state: { orderData, orderId: resolvedOrderId || (orderData && (orderData.id || orderData.orderNumber)) } })
+    } catch (err) {
+      console.error('OTP confirm error:', err)
+      alert('An error occurred verifying OTP. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Handlers for the success modal shown after OTP confirmation
+  const handleViewReceipt = () => {
+    const od = successModal.orderData
+    const oid = successModal.orderId
+    setSuccessModal({ open: false, orderData: null, orderId: null })
+    navigate('/order-confirmation', { state: { orderData: od, orderId: oid } })
+  }
+
+  const handleModalContinue = () => {
+    setSuccessModal({ open: false, orderData: null, orderId: null })
+    navigate('/')
   }
 
   if (cart.length === 0) {
@@ -229,6 +373,51 @@ const Checkout = () => {
           </div>
         </div>
       </div>
+      {/* OTP Modal */}
+      {otpModal.open && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-xl font-bold mb-4">Enter OTP</h3>
+            <p className="mb-4 text-sm text-gray-600">We sent a one-time code to your email. Enter it below to complete payment.</p>
+            <form onSubmit={handleOtpSubmit}>
+              <input
+                type="text"
+                value={otpValue}
+                onChange={(e) => setOtpValue(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 mb-4"
+                placeholder="Enter OTP"
+                required
+              />
+              <div className="flex gap-3 justify-end">
+                <button type="button" onClick={() => setOtpModal({ open: false, requestId: null })} className="px-4 py-2 rounded-lg bg-gray-200">Cancel</button>
+                <button type="submit" disabled={loading} className="px-4 py-2 rounded-lg bg-primary-600 text-white">{loading ? 'Verifying...' : 'Verify OTP'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Success Modal (shown after OTP confirmation) */}
+      {successModal.open && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-3xl">
+            <h3 className="text-xl font-bold mb-2">Payment Verified</h3>
+            <p className="text-sm text-gray-600 mb-4">Your payment was confirmed successfully. Below is your receipt.</p>
+
+            <div className="mb-4">
+              {successModal.orderData ? (
+                <Receipt order={successModal.orderData} />
+              ) : (
+                <div className="p-4 bg-gray-50 rounded text-sm text-gray-600">Loading receipt...</div>
+              )}
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setSuccessModal({ open: false, orderData: null, orderId: null })} className="px-4 py-2 rounded-lg bg-gray-200">Close</button>
+              <button onClick={handleViewReceipt} className="px-4 py-2 rounded-lg bg-primary-600 text-white">Open Full Receipt</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

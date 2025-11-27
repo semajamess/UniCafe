@@ -9,6 +9,7 @@ import categoriesRoutes from './routes/categories.js';
 import productsRoutes from './routes/products.js';
 import ordersRoutes from './routes/orders.js';
 import authRoutes from './routes/auth.js';
+import paymentsRoutes from './routes/payments.js';
 
 dotenv.config();
 
@@ -40,6 +41,7 @@ app.use('/api/categories', categoriesRoutes);
 app.use('/api/products', productsRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/payments', paymentsRoutes);
 
 // Seed database endpoint (for initial setup)
 app.post('/api/seed', async (req, res) => {

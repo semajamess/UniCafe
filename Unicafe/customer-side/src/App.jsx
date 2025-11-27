@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { CartProvider } from './context/CartContext'
 import { AuthProvider } from './context/AuthContext'
 import Navbar from './components/NavBar'
@@ -9,7 +9,7 @@ import Homepage from './pages/Homepage'
 import Menu from './pages/Menu'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
-import OrderConfirmation from './pages/OrderConfirmation'
+import OrderConfirmation from './pages/ReceiptPage'
 import About from './pages/About'
 import Contact from './pages/Contact'
 import Login from './pages/Login'
@@ -69,6 +69,8 @@ function App() {
                 <Route path="/order-confirmation" element={<OrderConfirmation />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
+                {/* Redirect unknown routes to homepage */}
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>
             <Footer />

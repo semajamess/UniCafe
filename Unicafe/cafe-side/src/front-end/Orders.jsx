@@ -52,10 +52,14 @@ const Orders = () => {
       const transformedOrders = data.map(order => ({
         id: `#ORD-${order.id}`,
         customer: { 
-          name: order.customer_name, 
-          email: order.customer_email
+          // Show username (resolved from user_id). Also display raw user_id below for clarity.
+          name: order.customer_name || 'Guest',
+          email: order.customer_email || '',
+          id: order.user_id || null,
         },
+        // items array may not be included in list endpoint; use count when available
         items: order.items || [],
+        itemsCount: order.item_count || (order.items ? order.items.length : 0),
         total: parseFloat(order.total),
         status: order.status,
         paymentMethod: order.payment_method || "N/A",
@@ -267,12 +271,12 @@ const Orders = () => {
                   <td className="py-4 px-6">
                     <div>
                       <p className="font-medium text-slate-900">{order.customer.name}</p>
-                      <p className="text-sm text-slate-500">{order.customer.email}</p>
+                      <p className="text-sm text-slate-500">{order.customer.email}{order.customer.id ? ` — ID:${order.customer.id}` : ''}</p>
                     </div>
                   </td>
                   <td className="py-4 px-6">
                     <span className="text-sm text-slate-600">
-                      {order.items.length} item{order.items.length > 1 ? "s" : ""}
+                      {order.itemsCount} item{order.itemsCount > 1 ? "s" : ""}
                     </span>
                   </td>
                   <td className="py-4 px-6">

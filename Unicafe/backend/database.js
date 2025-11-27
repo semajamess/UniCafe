@@ -1,16 +1,30 @@
 import sqlite3 from 'sqlite3';
 import { promisify } from 'util';
+import path from 'path';
 
-const db = new sqlite3.Database('./unicafe.db', (err) => {
+const dbPath = path.resolve('./unicafe.db');
+const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('❌ Error connecting to database:', err);
   } else {
     console.log('✅ Connected to SQLite database');
+    console.log('    DB file:', dbPath);
   }
 });
 
 // Promisify database methods for async/await
-db.runAsync = promisify(db.run.bind(db));
+// sqlite3's `run` callback doesn't pass the result object to the callback
+// (it provides `this.lastID` and `this.changes` on the callback `this`).
+// Promisify would resolve to `undefined`, so provide a small wrapper
+// that resolves `{ lastID, changes }` which the application expects.
+db.runAsync = (sql, params = []) => {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function (err) {
+        if (err) return reject(err);
+        resolve({ lastID: this.lastID, changes: this.changes });
+      });
+  });
+};
 db.getAsync = promisify(db.get.bind(db));
 db.allAsync = promisify(db.all.bind(db));
 
@@ -27,19 +41,19 @@ export const initDatabase = async () => {
       )
     `);
 
-    // Products table (accessible for both admin and customer)
+    // Products table (store category as an enum-like TEXT with a CHECK constraint)
+    // SQLite doesn't have a native ENUM type, so enforce allowed values with CHECK.
     await db.runAsync(`
       CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        category_id INTEGER NOT NULL,
+        category TEXT NOT NULL CHECK (category IN ('Drinks', 'Food')) DEFAULT 'Food',
         name TEXT NOT NULL,
         description TEXT,
         price REAL NOT NULL,
         stock INTEGER DEFAULT 0,
         image_url TEXT,
         is_available BOOLEAN DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (category_id) REFERENCES categories(id)
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -52,7 +66,6 @@ export const initDatabase = async () => {
         password TEXT,
         google_id TEXT UNIQUE,
         profile_image TEXT,
-        is_guest BOOLEAN DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -82,6 +95,21 @@ export const initDatabase = async () => {
         price REAL NOT NULL,
         FOREIGN KEY (order_id) REFERENCES orders(id),
         FOREIGN KEY (product_id) REFERENCES products(id)
+      )
+    `);
+
+    // Payments table (optional detailed records)
+    await db.runAsync(`
+      CREATE TABLE IF NOT EXISTS payments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_id INTEGER,
+        amount REAL NOT NULL,
+        method TEXT,
+        provider_txn_id TEXT,
+        status TEXT DEFAULT 'completed',
+        metadata TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (order_id) REFERENCES orders(id)
       )
     `);
 

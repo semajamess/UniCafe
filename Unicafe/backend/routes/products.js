@@ -15,12 +15,12 @@ router.get('/autocomplete', async (req, res) => {
     let results = [];
     if (type === 'Drinks') {
       results = await searchDrinksAutocomplete(q);
-      // Add category_id for drinks
-      results = results.map(r => ({ ...r, category_id: 1 }));
+      // Mark category for drinks
+      results = results.map(r => ({ ...r, category: 'Drinks' }));
     } else if (type === 'Food') {
       results = await searchFoodAutocomplete(q);
-      // Add category_id for food
-      results = results.map(r => ({ ...r, category_id: 2 }));
+      // Mark category for food
+      results = results.map(r => ({ ...r, category: 'Food' }));
     } else {
       // Search both
       const [drinks, food] = await Promise.all([
@@ -28,8 +28,8 @@ router.get('/autocomplete', async (req, res) => {
         searchFoodAutocomplete(q)
       ]);
       results = [
-        ...drinks.map(r => ({ ...r, category_id: 1 })),
-        ...food.map(r => ({ ...r, category_id: 2 }))
+        ...drinks.map(r => ({ ...r, category: 'Drinks' })),
+        ...food.map(r => ({ ...r, category: 'Food' }))
       ];
     }
     
@@ -44,10 +44,7 @@ router.get('/check-exists', async (req, res) => {
   try {
     const { name } = req.query;
     const product = await db.getAsync(
-      `SELECT p.*, c.name as category_name 
-       FROM products p 
-       JOIN categories c ON p.category_id = c.id 
-       WHERE p.name = ?`,
+      `SELECT p.* FROM products p WHERE p.name = ?`,
       [name]
     );
     
@@ -66,11 +63,7 @@ router.get('/deactivated', async (req, res) => {
   try {
     const { q } = req.query;
     const products = await db.allAsync(
-      `SELECT p.*, c.name as category_name 
-       FROM products p 
-       JOIN categories c ON p.category_id = c.id 
-       WHERE p.is_available = 0 AND p.name LIKE ?
-       LIMIT 5`,
+      `SELECT p.* FROM products p WHERE p.is_available = 0 AND p.name LIKE ? LIMIT 5`,
       [`%${q}%`]
     );
     res.json(products);
@@ -84,16 +77,11 @@ router.get('/', async (req, res) => {
   try {
     const { category, available, search } = req.query;
     
-    let query = `
-      SELECT p.*, c.name as category_name 
-      FROM products p 
-      JOIN categories c ON p.category_id = c.id 
-      WHERE 1=1
-    `;
+    let query = `SELECT p.* FROM products p WHERE 1=1`;
     const params = [];
 
     if (category) {
-      query += ' AND c.name = ?';
+      query += ' AND p.category = ?';
       params.push(category);
     }
 
@@ -119,13 +107,7 @@ router.get('/', async (req, res) => {
 // Get product by ID (CUSTOMER ACCESSIBLE)
 router.get('/:id', async (req, res) => {
   try {
-    const product = await db.getAsync(
-      `SELECT p.*, c.name as category_name 
-       FROM products p 
-       JOIN categories c ON p.category_id = c.id 
-       WHERE p.id = ?`,
-      [req.params.id]
-    );
+    const product = await db.getAsync(`SELECT p.* FROM products p WHERE p.id = ?`, [req.params.id]);
     
     if (!product) {
       return res.status(404).json({ error: 'Product not found' });
@@ -141,23 +123,19 @@ router.post('/', async (req, res) => {
   try {
     const { name, description, price, stock, image_url, is_available } = req.body;
     
-    // Auto-detect category based on product type from API or default to category ID 1 (Drinks) or 2 (Food)
-    // You can determine this based on image_url pattern or name keywords
-    let category_id = req.body.category_id;
-    if (!category_id) {
-      // Default to Food category (id: 2) if not specified
-      category_id = 2;
-    }
-    
+    // Category should be one of the allowed enum values ('Drinks'|'Food')
+    let category = req.body.category;
+    if (!category) category = 'Food';
+
     const result = await db.runAsync(
-      `INSERT INTO products (category_id, name, description, price, stock, image_url, is_available) 
+      `INSERT INTO products (category, name, description, price, stock, image_url, is_available) 
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [category_id, name, description, price, stock || 0, image_url, is_available !== undefined ? is_available : 1]
+      [category, name, description, price, stock || 0, image_url, is_available !== undefined ? is_available : 1]
     );
-    
+
     res.status(201).json({ 
       id: result.lastID, 
-      category_id, 
+      category, 
       name, 
       description, 
       price,
@@ -173,16 +151,16 @@ router.post('/', async (req, res) => {
 // Update product (ADMIN ONLY)
 router.put('/:id', async (req, res) => {
   try {
-    const { category_id, name, description, price, stock, image_url, is_available } = req.body;
-    
+    const { category, name, description, price, stock, image_url, is_available } = req.body;
+
     await db.runAsync(
       `UPDATE products 
-       SET category_id = ?, name = ?, description = ?, price = ?, stock = ?, image_url = ?, is_available = ? 
+       SET category = ?, name = ?, description = ?, price = ?, stock = ?, image_url = ?, is_available = ? 
        WHERE id = ?`,
-      [category_id, name, description, price, stock, image_url, is_available, req.params.id]
+      [category, name, description, price, stock, image_url, is_available, req.params.id]
     );
-    
-    res.json({ id: req.params.id, category_id, name, description, price, stock, image_url, is_available });
+
+    res.json({ id: req.params.id, category, name, description, price, stock, image_url, is_available });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
