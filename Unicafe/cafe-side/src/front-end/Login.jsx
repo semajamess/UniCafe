@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Coffee, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = "http://localhost:3000/api";
 
 const Login = ({ setIsAuthenticated }) => {
   const navigate = useNavigate();
@@ -19,12 +19,12 @@ const Login = ({ setIsAuthenticated }) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    
+
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email: formData.email,
@@ -35,17 +35,17 @@ const Login = ({ setIsAuthenticated }) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
+        throw new Error(data.error || "Login failed");
       }
 
       // Store token and user data
-      localStorage.setItem('admin_token', data.token);
-      localStorage.setItem('admin_user', JSON.stringify(data.user));
-      
+      localStorage.setItem("admin_token", data.token);
+      localStorage.setItem("admin_user", JSON.stringify(data.user));
+
       setIsAuthenticated(true);
       navigate("/dashboard");
     } catch (err) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      setError(err.message || "Login failed. Please check your credentials.");
     } finally {
       setLoading(false);
     }
@@ -59,7 +59,9 @@ const Login = ({ setIsAuthenticated }) => {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl shadow-lg mb-4">
             <Coffee className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">UniCafé Admin</h1>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">
+            UniCafé Admin
+          </h1>
           <p className="text-slate-600">Sign in to manage your cafe</p>
         </div>
 
@@ -70,7 +72,7 @@ const Login = ({ setIsAuthenticated }) => {
               {error}
             </div>
           )}
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Input */}
             <div>
@@ -83,7 +85,9 @@ const Login = ({ setIsAuthenticated }) => {
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
                   placeholder="admin@unicafe.com"
                 />
@@ -101,7 +105,9 @@ const Login = ({ setIsAuthenticated }) => {
                   type={showPassword ? "text" : "password"}
                   required
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
                   className="w-full pl-10 pr-12 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
                   placeholder="Enter your password"
                 />
@@ -110,7 +116,11 @@ const Login = ({ setIsAuthenticated }) => {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
                 </button>
               </div>
             </div>
@@ -121,12 +131,17 @@ const Login = ({ setIsAuthenticated }) => {
                 <input
                   type="checkbox"
                   checked={formData.rememberMe}
-                  onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, rememberMe: e.target.checked })
+                  }
                   className="w-4 h-4 text-amber-600 bg-slate-100 border-slate-300 rounded focus:ring-amber-500 focus:ring-2"
                 />
                 <span className="ml-2 text-sm text-slate-600">Remember me</span>
               </label>
-              <a href="#" className="text-sm text-amber-600 hover:text-amber-700 font-medium transition-colors">
+              <a
+                href="#"
+                className="text-sm text-amber-600 hover:text-amber-700 font-medium transition-colors"
+              >
                 Forgot password?
               </a>
             </div>
@@ -137,7 +152,7 @@ const Login = ({ setIsAuthenticated }) => {
               disabled={loading}
               className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span>{loading ? 'Signing in...' : 'Sign In'}</span>
+              <span>{loading ? "Signing in..." : "Sign In"}</span>
             </button>
           </form>
 
@@ -150,7 +165,9 @@ const Login = ({ setIsAuthenticated }) => {
 
           {/* Demo Credentials */}
           <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
-            <p className="text-sm font-medium text-amber-900 mb-2">Demo Credentials:</p>
+            <p className="text-sm font-medium text-amber-900 mb-2">
+              Demo Credentials:
+            </p>
             <div className="text-xs text-amber-700 space-y-1">
               <p>Use any registered user account</p>
               <p>Or create a new account on the customer app</p>

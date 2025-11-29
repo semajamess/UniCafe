@@ -1,18 +1,18 @@
-import express from 'express';
-import db from '../database.js';
+import express from "express";
+import db from "../database.js";
 
 const router = express.Router();
 
 // Get dashboard statistics (ADMIN ONLY)
-router.get('/dashboard', async (req, res) => {
+router.get("/dashboard", async (req, res) => {
   try {
-    const { period = 'all' } = req.query;
+    const { period = "all" } = req.query;
 
     // Calculate date filter
-    let dateFilter = '';
-    if (period === 'week') {
+    let dateFilter = "";
+    if (period === "week") {
       dateFilter = "AND created_at >= date('now', '-7 days')";
-    } else if (period === 'month') {
+    } else if (period === "month") {
       dateFilter = "AND created_at >= date('now', '-30 days')";
     }
 
@@ -24,11 +24,13 @@ router.get('/dashboard', async (req, res) => {
     `);
 
     // Previous period revenue for comparison
-    let prevDateFilter = '';
-    if (period === 'week') {
-      prevDateFilter = "AND created_at >= date('now', '-14 days') AND created_at < date('now', '-7 days')";
-    } else if (period === 'month') {
-      prevDateFilter = "AND created_at >= date('now', '-60 days') AND created_at < date('now', '-30 days')";
+    let prevDateFilter = "";
+    if (period === "week") {
+      prevDateFilter =
+        "AND created_at >= date('now', '-14 days') AND created_at < date('now', '-7 days')";
+    } else if (period === "month") {
+      prevDateFilter =
+        "AND created_at >= date('now', '-60 days') AND created_at < date('now', '-30 days')";
     }
 
     const prevRevenueData = await db.getAsync(`
@@ -38,30 +40,45 @@ router.get('/dashboard', async (req, res) => {
     `);
 
     // Calculate percentage change
-    const revenueChange = prevRevenueData.total > 0 
-      ? (((revenueData.total - prevRevenueData.total) / prevRevenueData.total) * 100).toFixed(1)
-      : 0;
+    const revenueChange =
+      prevRevenueData.total > 0
+        ? (
+            ((revenueData.total - prevRevenueData.total) /
+              prevRevenueData.total) *
+            100
+          ).toFixed(1)
+        : 0;
 
-    const ordersChange = prevRevenueData.count > 0
-      ? (((revenueData.count - prevRevenueData.count) / prevRevenueData.count) * 100).toFixed(1)
-      : 0;
+    const ordersChange =
+      prevRevenueData.count > 0
+        ? (
+            ((revenueData.count - prevRevenueData.count) /
+              prevRevenueData.count) *
+            100
+          ).toFixed(1)
+        : 0;
 
     // Total Customers
     const customersData = await db.getAsync(`
       SELECT COUNT(*) as total 
       FROM users 
-      WHERE 1=1 ${dateFilter.replace('created_at', 'users.created_at')}
+      WHERE 1=1 ${dateFilter.replace("created_at", "users.created_at")}
     `);
 
     const prevCustomersData = await db.getAsync(`
       SELECT COUNT(*) as total 
       FROM users 
-      WHERE 1=1 ${prevDateFilter.replace('created_at', 'users.created_at')}
+      WHERE 1=1 ${prevDateFilter.replace("created_at", "users.created_at")}
     `);
 
-    const customersChange = prevCustomersData.total > 0
-      ? (((customersData.total - prevCustomersData.total) / prevCustomersData.total) * 100).toFixed(1)
-      : 0;
+    const customersChange =
+      prevCustomersData.total > 0
+        ? (
+            ((customersData.total - prevCustomersData.total) /
+              prevCustomersData.total) *
+            100
+          ).toFixed(1)
+        : 0;
 
     // Total Products
     const productsData = await db.getAsync(`
@@ -91,7 +108,10 @@ router.get('/dashboard', async (req, res) => {
       FROM order_items oi
       JOIN products p ON oi.product_id = p.id
       JOIN orders o ON oi.order_id = o.id
-      WHERE o.status != 'cancelled' ${dateFilter.replace('created_at', 'o.created_at')}
+      WHERE o.status != 'cancelled' ${dateFilter.replace(
+        "created_at",
+        "o.created_at"
+      )}
       GROUP BY p.category
     `);
 
@@ -105,7 +125,10 @@ router.get('/dashboard', async (req, res) => {
       FROM order_items oi
       JOIN products p ON oi.product_id = p.id
       JOIN orders o ON oi.order_id = o.id
-      WHERE o.status != 'cancelled' ${dateFilter.replace('created_at', 'o.created_at')}
+      WHERE o.status != 'cancelled' ${dateFilter.replace(
+        "created_at",
+        "o.created_at"
+      )}
       GROUP BY oi.product_id
       ORDER BY sales DESC
       LIMIT 5
@@ -132,31 +155,31 @@ router.get('/dashboard', async (req, res) => {
         revenue: {
           value: revenueData.total,
           change: revenueChange,
-          trend: revenueChange >= 0 ? 'up' : 'down'
+          trend: revenueChange >= 0 ? "up" : "down",
         },
         orders: {
           value: revenueData.count,
           change: ordersChange,
-          trend: ordersChange >= 0 ? 'up' : 'down'
+          trend: ordersChange >= 0 ? "up" : "down",
         },
         customers: {
           value: customersData.total,
           change: customersChange,
-          trend: customersChange >= 0 ? 'up' : 'down'
+          trend: customersChange >= 0 ? "up" : "down",
         },
         products: {
           value: productsData.total,
           change: 0,
-          trend: 'neutral'
-        }
+          trend: "neutral",
+        },
       },
       revenueOverTime,
       categoryData,
       topProducts,
-      recentOrders
+      recentOrders,
     });
   } catch (error) {
-    console.error('Dashboard stats error:', error);
+    console.error("Dashboard stats error:", error);
     res.status(500).json({ error: error.message });
   }
 });

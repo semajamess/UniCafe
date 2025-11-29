@@ -1,10 +1,10 @@
-import express from 'express';
-import db from '../database.js';
+import express from "express";
+import db from "../database.js";
 
 const router = express.Router();
 
 // Get all categories - return actual categories from database
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     // Get distinct categories from products table
     const categories = await db.allAsync(`
@@ -13,15 +13,15 @@ router.get('/', async (req, res) => {
       WHERE category IS NOT NULL
       ORDER BY category
     `);
-    
+
     // If no categories found, return default enum values
     if (categories.length === 0) {
       return res.json([
-        { id: 'Drinks', name: 'Drinks' },
-        { id: 'Food', name: 'Food' }
+        { id: "Drinks", name: "Drinks" },
+        { id: "Food", name: "Food" },
       ]);
     }
-    
+
     res.json(categories);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -29,18 +29,18 @@ router.get('/', async (req, res) => {
 });
 
 // Get category by ID
-router.get('/:id', async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
     const id = req.params.id;
     const category = await db.getAsync(
-      'SELECT DISTINCT category as name, category as id FROM products WHERE category = ?',
+      "SELECT DISTINCT category as name, category as id FROM products WHERE category = ?",
       [id]
     );
-    
+
     if (!category) {
-      return res.status(404).json({ error: 'Category not found' });
+      return res.status(404).json({ error: "Category not found" });
     }
-    
+
     res.json(category);
   } catch (error) {
     res.status(500).json({ error: error.message });

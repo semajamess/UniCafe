@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Search, Mail, Phone, MapPin, Calendar, Loader } from "lucide-react";
 import { format } from "date-fns";
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = "http://localhost:3000/api";
 
 const Customers = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -25,15 +25,15 @@ const Customers = () => {
     return () => clearTimeout(debounceTimer);
   }, [searchTerm]);
 
-  const fetchCustomers = async (search = '') => {
+  const fetchCustomers = async (search = "") => {
     try {
       setLoading(true);
-      const params = search ? `?search=${encodeURIComponent(search)}` : '';
+      const params = search ? `?search=${encodeURIComponent(search)}` : "";
       const response = await fetch(`${API_URL}/customers${params}`);
       const data = await response.json();
       setCustomers(data);
     } catch (error) {
-      console.error('Error fetching customers:', error);
+      console.error("Error fetching customers:", error);
     } finally {
       setLoading(false);
     }
@@ -72,26 +72,44 @@ const Customers = () => {
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">Customer</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">Contact</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">Total Orders</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">Total Spent</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">Last Order</th>
+                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">
+                  Customer
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">
+                  Contact
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">
+                  Total Orders
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">
+                  Total Spent
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">
+                  Last Order
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {customers.map((customer) => (
-                <tr key={customer.id} className="hover:bg-slate-50 transition-colors">
+                <tr
+                  key={customer.id}
+                  className="hover:bg-slate-50 transition-colors"
+                >
                   <td className="py-4 px-6">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white font-semibold">
-                        {customer.username ? customer.username.charAt(0).toUpperCase() : 'U'}
+                        {customer.username
+                          ? customer.username.charAt(0).toUpperCase()
+                          : "U"}
                       </div>
                       <div>
-                        <p className="font-medium text-slate-900">{customer.username || 'Unknown'}</p>
+                        <p className="font-medium text-slate-900">
+                          {customer.username || "Unknown"}
+                        </p>
                         <p className="text-sm text-slate-500 flex items-center">
                           <MapPin className="w-3 h-3 mr-1" />
-                          Member since {format(new Date(customer.created_at), "MMM yyyy")}
+                          Member since{" "}
+                          {format(new Date(customer.created_at), "MMM yyyy")}
                         </p>
                       </div>
                     </div>
@@ -105,14 +123,20 @@ const Customers = () => {
                     </div>
                   </td>
                   <td className="py-4 px-6">
-                    <span className="font-semibold text-slate-900">{customer.totalOrders || 0}</span>
+                    <span className="font-semibold text-slate-900">
+                      {customer.totalOrders || 0}
+                    </span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className="font-semibold text-green-600">₱{parseFloat(customer.totalSpent || 0).toFixed(2)}</span>
+                    <span className="font-semibold text-green-600">
+                      ₱{parseFloat(customer.totalSpent || 0).toFixed(2)}
+                    </span>
                   </td>
                   <td className="py-4 px-6">
                     <span className="text-sm text-slate-600">
-                      {customer.lastOrder ? format(new Date(customer.lastOrder), "MMM dd, yyyy") : 'No orders'}
+                      {customer.lastOrder
+                        ? format(new Date(customer.lastOrder), "MMM dd, yyyy")
+                        : "No orders"}
                     </span>
                   </td>
                 </tr>
