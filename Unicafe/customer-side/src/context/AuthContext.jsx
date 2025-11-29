@@ -86,6 +86,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Don't clear the cart - keep it saved for when user logs back in
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setToken(null);

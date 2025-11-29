@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { useAuth } from './AuthContext'
 
 const CartContext = createContext()
 
@@ -11,14 +12,26 @@ export function useCart() {
 }
 
 export function CartProvider({ children }) {
-  const [cart, setCart] = useState(() => {
-    const savedCart = localStorage.getItem('unicafe-cart')
-    return savedCart ? JSON.parse(savedCart) : []
-  })
+  const { user } = useAuth()
+  const [cart, setCart] = useState([])
 
+  // Get the cart key based on the current user
+  const getCartKey = () => {
+    return user ? `unicafe-cart-${user.id}` : 'unicafe-cart-guest'
+  }
+
+  // Load cart from localStorage when user changes
   useEffect(() => {
-    localStorage.setItem('unicafe-cart', JSON.stringify(cart))
-  }, [cart])
+    const cartKey = getCartKey()
+    const savedCart = localStorage.getItem(cartKey)
+    setCart(savedCart ? JSON.parse(savedCart) : [])
+  }, [user?.id])
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    const cartKey = getCartKey()
+    localStorage.setItem(cartKey, JSON.stringify(cart))
+  }, [cart, user?.id])
 
   const addToCart = (product, quantity = 1) => {
     setCart(prevCart => {
