@@ -2,21 +2,52 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Coffee, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
+const API_URL = 'http://localhost:3000/api';
+
 const Login = ({ setIsAuthenticated }) => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     rememberMe: false,
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Mock authentication - in production, this would call an API
-    if (formData.email && formData.password) {
+    setLoading(true);
+    setError("");
+    
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
+      }
+
+      // Store token and user data
+      localStorage.setItem('admin_token', data.token);
+      localStorage.setItem('admin_user', JSON.stringify(data.user));
+      
       setIsAuthenticated(true);
       navigate("/dashboard");
+    } catch (err) {
+      setError(err.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -34,6 +65,12 @@ const Login = ({ setIsAuthenticated }) => {
 
         {/* Login Form */}
         <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8 animate-scale-in">
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Input */}
             <div>
@@ -97,9 +134,10 @@ const Login = ({ setIsAuthenticated }) => {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span>Sign In</span>
+              <span>{loading ? 'Signing in...' : 'Sign In'}</span>
             </button>
           </form>
 
@@ -114,8 +152,8 @@ const Login = ({ setIsAuthenticated }) => {
           <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
             <p className="text-sm font-medium text-amber-900 mb-2">Demo Credentials:</p>
             <div className="text-xs text-amber-700 space-y-1">
-              <p>Email: admin@unicafe.com</p>
-              <p>Password: admin123</p>
+              <p>Use any registered user account</p>
+              <p>Or create a new account on the customer app</p>
             </div>
           </div>
         </div>

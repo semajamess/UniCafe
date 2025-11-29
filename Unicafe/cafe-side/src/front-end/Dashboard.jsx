@@ -8,8 +8,9 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   ChevronDown,
+  Loader,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LineChart,
   Line,
@@ -31,113 +32,130 @@ import {
 const Dashboard = () => {
   const [revenuePeriod, setRevenuePeriod] = useState("week");
   const [categoryPeriod, setCategoryPeriod] = useState("week");
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState(null);
 
-  // Mock data for statistics
+  const API_URL = 'http://localhost:3000/api';
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/stats/dashboard?period=all`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log('Dashboard data received:', data);
+      setDashboardData(data);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      setDashboardData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader className="w-12 h-12 text-amber-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!dashboardData || !dashboardData.stats) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-slate-600 mb-4">Failed to load dashboard data</p>
+          <button 
+            onClick={fetchDashboardData}
+            className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Transform backend data for stats cards
   const stats = [
     {
       name: "Total Revenue",
-      value: "$48,574",
-      change: "+12.5%",
-      trend: "up",
+      value: `₱${dashboardData.stats.revenue.value.toFixed(2)}`,
+      change: `${dashboardData.stats.revenue.change >= 0 ? '+' : ''}${dashboardData.stats.revenue.change}%`,
+      trend: dashboardData.stats.revenue.trend,
       icon: DollarSign,
       color: "from-green-500 to-emerald-600",
     },
     {
       name: "Total Orders",
-      value: "1,284",
-      change: "+8.2%",
-      trend: "up",
+      value: dashboardData.stats.orders.value.toString(),
+      change: `${dashboardData.stats.orders.change >= 0 ? '+' : ''}${dashboardData.stats.orders.change}%`,
+      trend: dashboardData.stats.orders.trend,
       icon: ShoppingCart,
       color: "from-blue-500 to-blue-600",
     },
     {
       name: "Customers",
-      value: "892",
-      change: "+15.3%",
-      trend: "up",
+      value: dashboardData.stats.customers.value.toString(),
+      change: `${dashboardData.stats.customers.change >= 0 ? '+' : ''}${dashboardData.stats.customers.change}%`,
+      trend: dashboardData.stats.customers.trend,
       icon: Users,
       color: "from-purple-500 to-purple-600",
     },
     {
       name: "Products",
-      value: "156",
-      change: "-2.4%",
-      trend: "down",
+      value: dashboardData.stats.products.value.toString(),
+      change: `${dashboardData.stats.products.change >= 0 ? '+' : ''}${dashboardData.stats.products.change}%`,
+      trend: dashboardData.stats.products.trend,
       icon: Package,
       color: "from-amber-500 to-amber-600",
     },
   ];
 
-  // Revenue data by period
-  const revenueDataSets = {
-    week: [
-      { name: "Mon", revenue: 820, orders: 24 },
-      { name: "Tue", revenue: 950, orders: 28 },
-      { name: "Wed", revenue: 1100, orders: 32 },
-      { name: "Thu", revenue: 1050, orders: 30 },
-      { name: "Fri", revenue: 1400, orders: 42 },
-      { name: "Sat", revenue: 1650, orders: 48 },
-      { name: "Sun", revenue: 1430, orders: 40 },
-    ],
-    month: [
-      { name: "Week 1", revenue: 4200, orders: 120 },
-      { name: "Week 2", revenue: 3800, orders: 98 },
-      { name: "Week 3", revenue: 5100, orders: 145 },
-      { name: "Week 4", revenue: 4600, orders: 132 },
-    ],
-    all: [
-      { name: "Jan", revenue: 14200, orders: 420 },
-      { name: "Feb", revenue: 13800, orders: 398 },
-      { name: "Mar", revenue: 15100, orders: 445 },
-      { name: "Apr", revenue: 14600, orders: 432 },
-      { name: "May", revenue: 15900, orders: 467 },
-      { name: "Jun", revenue: 16400, orders: 489 },
-    ],
+  // Transform revenue over time data
+  const revenueData = dashboardData.revenueOverTime.map((item, index) => ({
+    name: new Date(item.date).toLocaleDateString('en-US', { weekday: 'short' }),
+    revenue: parseFloat(item.revenue),
+    orders: item.orders
+  }));
+
+  // Transform category data with colors
+  const categoryColors = {
+    'Drinks': '#f59e0b',
+    'Food': '#3b82f6',
+    'Snacks': '#10b981',
+    'Beverages': '#ef4444',
   };
 
-  const revenueData = revenueDataSets[revenuePeriod];
+  const categoryData = dashboardData.categoryData.map(cat => ({
+    name: cat.category || 'Unknown',
+    value: parseFloat(cat.revenue),
+    color: categoryColors[cat.category] || '#64748b'
+  }));
 
-  // Category data by period
-  const categoryDataSets = {
-    week: [
-      { name: "Coffee", value: 450, color: "#f59e0b" },
-      { name: "Pastries", value: 280, color: "#3b82f6" },
-      { name: "Snacks", value: 180, color: "#10b981" },
-      { name: "Beverages", value: 120, color: "#ef4444" },
-    ],
-    month: [
-      { name: "Coffee", value: 1850, color: "#f59e0b" },
-      { name: "Pastries", value: 1140, color: "#3b82f6" },
-      { name: "Snacks", value: 720, color: "#10b981" },
-      { name: "Beverages", value: 490, color: "#ef4444" },
-    ],
-    all: [
-      { name: "Coffee", value: 12400, color: "#f59e0b" },
-      { name: "Pastries", value: 7800, color: "#3b82f6" },
-      { name: "Snacks", value: 4200, color: "#10b981" },
-      { name: "Beverages", value: 2900, color: "#ef4444" },
-    ],
-  };
-
-  const categoryData = categoryDataSets[categoryPeriod];
-
-  // Top products data
-  const topProducts = [
-    { name: "Cappuccino", sales: 342, revenue: 1538 },
-    { name: "Espresso", sales: 298, revenue: 892 },
-    { name: "Latte", sales: 276, revenue: 1324 },
-    { name: "Americano", sales: 234, revenue: 936 },
-    { name: "Mocha", sales: 189, revenue: 945 },
-  ];
+  // Top products
+  const topProducts = dashboardData.topProducts.map(p => ({
+    name: p.name,
+    sales: p.sales,
+    revenue: parseFloat(p.revenue)
+  }));
 
   // Recent orders
-  const recentOrders = [
-    { id: "#1234", customer: "John Doe", product: "Cappuccino x2", amount: "$9.00", status: "completed", time: "2 min ago" },
-    { id: "#1233", customer: "Jane Smith", product: "Latte x1, Mocha x1", amount: "$10.50", status: "processing", time: "5 min ago" },
-    { id: "#1232", customer: "Bob Johnson", product: "Espresso x3", amount: "$8.97", status: "completed", time: "12 min ago" },
-    { id: "#1231", customer: "Alice Brown", product: "Cold Brew x1", amount: "$4.50", status: "pending", time: "18 min ago" },
-    { id: "#1230", customer: "Charlie Wilson", product: "Americano x2", amount: "$7.98", status: "completed", time: "25 min ago" },
-  ];
+  const recentOrders = dashboardData.recentOrders.map(o => ({
+    id: `#${o.id}`,
+    customer: o.customer_name || 'Guest',
+    product: `${o.item_count} item${o.item_count > 1 ? 's' : ''}`,
+    amount: `₱${parseFloat(o.total).toFixed(2)}`,
+    status: o.status,
+    time: new Date(o.created_at).toLocaleString()
+  }));
 
   const getStatusColor = (status) => {
     const colors = {
