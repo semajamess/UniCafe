@@ -10,9 +10,11 @@ import Menu from './pages/Menu'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import OrderConfirmation from './pages/ReceiptPage'
+import Orders from './pages/Orders'
 import About from './pages/About'
 import Contact from './pages/Contact'
 import Login from './pages/Login'
+import ProfileSelection from './pages/ProfileSelection'
 import { useAuth } from './context/AuthContext'
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -59,6 +61,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Homepage />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/profile-selection" element={<ProfileSelection />} />
                 <Route path="/menu" element={
                   <ProtectedRoute>
                     <Menu />
@@ -67,6 +70,7 @@ function App() {
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/order-confirmation" element={<OrderConfirmation />} />
+                <Route path="/orders" element={<Orders />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
                 {/* Redirect unknown routes to homepage */}

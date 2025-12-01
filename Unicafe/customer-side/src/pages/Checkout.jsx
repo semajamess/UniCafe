@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { CreditCard, User, Mail } from 'lucide-react'
+import { CreditCard, User, Mail, Building2, Smartphone } from 'lucide-react'
 import Receipt from '../components/Receipt'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
@@ -17,7 +17,7 @@ const Checkout = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    paymentMethod: 'cash'
+    paymentMethod: 'bank_transfer'
   })
 
   // Auto-fill form if user is logged in
@@ -65,83 +65,37 @@ const Checkout = () => {
         status: 'pending'
       }
 
-      if (formData.paymentMethod === 'cash') {
-        // Cash: create order directly
-        const response = await fetch('http://localhost:3000/api/customer/orders', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
-          },
-          body: JSON.stringify({ ...orderData })
+      // All payment methods use OTP-backed initiation
+      // bank_transfer uses email OTP, e_wallet uses SMS OTP
+      const returnUrl = window.location.origin + '/order-confirmation'
+      const initiateResp = await fetch('http://localhost:3000/api/customer/payments/initiate-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ 
+          items: orderData.items, 
+          return_url: returnUrl, 
+          method_hint: formData.paymentMethod 
         })
+      })
 
-        if (response.ok) {
-          const data = await response.json()
-          console.log('Create order response (cash):', data)
-          let orderData = data.order || data
-          console.log('orderData before normalization:', orderData)
-          console.log('orderData.items:', orderData.items)
-          
-          // Normalize items from API response - API returns order_item_* prefixed columns
-          if (orderData && orderData.items && Array.isArray(orderData.items)) {
-            console.log('Normalizing items...')
-            orderData = {
-              ...orderData,
-              items: orderData.items.map(item => ({
-                product_id: item.order_item_product_id || item.product_id,
-                product_name: item.order_item_product_name || item.product_name || item.name,
-                quantity: item.order_item_quantity || item.quantity,
-                price: item.order_item_price || item.price,
-                id: item.order_item_id || item.id
-              }))
-            }
-            console.log('Normalized items:', orderData.items)
-          }
-          
-          console.log('Final orderData to navigate:', orderData)
-          // Navigate to confirmation first, then clear the cart so this component
-          // doesn't redirect to /cart during the navigation render.
-          navigate('/order-confirmation', {
-            state: { orderData, orderId: (data.order && (data.order.order_id || data.order.id)) || data.order_id || data.id }
-          })
-        } else {
-          let msg = 'Failed to place order. Please try again.'
-          try {
-            const err = await response.json()
-            if (err && err.error) msg = err.error
-          } catch (e) {}
-          if (response.status === 401) {
-            alert(msg + ' Please log in again.')
-            navigate('/login')
-          } else {
-            alert(msg)
-          }
-        }
-      } else {
-        // Non-cash: use OTP-backed initiation so DB insert happens after OTP confirmation
-        const returnUrl = window.location.origin + '/order-confirmation'
-        const initiateResp = await fetch('http://localhost:3000/api/customer/payments/initiate-otp', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
-          },
-          body: JSON.stringify({ items: orderData.items, return_url: returnUrl, method_hint: formData.paymentMethod })
-        })
-
-        if (!initiateResp.ok) {
-          let msg = 'Failed to initiate payment. Please try again.'
-          try { const err = await initiateResp.json(); if (err && err.error) msg = err.error } catch (e) {}
-          alert(msg)
-          setLoading(false)
-          return
-        }
-
-        const initData = await initiateResp.json()
-        // show OTP modal to the user
-        setOtpModal({ open: true, requestId: initData.requestId })
+      if (!initiateResp.ok) {
+        let msg = 'Failed to initiate payment. Please try again.'
+        try { const err = await initiateResp.json(); if (err && err.error) msg = err.error } catch (e) {}
+        alert(msg)
+        setLoading(false)
+        return
       }
+
+      const initData = await initiateResp.json()
+      // show OTP modal to the user
+      setOtpModal({ 
+        open: true, 
+        requestId: initData.requestId, 
+        channel: initData.channel || (formData.paymentMethod === 'e_wallet' ? 'sms' : 'email')
+      })
     } catch (error) {
       console.error('Error placing order:', error)
       alert('An error occurred. Please try again.')
@@ -253,6 +207,10 @@ const Checkout = () => {
       // user sees the Order Confirmation (receipt) immediately.
       setOtpModal({ open: false, requestId: null })
       setOtpValue('')
+      
+      // Clear the cart immediately after successful payment
+      clearCart()
+      
       const finalOrderId = resolvedOrderId || (orderData && (orderData.id || orderData.orderNumber))
       console.log('FINAL NAVIGATION - orderData:', orderData)
       console.log('FINAL NAVIGATION - orderData.items:', orderData?.items)
@@ -353,27 +311,43 @@ const Checkout = () => {
                     Payment Method *
                   </label>
                   <div className="space-y-3">
-                    <label className="flex items-center space-x-3 p-4 rounded-xl border-2 border-gray-300 cursor-pointer hover:border-primary-500 transition-colors">
+                    <label className={`flex items-center space-x-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
+                      formData.paymentMethod === 'bank_transfer' 
+                        ? 'border-primary-500 bg-primary-50' 
+                        : 'border-gray-300 hover:border-primary-500'
+                    }`}>
                       <input
                         type="radio"
                         name="paymentMethod"
-                        value="cash"
-                        checked={formData.paymentMethod === 'cash'}
+                        value="bank_transfer"
+                        checked={formData.paymentMethod === 'bank_transfer'}
                         onChange={handleInputChange}
                         className="w-5 h-5 text-primary-600"
                       />
-                      <span className="font-medium text-gray-700">Cash on Delivery</span>
+                      <Building2 className="w-5 h-5 text-blue-600" />
+                      <div className="flex-1">
+                        <span className="font-medium text-gray-700">Bank Transfer</span>
+                        <p className="text-sm text-gray-500">OTP verification via email</p>
+                      </div>
                     </label>
-                    <label className="flex items-center space-x-3 p-4 rounded-xl border-2 border-gray-300 cursor-pointer hover:border-primary-500 transition-colors">
+                    <label className={`flex items-center space-x-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
+                      formData.paymentMethod === 'e_wallet' 
+                        ? 'border-primary-500 bg-primary-50' 
+                        : 'border-gray-300 hover:border-primary-500'
+                    }`}>
                       <input
                         type="radio"
                         name="paymentMethod"
-                        value="gcash"
-                        checked={formData.paymentMethod === 'gcash'}
+                        value="e_wallet"
+                        checked={formData.paymentMethod === 'e_wallet'}
                         onChange={handleInputChange}
                         className="w-5 h-5 text-primary-600"
                       />
-                      <span className="font-medium text-gray-700">GCash</span>
+                      <Smartphone className="w-5 h-5 text-green-600" />
+                      <div className="flex-1">
+                        <span className="font-medium text-gray-700">E-Wallet</span>
+                        <p className="text-sm text-gray-500">OTP verification via SMS</p>
+                      </div>
                     </label>
                   </div>
                 </div>
@@ -440,7 +414,18 @@ const Checkout = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md">
             <h3 className="text-xl font-bold mb-4">Enter OTP</h3>
-            <p className="mb-4 text-sm text-gray-600">We sent a one-time code to your email. Enter it below to complete payment.</p>
+            <p className="mb-4 text-sm text-gray-600">
+              {otpModal.channel === 'sms' 
+                ? 'We sent a one-time code to your phone number via SMS. Enter it below to complete payment.'
+                : 'We sent a one-time code to your email. Enter it below to complete payment.'}
+            </p>
+            {otpModal.channel === 'sms' && (
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-xs text-yellow-700">
+                  <strong>Demo Mode:</strong> For testing, use OTP code <code className="bg-yellow-100 px-1 rounded">123456</code>
+                </p>
+              </div>
+            )}
             <form onSubmit={handleOtpSubmit}>
               <input
                 type="text"
@@ -451,7 +436,7 @@ const Checkout = () => {
                 required
               />
               <div className="flex gap-3 justify-end">
-                <button type="button" onClick={() => setOtpModal({ open: false, requestId: null })} className="px-4 py-2 rounded-lg bg-gray-200">Cancel</button>
+                <button type="button" onClick={() => setOtpModal({ open: false, requestId: null, channel: null })} className="px-4 py-2 rounded-lg bg-gray-200">Cancel</button>
                 <button type="submit" disabled={loading} className="px-4 py-2 rounded-lg bg-primary-600 text-white">{loading ? 'Verifying...' : 'Verify OTP'}</button>
               </div>
             </form>

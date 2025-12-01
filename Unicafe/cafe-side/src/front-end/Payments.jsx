@@ -24,14 +24,14 @@ const Payments = () => {
 
       const mapped = data.map(o => ({
         // Use payment_id when available so the Payments table shows the payment reference
-        id: o.payment_id || o.id,
+        id: o.payment_id || o.order_id,
         paymentRef: o.payment_id ? `#PAY-${o.payment_id}` : null,
-        orderRef: `#ORD-${o.id}`,
-        amount: parseFloat(o.total || 0),
+        orderRef: `#ORD-${o.order_id}`,
+        amount: parseFloat(o.order_total || o.payment_amount || 0),
         method: (o.payment_method || 'N/A'),
-        status: (o.status || 'pending'),
-        created_at: o.created_at,
-        customer_name: (o.user_username || o.user_email || 'Guest')
+        status: (o.order_status || 'pending'),
+        created_at: o.order_created_at,
+        customer_name: (o.user_username || o.user_email || o.order_customer_name || 'Guest')
       }))
 
       setPayments(mapped)
@@ -154,7 +154,7 @@ const Payments = () => {
                     <td className="py-4">{p.method}</td>
                     <td className="py-4 font-semibold">₱{p.amount.toFixed(2)}</td>
                     <td className="py-4">{p.status}</td>
-                    <td className="py-4">{new Date(p.created_at).toLocaleString()}</td>
+                    <td className="py-4">{p.created_at ? new Date(p.created_at).toLocaleString() : 'N/A'}</td>
                     <td className="py-4">
                       <button onClick={() => openDetails(p)} className="px-3 py-1 bg-amber-500 text-white rounded-md">View Order</button>
                     </td>
@@ -171,7 +171,7 @@ const Payments = () => {
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full p-6 overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">Order Details — #{selected.id}</h3>
+              <h3 className="text-xl font-bold">Order Details — #{selected.order_id}</h3>
               <button onClick={closeDetails} className="text-slate-600">Close</button>
             </div>
 
@@ -182,11 +182,11 @@ const Payments = () => {
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
                     <p className="text-sm text-slate-500">Customer</p>
-                    <p className="font-semibold">{selected.customer_name || selected.customer_email || 'Guest'}</p>
+                    <p className="font-semibold">{selected.user_username || selected.user_email || selected.order_customer_name || 'Guest'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-slate-500">Payment Method</p>
-                    <p className="font-semibold">{selected.payment_method || 'N/A'}</p>
+                    <p className="font-semibold">{selected.payment?.payment_method || selected.payment_method || 'N/A'}</p>
                   </div>
                 </div>
 
@@ -196,10 +196,10 @@ const Payments = () => {
                     {(selected.items || []).map((it, idx) => (
                       <div key={idx} className="flex items-center justify-between py-2 border-b last:border-b-0">
                         <div>
-                          <div className="font-medium">{it.product_name}</div>
-                          <div className="text-xs text-slate-500">Qty: {it.quantity}</div>
+                          <div className="font-medium">{it.order_item_product_name || it.product_name}</div>
+                          <div className="text-xs text-slate-500">Qty: {it.order_item_quantity || it.quantity}</div>
                         </div>
-                        <div className="font-semibold">₱{parseFloat(it.price).toFixed(2)}</div>
+                        <div className="font-semibold">₱{parseFloat(it.order_item_price || it.price || 0).toFixed(2)}</div>
                       </div>
                     ))}
                   </div>
@@ -207,7 +207,7 @@ const Payments = () => {
 
                 <div className="text-right">
                   <div className="text-sm text-slate-500">Total</div>
-                  <div className="text-2xl font-bold">{parseFloat(selected.total || 0).toFixed(2)}</div>
+                  <div className="text-2xl font-bold">₱{parseFloat(selected.order_total || 0).toFixed(2)}</div>
                 </div>
               </div>
             )}

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { CheckCircle } from 'lucide-react'
 import Receipt from '../components/Receipt'
-import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 
 const fetchOrderById = async (id, token) => {
@@ -59,7 +58,6 @@ const normalizeOrder = (order) => {
 export default function ReceiptPage() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { clearCart } = useCart()
   const { token } = useAuth()
   const orderDataFromState = location.state?.orderData
   const passedOrderId = location.state?.orderId
@@ -123,12 +121,10 @@ export default function ReceiptPage() {
   const finalOrder = orderDataFromState ? normalizeOrder(orderDataFromState) : fetchedOrder || sessionOrder
 
   const handleBackToMenu = () => {
-    clearCart()
     navigate('/menu')
   }
 
   const handleBackHome = () => {
-    clearCart()
     navigate('/')
   }
 

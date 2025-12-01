@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { Coffee, ShoppingCart, Menu, X, User, LogOut } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Coffee, ShoppingCart, Menu, X, User, LogOut, AlertTriangle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
@@ -8,9 +8,11 @@ import { useAuth } from '../context/AuthContext'
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
   const { getTotalItems } = useCart()
   const { user, logout, isAuthenticated } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,6 +21,21 @@ export default function Navbar() {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true)
+    setIsMobileMenuOpen(false)
+  }
+
+  const handleLogoutConfirm = () => {
+    logout()
+    setShowLogoutModal(false)
+    navigate('/')
+  }
+
+  const handleLogoutCancel = () => {
+    setShowLogoutModal(false)
+  }
 
   const navLinks = [
     { name: 'Home', path: '/' },
@@ -80,11 +97,22 @@ export default function Navbar() {
             
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-700">
-                  Hi, <span className="font-semibold text-amber-600">{user?.username}</span>
-                </span>
+                <Link to="/orders" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+                  {user?.profile_image ? (
+                    <img 
+                      src={user.profile_image} 
+                      alt={user.username} 
+                      className="w-9 h-9 rounded-full object-cover border-2 border-amber-500"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-semibold text-sm">
+                      {user?.username?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                  )}
+                  <span className="text-sm font-semibold text-gray-700">{user?.username}</span>
+                </Link>
                 <button
-                  onClick={logout}
+                  onClick={handleLogoutClick}
                   className="flex items-center space-x-1 text-gray-700 hover:text-amber-600 transition-colors"
                 >
                   <LogOut className="h-5 w-5" />
@@ -151,14 +179,26 @@ export default function Navbar() {
               
               {isAuthenticated ? (
                 <>
-                  <div className="py-2 px-4 text-sm text-gray-700">
-                    Hi, <span className="font-semibold text-amber-600">{user?.username}</span>
-                  </div>
+                  <Link
+                    to="/orders"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center space-x-3 py-2 px-4 rounded-lg text-gray-700 hover:bg-amber-50"
+                  >
+                    {user?.profile_image ? (
+                      <img 
+                        src={user.profile_image} 
+                        alt={user.username} 
+                        className="w-8 h-8 rounded-full object-cover border-2 border-amber-500"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-semibold text-sm">
+                        {user?.username?.charAt(0).toUpperCase() || 'U'}
+                      </div>
+                    )}
+                    <span className="font-semibold">{user?.username}</span>
+                  </Link>
                   <button
-                    onClick={() => {
-                      logout();
-                      setIsMobileMenuOpen(false);
-                    }}
+                    onClick={handleLogoutClick}
                     className="w-full text-left py-2 px-4 rounded-lg text-gray-700 hover:bg-amber-50"
                   >
                     Logout
@@ -174,6 +214,51 @@ export default function Navbar() {
                 </Link>
               )}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Logout Confirmation Modal */}
+      <AnimatePresence>
+        {showLogoutModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+            onClick={handleLogoutCancel}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle className="w-8 h-8 text-amber-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Confirm Logout</h3>
+                <p className="text-gray-600 mb-6">
+                  Are you sure you want to logout? You'll need to sign in again to place orders.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleLogoutCancel}
+                    className="flex-1 py-3 rounded-xl font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleLogoutConfirm}
+                    className="flex-1 py-3 rounded-xl font-semibold bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 transition-all"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

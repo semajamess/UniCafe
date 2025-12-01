@@ -61,6 +61,22 @@ export const runMigration = async (dbInstance) => {
           }
         }
         
+        // Check if users table needs user_phone column added
+        const userColumns = await db.allAsync("PRAGMA table_info(users)");
+        const hasPhoneColumn = userColumns.some(col => col.name === 'user_phone');
+        
+        if (!hasPhoneColumn) {
+          console.log('📋 Adding user_phone column to users table...');
+          try {
+            await db.runAsync('ALTER TABLE users ADD COLUMN user_phone TEXT');
+            console.log('✅ Added user_phone column to users');
+          } catch (e) {
+            console.warn('⚠️ Could not add user_phone column (may already exist):', e.message);
+          }
+        } else {
+          console.log('✅ user_phone column already exists in users');
+        }
+        
         return;
       }
     }
@@ -73,6 +89,7 @@ export const runMigration = async (dbInstance) => {
         user_id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_username TEXT,
         user_email TEXT UNIQUE NOT NULL,
+        user_phone TEXT,
         user_password TEXT,
         user_google_id TEXT UNIQUE,
         user_profile_image TEXT,

@@ -48,6 +48,7 @@ app.get("/", (req, res) => {
 
 // API Routes - Customer Side
 app.use("/api/auth", customerAuthRoutes);
+app.use("/api/customer/auth", customerAuthRoutes);
 app.use("/api/customer/categories", customerCategoriesRoutes);
 app.use("/api/customer/products", customerProductsRoutes);
 app.use("/api/customer/orders", customerOrdersRoutes);

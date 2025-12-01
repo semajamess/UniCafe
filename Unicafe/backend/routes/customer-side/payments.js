@@ -2,6 +2,7 @@ import express from 'express';
 import db from '../../database.js';
 import { authenticateToken } from './auth.js';
 import { sendOtpEmail } from '../../services/emailService.js';
+import { sendOtpSms, maskPhoneNumber } from '../../services/smsService.js';
 import bodyParser from 'body-parser';
 
 const router = express.Router();
@@ -207,32 +208,85 @@ router.post('/verify-otp', async (req, res) => {
   }
 });
 
-// Initiate OTP
+// Initiate OTP - supports both email (bank_transfer) and SMS (e_wallet)
 router.post('/initiate-otp', authenticateToken, async (req, res) => {
   try {
-    const { items, return_url, method_hint } = req.body;
+    const { items, return_url, method_hint, otp_channel } = req.body;
     const user_id = req.user && req.user.id ? req.user.id : null;
 
     if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: 'items required' });
 
-    // Build payload to persist (stringified) - includes items, return_url, method, and user_id
-    const payload = JSON.stringify({ items, return_url: return_url || null, method_hint: method_hint || null, user_id });
+    // Determine OTP channel: 'sms' for e_wallet, 'email' for bank_transfer (default)
+    // Support both 'e_wallet' and 'ewallet' formats
+    const isEwallet = method_hint === 'e_wallet' || method_hint === 'ewallet';
+    const channel = otp_channel || (isEwallet ? 'sms' : 'email');
+    
+    console.log('Payment method_hint:', method_hint, '| Channel:', channel);
+
+    // Get user details including phone
+    let userEmail = req.user.email || null;
+    let userPhone = req.user.phone || null;
+    
+    if (user_id && !userPhone) {
+      try {
+        const u = await db.getAsync('SELECT user_email, user_phone FROM users WHERE user_id = ?', [user_id]);
+        if (u) {
+          userEmail = u.user_email || userEmail;
+          userPhone = u.user_phone || null;
+        }
+      } catch (e) {}
+    }
+
+    // Validate that we have the right contact info for the channel
+    if (channel === 'sms' && !userPhone) {
+      return res.status(400).json({ error: 'Phone number required for E-Wallet payment. Please update your profile.' });
+    }
+    if (channel === 'email' && !userEmail) {
+      return res.status(400).json({ error: 'Email required for Bank Transfer payment.' });
+    }
+
+    // Build payload to persist (stringified)
+    const payload = JSON.stringify({ 
+      items, 
+      return_url: return_url || null, 
+      method_hint: method_hint || null, 
+      user_id,
+      otp_channel: channel 
+    });
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Insert OTP request with payload stored in otp_payload column
+    // Insert OTP request
     const insertSql = `INSERT INTO otp_requests (otp_email, otp_code, otp_payload, otp_attempts, otp_expires_at) VALUES (?, ?, ?, ?, ?)`;
-    const insertRes = await db.runAsync(insertSql, [req.user.email || null, otp, payload, 0, expiresAt.toISOString()]);
+    const recipient = channel === 'sms' ? userPhone : userEmail;
+    const insertRes = await db.runAsync(insertSql, [recipient, otp, payload, 0, expiresAt.toISOString()]);
     const requestId = insertRes.lastID;
 
-    let recipient = req.user.email || null;
-
-    if (recipient) {
-      try { await sendOtpEmail(recipient, otp, requestId); } catch (e) { console.warn('OTP email send failed:', e.message || e); }
+    // Send OTP via appropriate channel
+    let sendResult = null;
+    if (channel === 'sms') {
+      try { 
+        sendResult = await sendOtpSms(userPhone, otp, requestId); 
+        console.log('SMS OTP sent to:', maskPhoneNumber(userPhone));
+      } catch (e) { 
+        console.warn('OTP SMS send failed:', e.message || e); 
+      }
+    } else {
+      try { 
+        await sendOtpEmail(userEmail, otp, requestId); 
+        console.log('Email OTP sent to:', userEmail);
+      } catch (e) { 
+        console.warn('OTP email send failed:', e.message || e); 
+      }
     }
 
-    res.json({ requestId, otp_demo: otp }); // otp_demo for testing only - remove in production
+    res.json({ 
+      requestId, 
+      otp_channel: channel,
+      otp_sent_to: channel === 'sms' ? maskPhoneNumber(userPhone) : userEmail,
+      otp_demo: otp // For testing only - remove in production
+    });
   } catch (err) {
     console.error('initiate-otp error:', err);
     res.status(500).json({ error: err.message });
@@ -316,7 +370,7 @@ router.post('/confirm-otp', authenticateToken, async (req, res) => {
     // Create payment record
     const paymentResult = await db.runAsync(
       `INSERT INTO payments (payment_order_id, payment_amount, payment_method, payment_status) VALUES (?, ?, ?, ?)`,
-      [orderId, total.toFixed(2), method_hint || 'gcash', 'completed']
+      [orderId, total.toFixed(2), method_hint || 'bank_transfer', 'completed']
     );
     const paymentId = paymentResult.lastID;
 
@@ -345,7 +399,7 @@ router.post('/confirm-otp', authenticateToken, async (req, res) => {
       id: orderId,
       customer_name: customer_name || 'Guest',
       customer_email: customer_email || '',
-      payment_method: method_hint || 'gcash',
+      payment_method: method_hint || 'bank_transfer',
       subtotal: total,
       tax: 0,
       total: total

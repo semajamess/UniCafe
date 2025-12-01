@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch("http://localhost:3000/api/auth/login", {
+      const response = await fetch("http://localhost:3000/api/customer/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const response = await fetch("http://localhost:3000/api/auth/register", {
+      const response = await fetch("http://localhost:3000/api/customer/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -95,7 +95,7 @@ export const AuthProvider = ({ children }) => {
 
   const googleLogin = async (credential) => {
     try {
-      const response = await fetch("http://localhost:3000/api/auth/google", {
+      const response = await fetch("http://localhost:3000/api/customer/auth/google", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -116,11 +116,48 @@ export const AuthProvider = ({ children }) => {
       setToken(data.token);
       setUser(data.user);
 
+      return { success: true, needsPhone: data.needsPhone, isNewUser: data.isNewUser };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Update user phone number
+  const updatePhone = async (phone) => {
+    try {
+      const response = await fetch("http://localhost:3000/api/customer/auth/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ phone }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update phone");
+      }
+
+      // Update stored user data with new token
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        setToken(data.token);
+      }
+      if (data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+        setUser(data.user);
+      }
+
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
     }
   };
+
+  // Check if user needs to add phone number
+  const needsPhoneNumber = user && !user.phone;
 
   const value = {
     user,
@@ -130,6 +167,8 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     googleLogin,
+    updatePhone,
+    needsPhoneNumber,
     isAuthenticated: !!token,
   };
 

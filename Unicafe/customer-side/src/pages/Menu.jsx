@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Coffee, ShoppingCart, Filter } from 'lucide-react'
+import { Search, Coffee, ShoppingCart, Filter, Phone, CheckCircle, X } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
@@ -77,12 +77,72 @@ const Menu = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const { addToCart } = useCart()
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, needsPhoneNumber, updatePhone, token } = useAuth()
   const navigate = useNavigate()
   const [showModal, setShowModal] = useState(false)
+  const [showPhoneModal, setShowPhoneModal] = useState(false)
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [phoneError, setPhoneError] = useState('')
+  const [phoneLoading, setPhoneLoading] = useState(false)
+  const [showPhoneSuccess, setShowPhoneSuccess] = useState(false)
+  const [checkingPhone, setCheckingPhone] = useState(false)
 
-  // Google-only users have google_id and no local password
-  const isGoogleOnly = user && user.google_id && (!user.password || user.password === '')
+  // Check if phone modal should be shown on mount - fetch fresh user data first
+  useEffect(() => {
+    const checkUserPhone = async () => {
+      if (!isAuthenticated || !token) return
+      
+      // If user already has phone in local state, don't show modal
+      if (user?.phone) {
+        setShowPhoneModal(false)
+        return
+      }
+      
+      // Only check for Google-only users who might need phone
+      if (!needsPhoneNumber) {
+        setShowPhoneModal(false)
+        return
+      }
+      
+      // Fetch fresh profile data to check if phone exists in DB
+      setCheckingPhone(true)
+      try {
+        const response = await fetch('http://localhost:3000/api/customer/auth/profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (response.ok) {
+          const profileData = await response.json()
+          // If user already has phone in database, don't show modal
+          if (profileData.phone) {
+            // Update local storage with phone data
+            const storedUser = localStorage.getItem('user')
+            if (storedUser) {
+              const userData = JSON.parse(storedUser)
+              userData.phone = profileData.phone
+              localStorage.setItem('user', JSON.stringify(userData))
+            }
+            setShowPhoneModal(false)
+          } else {
+            // User doesn't have phone, show modal
+            setShowPhoneModal(true)
+          }
+        }
+      } catch (error) {
+        console.error('Error checking user phone:', error)
+        // Fall back to original logic if check fails
+        if (needsPhoneNumber) {
+          setShowPhoneModal(true)
+        }
+      } finally {
+        setCheckingPhone(false)
+      }
+    }
+    
+    checkUserPhone()
+  }, [isAuthenticated, needsPhoneNumber, token, user?.phone])
 
   const handleAddToCart = useCallback((product) => {
     console.log('Menu - Add attempt:', product.product_name, 'ID:', product.product_id)
@@ -95,20 +155,8 @@ const Menu = () => {
       return
     }
 
-    if (isGoogleOnly) {
-      // Allow Google-only users to add to cart, but encourage completion
-      console.log('Google-only user adding to cart; prompting to complete signup')
-      addToCart(product)
-      setShowModal(true)
-      // keep modal short and do not navigate automatically to avoid disrupting flow
-      setTimeout(() => {
-        setShowModal(false)
-      }, 1600)
-      return
-    }
-
     addToCart(product)
-  }, [addToCart, isAuthenticated, isGoogleOnly, navigate])
+  }, [addToCart, isAuthenticated, navigate])
 
   useEffect(() => {
     fetchProducts()
@@ -156,30 +204,146 @@ const Menu = () => {
 
   const categories = ['all', 'food', 'drinks']
 
+  const validatePhoneNumber = (phone) => {
+    // Philippine mobile number format: 09XXXXXXXXX (11 digits starting with 09)
+    const phoneRegex = /^09\d{9}$/
+    return phoneRegex.test(phone)
+  }
+
+  const handlePhoneSubmit = async (e) => {
+    e.preventDefault()
+    setPhoneError('')
+    
+    if (!validatePhoneNumber(phoneNumber)) {
+      setPhoneError('Please enter a valid Philippine mobile number (09XXXXXXXXX)')
+      return
+    }
+
+    setPhoneLoading(true)
+    const result = await updatePhone(phoneNumber)
+    setPhoneLoading(false)
+
+    if (result.success) {
+      setShowPhoneModal(false)
+      setShowPhoneSuccess(true)
+      setTimeout(() => {
+        setShowPhoneSuccess(false)
+      }, 2500)
+    } else {
+      setPhoneError(result.error || 'Failed to update phone number')
+    }
+  }
+
   return (
     <div className="min-h-screen">
-      {showModal && (
+      {showModal && !isAuthenticated && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
             <div className="bg-white rounded-2xl shadow-xl p-6 text-center">
-              {!isAuthenticated ? (
-                <>
-                  <h2 className="text-lg font-bold mb-1">Please sign up first!</h2>
-                  <p className="text-sm text-gray-600">You must log in to add items.</p>
-                </>
-              ) : isGoogleOnly ? (
-                <>
-                  <h2 className="text-lg font-bold mb-1">Signed in with Google</h2>
-                  <p className="text-sm text-gray-600">You're signed in via Google. Items were added to your cart — complete your profile for faster checkout.</p>
-                </>
-              ) : (
-                <>
-                  <h2 className="text-lg font-bold mb-1">Please complete your signup first!</h2>
-                  <p className="text-sm text-gray-600">Finish signup to start ordering.</p>
-                </>
-              )}
+              <h2 className="text-lg font-bold mb-1">Please sign up first!</h2>
+              <p className="text-sm text-gray-600">You must log in to add items.</p>
             </div>
           </div>
       )}
+
+      {/* Phone Number Modal for Google Users */}
+      {showPhoneModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4"
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md relative"
+          >
+            <button
+              onClick={() => setShowPhoneModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Phone className="w-8 h-8 text-amber-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-800 mb-2">Add Your Phone Number</h2>
+              <p className="text-sm text-gray-600">
+                To use E-Wallet payments, we need your phone number for SMS verification.
+              </p>
+            </div>
+
+            <form onSubmit={handlePhoneSubmit}>
+              {phoneError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">
+                  {phoneError}
+                </div>
+              )}
+              
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Phone Number
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-amber-500" />
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    placeholder="09XXXXXXXXX"
+                    maxLength={11}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Philippine mobile number format</p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowPhoneModal(false)}
+                  className="flex-1 py-3 rounded-xl font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                >
+                  Skip for Now
+                </button>
+                <button
+                  type="submit"
+                  disabled={phoneLoading}
+                  className="flex-1 py-3 rounded-xl font-semibold bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 transition-all disabled:opacity-50"
+                >
+                  {phoneLoading ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Phone Success Modal */}
+      {showPhoneSuccess && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4"
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-2xl shadow-2xl p-8 text-center max-w-sm"
+          >
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-12 h-12 text-green-500" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Phone Added!</h2>
+            <p className="text-sm text-gray-600">
+              Your phone number has been saved. You can now use E-Wallet payments.
+            </p>
+          </motion.div>
+        </motion.div>
+      )}
+
       <FloatingCart />
       
       <section className="bg-white shadow-sm sticky top-16 z-40">
