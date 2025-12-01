@@ -35,7 +35,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
 
-  const API_URL = "http://localhost:3000/api";
+  const API_URL = "http://localhost:3000/api/cafe";
 
   useEffect(() => {
     fetchDashboardData();
@@ -158,7 +158,7 @@ const Dashboard = () => {
   // Recent orders
   const recentOrders = dashboardData.recentOrders.map((o) => ({
     id: `#${o.id}`,
-    customer: o.customer_name || "Guest",
+    customer: o.user_username || "Guest",
     product: `${o.item_count} item${o.item_count > 1 ? "s" : ""}`,
     amount: `₱${parseFloat(o.total).toFixed(2)}`,
     status: o.status,

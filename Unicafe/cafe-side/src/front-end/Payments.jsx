@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { CreditCard, Search, DollarSign, Filter } from 'lucide-react'
 
-const API_URL = 'http://localhost:3000/api'
+const API_URL = 'http://localhost:3000/api/cafe'
 
 const Payments = () => {
   const [payments, setPayments] = useState([])
@@ -31,7 +31,7 @@ const Payments = () => {
         method: (o.payment_method || 'N/A'),
         status: (o.status || 'pending'),
         created_at: o.created_at,
-        customer_name: (o.customer_name || o.customer_email || 'Guest')
+        customer_name: (o.user_username || o.user_email || 'Guest')
       }))
 
       setPayments(mapped)

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Search, Mail, Phone, MapPin, Calendar, Loader } from "lucide-react";
 import { format } from "date-fns";
 
-const API_URL = "http://localhost:3000/api";
+const API_URL = "http://localhost:3000/api/cafe";
 
 const Customers = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -92,24 +92,24 @@ const Customers = () => {
             <tbody className="divide-y divide-slate-100">
               {customers.map((customer) => (
                 <tr
-                  key={customer.id}
+                  key={customer.user_id || customer.id}
                   className="hover:bg-slate-50 transition-colors"
                 >
                   <td className="py-4 px-6">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white font-semibold">
-                        {customer.username
-                          ? customer.username.charAt(0).toUpperCase()
+                        {(customer.user_username || customer.username)
+                          ? (customer.user_username || customer.username).charAt(0).toUpperCase()
                           : "U"}
                       </div>
                       <div>
                         <p className="font-medium text-slate-900">
-                          {customer.username || "Unknown"}
+                          {customer.user_username || customer.username || "Unknown"}
                         </p>
                         <p className="text-sm text-slate-500 flex items-center">
                           <MapPin className="w-3 h-3 mr-1" />
                           Member since{" "}
-                          {format(new Date(customer.created_at), "MMM yyyy")}
+                          {format(new Date(customer.user_created_at || customer.created_at), "MMM yyyy")}
                         </p>
                       </div>
                     </div>
@@ -118,7 +118,7 @@ const Customers = () => {
                     <div className="space-y-1">
                       <p className="text-sm text-slate-600 flex items-center">
                         <Mail className="w-3 h-3 mr-2" />
-                        {customer.email}
+                        {customer.user_email || customer.email}
                       </p>
                     </div>
                   </td>

@@ -8,10 +8,10 @@ router.get("/", async (req, res) => {
   try {
     // Get distinct categories from products table
     const categories = await db.allAsync(`
-      SELECT DISTINCT category as name, category as id
+      SELECT DISTINCT product_category as name, product_category as id
       FROM products
-      WHERE category IS NOT NULL
-      ORDER BY category
+      WHERE product_category IS NOT NULL
+      ORDER BY product_category
     `);
 
     // If no categories found, return default enum values
@@ -33,7 +33,7 @@ router.get("/:id", async (req, res) => {
   try {
     const id = req.params.id;
     const category = await db.getAsync(
-      "SELECT DISTINCT category as name, category as id FROM products WHERE category = ?",
+      "SELECT DISTINCT product_category as name, product_category as id FROM products WHERE product_category = ?",
       [id]
     );
 

@@ -33,20 +33,20 @@ router.post('/register', async (req, res) => {
     }
 
     const existingUser = await db.getAsync(
-      'SELECT * FROM users WHERE email = ? OR username = ?',
+      'SELECT * FROM users WHERE user_email = ? OR user_username = ?',
       [email, username]
     )
     console.log('[auth:register] existingUser:', existingUser)
 
     if (existingUser) {
-      if (existingUser.email === email) return res.status(400).json({ error: 'Email already registered' })
-      if (existingUser.username === username) return res.status(400).json({ error: 'Username already taken' })
+      if (existingUser.user_email === email) return res.status(400).json({ error: 'Email already registered' })
+      if (existingUser.user_username === username) return res.status(400).json({ error: 'Username already taken' })
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)
 
     const result = await db.runAsync(
-      'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
+      'INSERT INTO users (user_username, user_email, user_password) VALUES (?, ?, ?)',
       [username, email, hashedPassword]
     )
     console.log('[auth:register] insert result:', result)
@@ -78,18 +78,18 @@ router.post('/login', async (req, res) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) return res.status(400).json({ error: 'Invalid email format' })
 
-    const user = await db.getAsync('SELECT * FROM users WHERE email = ?', [email])
+    const user = await db.getAsync('SELECT * FROM users WHERE user_email = ?', [email])
     if (!user) return res.status(401).json({ error: 'Invalid email or password' })
 
-    const isValidPassword = await bcrypt.compare(password, user.password)
+    const isValidPassword = await bcrypt.compare(password, user.user_password)
     if (!isValidPassword) return res.status(401).json({ error: 'Invalid email or password' })
 
-    const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, JWT_SECRET, { expiresIn: '7d' })
+    const token = jwt.sign({ id: user.user_id, email: user.user_email, username: user.user_username }, JWT_SECRET, { expiresIn: '7d' })
 
     res.json({
       message: 'Login successful',
       token,
-      user: { id: user.id, username: user.username, email: user.email, profile_image: user.profile_image || null }
+      user: { id: user.user_id, username: user.user_username, email: user.user_email, profile_image: user.user_profile_image || null }
     })
   } catch (error) {
     console.error('Login error:', error)
@@ -116,7 +116,7 @@ export { authenticateToken }
 // Get user profile (requires authentication)
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
-    const user = await db.getAsync('SELECT id, username, email, profile_image, created_at FROM users WHERE id = ?', [req.user.id])
+    const user = await db.getAsync('SELECT user_id, user_username, user_email, user_profile_image, user_created_at FROM users WHERE user_id = ?', [req.user.id])
     if (!user) return res.status(404).json({ error: 'User not found' })
     res.json(user)
   } catch (error) {
@@ -138,27 +138,27 @@ router.post('/google', async (req, res) => {
     const name = payload['name']
     const picture = payload['picture'] || null
 
-    let user = await db.getAsync('SELECT * FROM users WHERE google_id = ?', [googleId])
+    let user = await db.getAsync('SELECT * FROM users WHERE user_google_id = ?', [googleId])
 
     if (!user) {
-      user = await db.getAsync('SELECT * FROM users WHERE email = ?', [email])
+      user = await db.getAsync('SELECT * FROM users WHERE user_email = ?', [email])
       if (user) {
-        await db.runAsync('UPDATE users SET google_id = ? WHERE id = ?', [googleId, user.id])
+        await db.runAsync('UPDATE users SET user_google_id = ? WHERE user_id = ?', [googleId, user.user_id])
       }
     }
 
     if (!user) {
-      const result = await db.runAsync('INSERT INTO users (username, email, password, google_id, profile_image) VALUES (?, ?, ?, ?, ?)', [name, email, '', googleId, picture])
+      const result = await db.runAsync('INSERT INTO users (user_username, user_email, user_password, user_google_id, user_profile_image) VALUES (?, ?, ?, ?, ?)', [name, email, '', googleId, picture])
 
       if (!result || typeof result.lastID === 'undefined') {
         throw new Error('Failed to create user from Google login');
       }
 
-      user = await db.getAsync('SELECT * FROM users WHERE id = ?', [result.lastID])
+      user = await db.getAsync('SELECT * FROM users WHERE user_id = ?', [result.lastID])
     }
 
-    const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, JWT_SECRET, { expiresIn: '7d' })
-    res.json({ message: 'Google login successful', token, user: { id: user.id, username: user.username, email: user.email, profile_image: user.profile_image || null, google_id: user.google_id || null } })
+    const token = jwt.sign({ id: user.user_id, email: user.user_email, username: user.user_username }, JWT_SECRET, { expiresIn: '7d' })
+    res.json({ message: 'Google login successful', token, user: { id: user.user_id, username: user.user_username, email: user.user_email, profile_image: user.user_profile_image || null, google_id: user.user_google_id || null } })
   } catch (error) {
     console.error('Google login error:', error)
     res.status(500).json({ error: 'Google login failed. Please try again.' })
@@ -173,7 +173,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
 
     if (username) {
       if (username.length < 3) return res.status(400).json({ error: 'Username must be at least 3 characters' })
-      const existingUser = await db.getAsync('SELECT id FROM users WHERE username = ? AND id != ?', [username, req.user.id])
+      const existingUser = await db.getAsync('SELECT user_id FROM users WHERE user_username = ? AND user_id != ?', [username, req.user.id])
       if (existingUser) return res.status(400).json({ error: 'Username already taken' })
     }
 
@@ -185,13 +185,13 @@ router.put('/profile', authenticateToken, async (req, res) => {
 
     const updates = []
     const params = []
-    if (username) { updates.push('username = ?'); params.push(username) }
-    if (hashedPassword !== null) { updates.push('password = ?'); params.push(hashedPassword) }
-    if (profile_image) { updates.push('profile_image = ?'); params.push(profile_image) }
+    if (username) { updates.push('user_username = ?'); params.push(username) }
+    if (hashedPassword !== null) { updates.push('user_password = ?'); params.push(hashedPassword) }
+    if (profile_image) { updates.push('user_profile_image = ?'); params.push(profile_image) }
     if (updates.length === 0) return res.status(400).json({ error: 'No valid fields to update' })
 
     params.push(req.user.id)
-    const sql = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`
+    const sql = `UPDATE users SET ${updates.join(', ')} WHERE user_id = ?`
     await db.runAsync(sql, params)
     res.json({ message: 'Profile updated successfully' })
   } catch (error) {

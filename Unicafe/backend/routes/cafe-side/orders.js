@@ -1,0 +1,111 @@
+import express from 'express';
+import db from '../../database.js';
+
+const router = express.Router();
+
+// Get all orders (ADMIN ONLY)
+router.get('/', async (req, res) => {
+  try {
+    const { status } = req.query;
+    
+    let query = `
+      SELECT o.*, 
+        u.user_username,
+        u.user_email,
+        (SELECT COUNT(*) FROM order_items WHERE order_item_order_id = o.order_id) as item_count,
+        (SELECT payment_method FROM payments WHERE payment_order_id = o.order_id ORDER BY payment_id DESC LIMIT 1) AS payment_method,
+        (SELECT payment_amount FROM payments WHERE payment_order_id = o.order_id ORDER BY payment_id DESC LIMIT 1) AS payment_amount,
+        (SELECT payment_id FROM payments WHERE payment_order_id = o.order_id ORDER BY payment_id DESC LIMIT 1) AS payment_id
+      FROM orders o
+      LEFT JOIN users u ON o.order_user_id = u.user_id
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (status) {
+      query += ' AND o.order_status = ?';
+      params.push(status);
+    }
+
+    query += ' ORDER BY o.order_created_at DESC';
+
+    const orders = await db.allAsync(query, params);
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get order by ID with details (ADMIN ONLY)
+router.get('/:id', async (req, res) => {
+  try {
+    const order = await db.getAsync('SELECT o.*, u.user_username, u.user_email FROM orders o LEFT JOIN users u ON o.order_user_id = u.user_id WHERE o.order_id = ?', [req.params.id]);
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const items = await db.allAsync('SELECT * FROM order_items WHERE order_item_order_id = ?', [req.params.id]);
+    const latestPayment = await db.getAsync('SELECT * FROM payments WHERE payment_order_id = ? ORDER BY payment_id DESC LIMIT 1', [req.params.id]);
+
+    res.json({ ...order, items, payment: latestPayment || null, payment_id: latestPayment ? latestPayment.payment_id : null });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update order status (ADMIN ONLY)
+router.patch('/:id/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    
+    if (!['pending', 'processing', 'completed', 'cancelled'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    await db.runAsync('UPDATE orders SET order_status = ? WHERE order_id = ?', [status, req.params.id]);
+    res.json({ id: req.params.id, status, message: 'Order status updated' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete order (ADMIN ONLY)
+router.delete('/:id', async (req, res) => {
+  try {
+    await db.runAsync('DELETE FROM order_items WHERE order_item_order_id = ?', [req.params.id]);
+    await db.runAsync('DELETE FROM orders WHERE order_id = ?', [req.params.id]);
+    res.json({ message: 'Order deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get revenue statistics (ADMIN ONLY)
+router.get('/stats/revenue', async (req, res) => {
+  try {
+    const { period = 'week' } = req.query;
+    
+    let dateFilter = '';
+    if (period === 'week') {
+      dateFilter = "AND order_created_at >= date('now', '-7 days')";
+    } else if (period === 'month') {
+      dateFilter = "AND order_created_at >= date('now', '-30 days')";
+    }
+
+    const stats = await db.getAsync(`
+      SELECT 
+        COUNT(*) as total_orders,
+        SUM(order_total) as total_revenue,
+        AVG(order_total) as avg_order_value
+      FROM orders 
+      WHERE order_status != 'cancelled' ${dateFilter}
+    `);
+
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+export default router;

@@ -3,10 +3,14 @@ import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { CheckCircle } from 'lucide-react'
 import Receipt from '../components/Receipt'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
 
-const fetchOrderById = async (id) => {
+const fetchOrderById = async (id, token) => {
   try {
-    const res = await fetch(`http://localhost:3000/api/orders/${id}`)
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+    const res = await fetch(`http://localhost:3000/api/customer/orders/${id}`, { headers })
     if (!res.ok) return null
     const data = await res.json()
     return data
@@ -16,15 +20,55 @@ const fetchOrderById = async (id) => {
   }
 }
 
+const normalizeOrder = (order) => {
+  if (!order) return null;
+  
+  console.log('normalizeOrder input:', order)
+  console.log('normalizeOrder items:', order.items)
+  
+  // Normalize items - handle both API response format and local format
+  const normalizedItems = (order.items || []).map(item => ({
+    product_id: item.order_item_product_id || item.product_id || item.id,
+    product_name: item.order_item_product_name || item.product_name || item.name,
+    quantity: item.order_item_quantity || item.quantity,
+    price: item.order_item_price || item.price,
+    id: item.order_item_id || item.id
+  }))
+  
+  console.log('normalizedItems:', normalizedItems)
+  
+  const subtotal = normalizedItems.reduce((s, i) => s + ((Number(i.price) || 0) * (Number(i.quantity) || 0)), 0)
+  const total = parseFloat(order.order_total || order.total || subtotal)
+  
+  const result = {
+    orderNumber: order.order_id || order.id || order.orderNumber,
+    id: order.order_id || order.id || order.orderNumber,
+    customer_name: order.user_username || order.customer_name || 'Guest',
+    customer_email: order.user_email || order.customer_email || '',
+    payment_method: (order.payment && (order.payment.payment_method || order.payment.method)) || order.payment_method || 'N/A',
+    items: normalizedItems,
+    subtotal,
+    tax: order.tax || 0,
+    total
+  }
+  
+  console.log('normalizeOrder result:', result)
+  return result
+}
+
 export default function ReceiptPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { clearCart } = useCart()
+  const { token } = useAuth()
   const orderDataFromState = location.state?.orderData
   const passedOrderId = location.state?.orderId
 
   const [fetchedOrder, setFetchedOrder] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  console.log('ReceiptPage mounted. orderDataFromState:', orderDataFromState)
+  console.log('ReceiptPage mounted. passedOrderId:', passedOrderId)
 
   const sessionOrder = (() => {
     try {
@@ -39,44 +83,44 @@ export default function ReceiptPage() {
     let mounted = true
     const load = async () => {
       setLoading(true)
-      if (!orderDataFromState) {
-        const orderId = passedOrderId || new URLSearchParams(location.search).get('orderId')
-        if (!orderId) {
+      
+      // First, try to use orderDataFromState if it exists
+      if (orderDataFromState) {
+        const normalized = normalizeOrder(orderDataFromState)
+        if (mounted) {
+          setFetchedOrder(normalized)
           setLoading(false)
-          return
         }
-        const data = await fetchOrderById(orderId)
-        if (!mounted) return
-        if (!data) {
-          setLoading(false)
-          return
-        }
-
-        const items = data.items || []
-        const subtotal = items.reduce((s, i) => s + ((Number(i.price) || 0) * (Number(i.quantity) || 0)), 0)
-        const total = parseFloat(data.total || subtotal)
-        const built = {
-          orderNumber: data.id,
-          id: data.id,
-          customer_name: data.customer_name || data.username || 'Guest',
-          customer_email: data.customer_email || data.user_email || '',
-          payment_method: (data.payment && data.payment.method) || data.payment_method || 'N/A',
-          items,
-          subtotal,
-          tax: data.tax || 0,
-          total
-        }
-        setFetchedOrder(built)
-        setLoading(false)
         return
       }
-      setLoading(false)
+      
+      // Otherwise, fetch the order by ID
+      const orderId = passedOrderId || new URLSearchParams(location.search).get('orderId')
+      if (!orderId) {
+        if (mounted) setLoading(false)
+        return
+      }
+      
+      const data = await fetchOrderById(orderId, token)
+      if (!mounted) return
+      
+      if (!data) {
+        if (mounted) setLoading(false)
+        return
+      }
+
+      const normalized = normalizeOrder(data)
+      if (mounted) {
+        setFetchedOrder(normalized)
+        setLoading(false)
+      }
     }
+    
     load()
     return () => { mounted = false }
   }, [orderDataFromState, passedOrderId, location.search])
 
-  const finalOrder = orderDataFromState || fetchedOrder || sessionOrder
+  const finalOrder = orderDataFromState ? normalizeOrder(orderDataFromState) : fetchedOrder || sessionOrder
 
   const handleBackToMenu = () => {
     clearCart()

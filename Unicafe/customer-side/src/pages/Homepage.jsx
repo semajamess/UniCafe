@@ -23,11 +23,11 @@ const Homepage = () => {
 
   const fetchFeaturedProducts = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/products')
+      const response = await fetch('http://localhost:3000/api/customer/products')
       if (response.ok) {
         const products = await response.json()
         const shuffled = products
-          .filter(p => p.is_available === 1)
+          .filter(p => p.product_is_available === 1)
           .sort(() => 0.5 - Math.random())
           .slice(0, 6)
         setFeaturedProducts(shuffled)
@@ -169,7 +169,7 @@ const Homepage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {featuredProducts.map((product, index) => (
                 <motion.div
-                  key={product.id}
+                  key={product.product_id}
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -179,10 +179,10 @@ const Homepage = () => {
                 >
                   <div className="glass-effect rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300">
                     <div className="relative h-64 bg-gradient-to-br from-primary-100 to-orange-100 overflow-hidden">
-                      {product.image_url ? (
+                      {product.product_image_url ? (
                         <img 
-                          src={product.image_url} 
-                          alt={product.name}
+                          src={product.product_image_url} 
+                          alt={product.product_name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
                       ) : (
@@ -197,14 +197,14 @@ const Homepage = () => {
                     </div>
                     <div className="p-6">
                       <h3 className="text-xl font-bold text-gray-800 mb-2">
-                        {product.name}
+                        {product.product_name}
                       </h3>
                       <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                        {product.description || 'Delicious and freshly made'}
+                        {product.product_description || 'Delicious and freshly made'}
                       </p>
                       <div className="flex items-center justify-between">
                         <span className="text-2xl font-bold text-primary-600">
-                          ₱{product.price.toFixed(2)}
+                          ₱{product.product_price.toFixed(2)}
                         </span>
                         <motion.button
                           whileHover={{ scale: 1.1 }}

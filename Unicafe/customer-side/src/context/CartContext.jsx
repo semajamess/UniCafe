@@ -34,18 +34,29 @@ export function CartProvider({ children }) {
   }, [cart, user?.id]);
 
   const addToCart = (product, quantity = 1) => {
+    // Normalize product data: map API fields (product_id, product_name, etc.) to cart item fields (id, name, etc.)
+    const normalizedProduct = {
+      ...product,
+      id: product.product_id,
+      name: product.product_name,
+      price: product.product_price,
+      description: product.product_description,
+      image_url: product.product_image_url,
+      category: product.product_category
+    };
+
     setCart((prevCart) => {
-      const existingItem = prevCart.find((item) => item.id === product.id);
+      const existingItem = prevCart.find((item) => item.id === normalizedProduct.id);
 
       if (existingItem) {
         return prevCart.map((item) =>
-          item.id === product.id
+          item.id === normalizedProduct.id
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       }
 
-      return [...prevCart, { ...product, quantity }];
+      return [...prevCart, { ...normalizedProduct, quantity }];
     });
   };
 

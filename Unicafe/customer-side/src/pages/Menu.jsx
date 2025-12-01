@@ -12,7 +12,7 @@ const ProductCard = ({ product, onAddToCart }) => {
   const handleAddToCart = useCallback((e) => {
     e.preventDefault()
     e.stopPropagation()
-    console.log('Adding to cart:', product.name, 'ID:', product.id)
+    console.log('Adding to cart:', product.product_name, 'ID:', product.product_id)
     onAddToCart(product)
   }, [product, onAddToCart])
 
@@ -26,10 +26,10 @@ const ProductCard = ({ product, onAddToCart }) => {
     >
       <div className="glass-effect rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 h-full flex flex-col">
         <div className="relative h-48 bg-gradient-to-br from-primary-100 to-orange-100 overflow-hidden">
-          {product.image_url ? (
+          {product.product_image_url ? (
             <img 
-              src={product.image_url} 
-              alt={product.name}
+              src={product.product_image_url} 
+              alt={product.product_name}
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
             />
           ) : (
@@ -37,24 +37,24 @@ const ProductCard = ({ product, onAddToCart }) => {
               <Coffee className="w-20 h-20 text-primary-600 group-hover:scale-110 transition-transform duration-300" />
             </div>
           )}
-          {(product.category || product.category_name) && (
+          {product.product_category && (
             <div className="absolute top-3 left-3 bg-white/90 px-3 py-1 rounded-full text-xs font-semibold text-gray-700">
-              {product.category || product.category_name}
+              {product.product_category}
             </div>
           )}
         </div>
 
         <div className="p-5 flex-grow flex flex-col">
           <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-1">
-            {product.name}
+            {product.product_name}
           </h3>
           <p className="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow">
-            {product.description || 'Freshly made and delicious'}
+            {product.product_description || 'Freshly made and delicious'}
           </p>
           
           <div className="flex items-center justify-between mt-auto">
             <span className="text-2xl font-bold text-primary-600">
-              ₱{product.price.toFixed(2)}
+              ₱{parseFloat(product.product_price).toFixed(2)}
             </span>
             <button
               type="button"
@@ -85,7 +85,7 @@ const Menu = () => {
   const isGoogleOnly = user && user.google_id && (!user.password || user.password === '')
 
   const handleAddToCart = useCallback((product) => {
-    console.log('Menu - Add attempt:', product.name, 'ID:', product.id)
+    console.log('Menu - Add attempt:', product.product_name, 'ID:', product.product_id)
     if (!isAuthenticated) {
       setShowModal(true)
       setTimeout(() => {
@@ -120,10 +120,10 @@ const Menu = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/products')
+      const response = await fetch('http://localhost:3000/api/customer/products')
       if (response.ok) {
         const data = await response.json()
-        const availableProducts = data.filter(p => p.is_available === 1)
+        const availableProducts = data.filter(p => p.product_is_available === 1)
         setProducts(availableProducts)
         setFilteredProducts(availableProducts)
       }
@@ -139,15 +139,15 @@ const Menu = () => {
 
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(p => {
-        const productCategory = p.category_name || p.category || ''
+        const productCategory = p.product_category || ''
         return productCategory.toLowerCase() === selectedCategory.toLowerCase()
       })
     }
 
     if (searchQuery) {
       filtered = filtered.filter(p =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
+        p.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.product_description && p.product_description.toLowerCase().includes(searchQuery.toLowerCase()))
       )
     }
 
@@ -247,7 +247,7 @@ const Menu = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {filteredProducts.map((product) => (
                   <ProductCard 
-                    key={product.id} 
+                    key={product.product_id} 
                     product={product}
                     onAddToCart={(prod) => handleAddToCart(prod)}
                   />

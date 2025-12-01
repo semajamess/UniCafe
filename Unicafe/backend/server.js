@@ -7,14 +7,19 @@ import {
   seedPastryProducts,
 } from "./services/apiService.js";
 
-// Import routes
-import categoriesRoutes from "./routes/categories.js";
-import productsRoutes from "./routes/products.js";
-import ordersRoutes from "./routes/orders.js";
-import authRoutes from "./routes/auth.js";
-import paymentsRoutes from "./routes/payments.js";
-import customersRoutes from "./routes/customers.js";
-import statsRoutes from "./routes/stats.js";
+// Import customer-side routes
+import customerAuthRoutes from "./routes/customer-side/auth.js";
+import customerProductsRoutes from "./routes/customer-side/products.js";
+import customerCategoriesRoutes from "./routes/customer-side/categories.js";
+import customerOrdersRoutes from "./routes/customer-side/orders.js";
+import customerPaymentsRoutes from "./routes/customer-side/payments.js";
+
+// Import cafe-side routes
+import cafeProductsRoutes from "./routes/cafe-side/products.js";
+import cafeOrdersRoutes from "./routes/cafe-side/orders.js";
+import cafeCustomersRoutes from "./routes/cafe-side/customers.js";
+import cafePaymentsRoutes from "./routes/cafe-side/payments.js";
+import cafeStatsRoutes from "./routes/cafe-side/stats.js";
 
 dotenv.config();
 
@@ -41,14 +46,19 @@ app.get("/", (req, res) => {
   });
 });
 
-// API Routes
-app.use("/api/categories", categoriesRoutes);
-app.use("/api/products", productsRoutes);
-app.use("/api/orders", ordersRoutes);
-app.use("/api/auth", authRoutes);
-app.use("/api/payments", paymentsRoutes);
-app.use("/api/customers", customersRoutes);
-app.use("/api/stats", statsRoutes);
+// API Routes - Customer Side
+app.use("/api/auth", customerAuthRoutes);
+app.use("/api/customer/categories", customerCategoriesRoutes);
+app.use("/api/customer/products", customerProductsRoutes);
+app.use("/api/customer/orders", customerOrdersRoutes);
+app.use("/api/customer/payments", customerPaymentsRoutes);
+
+// API Routes - Cafe Side (Admin)
+app.use("/api/cafe/products", cafeProductsRoutes);
+app.use("/api/cafe/orders", cafeOrdersRoutes);
+app.use("/api/cafe/customers", cafeCustomersRoutes);
+app.use("/api/cafe/payments", cafePaymentsRoutes);
+app.use("/api/cafe/stats", cafeStatsRoutes);
 
 // Seed database endpoint (for initial setup)
 app.post("/api/seed", async (req, res) => {

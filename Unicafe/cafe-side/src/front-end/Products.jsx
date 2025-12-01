@@ -9,7 +9,7 @@ import {
   Loader,
 } from "lucide-react";
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:3000/api/cafe';
 
 const Products = () => {
   const [showModal, setShowModal] = useState(false);
@@ -82,7 +82,7 @@ const Products = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`${API_URL}/categories`);
+      const response = await fetch(`http://localhost:3000/api/customer/categories`);
       const data = await response.json();
       setCategories(data);
     } catch (error) {
@@ -191,13 +191,13 @@ const Products = () => {
     setModalMode("edit");
     setSelectedProduct(product);
     setFormData({
-      name: product.name,
-      category: product.category || product.category_name || '',
-      price: product.price,
-      stock: product.stock || 0,
-      description: product.description || "",
-      image_url: product.image_url || "",
-      is_available: product.is_available,
+      name: product.product_name || product.name,
+      category: product.product_category || product.category || product.category_name || '',
+      price: product.product_price || product.price,
+      stock: product.product_stock || product.stock || 0,
+      description: product.product_description || product.description || "",
+      image_url: product.product_image_url || product.image_url || "",
+      is_available: product.product_is_available !== undefined ? product.product_is_available : product.is_available,
     });
     setShowModal(true);
   };
@@ -359,10 +359,11 @@ const Products = () => {
   };
 
   const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const prodCategory = product.category || product.category_name || '';
+    const name = product.product_name || product.name || '';
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
+    const prodCategory = product.product_category || product.category || product.category_name || '';
     const matchesCategory = selectedCategory === "all" || prodCategory.toLowerCase() === selectedCategory.toLowerCase();
-    const isActive = product.is_available === 1; // Only show active products
+    const isActive = (product.product_is_available !== undefined ? product.product_is_available : product.is_available) === 1;
     return matchesSearch && matchesCategory && isActive;
   });
 
@@ -418,21 +419,21 @@ const Products = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map((product) => (
             <div
-              key={product.id}
+              key={product.product_id || product.id}
               className="bg-white rounded-xl p-6 shadow-sm border-2 border-slate-100 hover:shadow-xl hover:border-amber-200 transition-all card-hover"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
-                  {product.image_url ? (
-                    <img src={product.image_url} alt={product.name} className="w-16 h-16 rounded-lg object-cover" />
+                  {(product.product_image_url || product.image_url) ? (
+                    <img src={product.product_image_url || product.image_url} alt={product.product_name || product.name} className="w-16 h-16 rounded-lg object-cover" />
                   ) : (
                     <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center text-3xl">
                       ☕
                     </div>
                   )}
                   <div>
-                    <h3 className="font-bold text-lg text-slate-900">{product.name}</h3>
-                    <span className="text-sm text-amber-600 font-semibold">{product.category || product.category_name}</span>
+                    <h3 className="font-bold text-lg text-slate-900">{product.product_name || product.name}</h3>
+                    <span className="text-sm text-amber-600 font-semibold">{product.product_category || product.category || product.category_name}</span>
                   </div>
                 </div>
                 <div className="flex space-x-2">
@@ -451,17 +452,17 @@ const Products = () => {
                 </div>
               </div>
               
-              <p className="text-sm text-slate-600 mb-4 line-clamp-2">{product.description}</p>
+              <p className="text-sm text-slate-600 mb-4 line-clamp-2">{product.product_description || product.description}</p>
               
               <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                 <div>
-                  <div className="text-2xl font-bold text-slate-900">₱{parseFloat(product.price).toFixed(2)}</div>
-                  <div className="text-xs text-slate-500 mt-1">Stock: {product.stock || 0} units</div>
+                  <div className="text-2xl font-bold text-slate-900">₱{parseFloat(product.product_price || product.price || 0).toFixed(2)}</div>
+                  <div className="text-xs text-slate-500 mt-1">Stock: {product.product_stock || product.stock || 0} units</div>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  product.is_available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                  (product.product_is_available !== undefined ? product.product_is_available : product.is_available) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                 }`}>
-                  {product.is_available ? 'Available' : 'Unavailable'}
+                  {(product.product_is_available !== undefined ? product.product_is_available : product.is_available) ? 'Available' : 'Unavailable'}
                 </span>
               </div>
             </div>

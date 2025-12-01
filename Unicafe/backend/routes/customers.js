@@ -10,25 +10,25 @@ router.get("/", async (req, res) => {
 
     let query = `
       SELECT 
-        u.id,
-        u.username,
-        u.email,
-        u.created_at,
-        COUNT(DISTINCT o.id) as totalOrders,
-        COALESCE(SUM(o.total), 0) as totalSpent,
-        MAX(o.created_at) as lastOrder
+        u.user_id,
+        u.user_username,
+        u.user_email,
+        u.user_created_at,
+        COUNT(DISTINCT o.order_id) as totalOrders,
+        COALESCE(SUM(o.order_total), 0) as totalSpent,
+        MAX(o.order_created_at) as lastOrder
       FROM users u
-      LEFT JOIN orders o ON u.id = o.user_id
+      LEFT JOIN orders o ON u.user_id = o.order_user_id
       WHERE 1=1
     `;
     const params = [];
 
     if (search) {
-      query += " AND (u.username LIKE ? OR u.email LIKE ?)";
+      query += " AND (u.user_username LIKE ? OR u.user_email LIKE ?)";
       params.push(`%${search}%`, `%${search}%`);
     }
 
-    query += " GROUP BY u.id ORDER BY totalSpent DESC";
+    query += " GROUP BY u.user_id ORDER BY totalSpent DESC";
 
     const customers = await db.allAsync(query, params);
     res.json(customers);
@@ -41,7 +41,7 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const customer = await db.getAsync(
-      "SELECT id, username, email, created_at FROM users WHERE id = ?",
+      "SELECT user_id, user_username, user_email, user_created_at FROM users WHERE user_id = ?",
       [req.params.id]
     );
 
@@ -50,17 +50,17 @@ router.get("/:id", async (req, res) => {
     }
 
     const orders = await db.allAsync(
-      "SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC",
+      "SELECT * FROM orders WHERE order_user_id = ? ORDER BY order_created_at DESC",
       [req.params.id]
     );
 
     const stats = await db.getAsync(
       `SELECT 
         COUNT(*) as totalOrders,
-        COALESCE(SUM(total), 0) as totalSpent,
-        MAX(created_at) as lastOrder
+        COALESCE(SUM(order_total), 0) as totalSpent,
+        MAX(order_created_at) as lastOrder
       FROM orders 
-      WHERE user_id = ? AND status != 'cancelled'`,
+      WHERE order_user_id = ? AND order_status != 'cancelled'`,
       [req.params.id]
     );
 

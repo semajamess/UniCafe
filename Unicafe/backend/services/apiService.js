@@ -30,7 +30,7 @@ export const seedDrinkProducts = async () => {
     
     for (const drink of drinks) {
       await db.runAsync(
-        `INSERT OR IGNORE INTO products (category, name, description, price, stock, image_url, is_available) 
+        `INSERT OR IGNORE INTO products (product_category, product_name, product_description, product_price, product_stock, product_image_url, product_is_available) 
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           category,
@@ -87,7 +87,7 @@ export const seedPastryProducts = async () => {
     
     for (const food of foods) {
       await db.runAsync(
-        `INSERT OR IGNORE INTO products (category, name, description, price, stock, image_url, is_available) 
+        `INSERT OR IGNORE INTO products (product_category, product_name, product_description, product_price, product_stock, product_image_url, product_is_available) 
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           category,
@@ -115,8 +115,8 @@ export const searchDrinksAutocomplete = async (query) => {
     if (!data.drinks) return [];
     
     // Get existing product names to filter out
-    const existing = await db.allAsync('SELECT name FROM products');
-    const existingNames = new Set(existing.map(p => p.name));
+    const existing = await db.allAsync('SELECT product_name FROM products');
+    const existingNames = new Set(existing.map(p => p.product_name));
     
     return data.drinks
       .filter(drink => !existingNames.has(drink.strDrink))
@@ -141,8 +141,8 @@ export const searchFoodAutocomplete = async (query) => {
     if (!data.meals) return [];
     
     // Get existing product names to filter out
-    const existing = await db.allAsync('SELECT name FROM products');
-    const existingNames = new Set(existing.map(p => p.name));
+    const existing = await db.allAsync('SELECT product_name FROM products');
+    const existingNames = new Set(existing.map(p => p.product_name));
     
     return data.meals
       .filter(meal => !existingNames.has(meal.strMeal))

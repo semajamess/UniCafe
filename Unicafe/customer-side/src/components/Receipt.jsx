@@ -37,7 +37,7 @@ export default function Receipt({ order }) {
         </div>
         <div className="text-right">
           <div className="font-medium text-gray-700">Payment</div>
-          <div className="text-gray-500">{(order.payment_method && String(order.payment_method)) || (order.payment && order.payment.method) || 'N/A'}</div>
+          <div className="text-gray-500">{(order.payment_method && String(order.payment_method)) || (order.payment && (order.payment.payment_method || order.payment.method)) || 'N/A'}</div>
         </div>
       </div>
 
@@ -46,8 +46,8 @@ export default function Receipt({ order }) {
         <ul className="divide-y divide-gray-100">
           {items.length === 0 && <li className="py-3 text-sm text-gray-600">No items</li>}
           {items.map((it, idx) => {
-            const qty = Number(it.quantity || it.qty || 1)
-            const price = Number(it.price || it.unit_price || 0)
+            const qty = Number(it.quantity || 1)
+            const price = Number(it.price || 0)
             const name = it.product_name || it.name || `Product #${it.product_id || it.id}`
             return (
               <li key={idx} className="py-3 flex justify-between items-center text-sm">

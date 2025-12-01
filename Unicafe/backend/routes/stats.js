@@ -8,35 +8,30 @@ router.get("/dashboard", async (req, res) => {
   try {
     const { period = "all" } = req.query;
 
-    // Calculate date filter
-    let dateFilter = "";
+    // Build date filters for current and previous periods
+    let currentDateFilter = "";
+    let previousDateFilter = "";
+
     if (period === "week") {
-      dateFilter = "AND created_at >= date('now', '-7 days')";
+      currentDateFilter = " AND order_created_at >= DATETIME('now', '-7 days')";
+      previousDateFilter = " AND order_created_at >= DATETIME('now', '-14 days') AND order_created_at < DATETIME('now', '-7 days')";
     } else if (period === "month") {
-      dateFilter = "AND created_at >= date('now', '-30 days')";
+      currentDateFilter = " AND order_created_at >= DATETIME('now', '-30 days')";
+      previousDateFilter = " AND order_created_at >= DATETIME('now', '-60 days') AND order_created_at < DATETIME('now', '-30 days')";
     }
 
     // Total Revenue
     const revenueData = await db.getAsync(`
-      SELECT COALESCE(SUM(total), 0) as total, COUNT(*) as count
+      SELECT COALESCE(SUM(order_total), 0) as total, COUNT(*) as count
       FROM orders 
-      WHERE status != 'cancelled' ${dateFilter}
+      WHERE order_status != 'cancelled'${currentDateFilter}
     `);
 
     // Previous period revenue for comparison
-    let prevDateFilter = "";
-    if (period === "week") {
-      prevDateFilter =
-        "AND created_at >= date('now', '-14 days') AND created_at < date('now', '-7 days')";
-    } else if (period === "month") {
-      prevDateFilter =
-        "AND created_at >= date('now', '-60 days') AND created_at < date('now', '-30 days')";
-    }
-
     const prevRevenueData = await db.getAsync(`
-      SELECT COALESCE(SUM(total), 0) as total, COUNT(*) as count
+      SELECT COALESCE(SUM(order_total), 0) as total, COUNT(*) as count
       FROM orders 
-      WHERE status != 'cancelled' ${prevDateFilter}
+      WHERE order_status != 'cancelled'${previousDateFilter}
     `);
 
     // Calculate percentage change
@@ -62,13 +57,13 @@ router.get("/dashboard", async (req, res) => {
     const customersData = await db.getAsync(`
       SELECT COUNT(*) as total 
       FROM users 
-      WHERE 1=1 ${dateFilter.replace("created_at", "users.created_at")}
+      WHERE 1=1${currentDateFilter.replace('order_created_at', 'user_created_at')}
     `);
 
     const prevCustomersData = await db.getAsync(`
       SELECT COUNT(*) as total 
       FROM users 
-      WHERE 1=1 ${prevDateFilter.replace("created_at", "users.created_at")}
+      WHERE 1=1${previousDateFilter.replace('order_created_at', 'user_created_at')}
     `);
 
     const customersChange =
@@ -84,52 +79,46 @@ router.get("/dashboard", async (req, res) => {
     const productsData = await db.getAsync(`
       SELECT COUNT(*) as total 
       FROM products 
-      WHERE is_available = 1
+      WHERE product_is_available = 1
     `);
 
     // Revenue over time
     const revenueOverTime = await db.allAsync(`
       SELECT 
-        DATE(created_at) as date,
-        COALESCE(SUM(total), 0) as revenue,
+        DATE(order_created_at) as date,
+        COALESCE(SUM(order_total), 0) as revenue,
         COUNT(*) as orders
       FROM orders
-      WHERE status != 'cancelled' ${dateFilter}
-      GROUP BY DATE(created_at)
+      WHERE order_status != 'cancelled'${currentDateFilter}
+      GROUP BY DATE(order_created_at)
       ORDER BY date ASC
     `);
 
     // Category distribution
     const categoryData = await db.allAsync(`
       SELECT 
-        p.category,
-        COUNT(oi.id) as itemCount,
-        COALESCE(SUM(oi.price * oi.quantity), 0) as revenue
+        p.product_category as category,
+        COUNT(oi.order_item_id) as itemCount,
+        COALESCE(SUM(oi.order_item_price * oi.order_item_quantity), 0) as revenue
       FROM order_items oi
-      JOIN products p ON oi.product_id = p.id
-      JOIN orders o ON oi.order_id = o.id
-      WHERE o.status != 'cancelled' ${dateFilter.replace(
-        "created_at",
-        "o.created_at"
-      )}
-      GROUP BY p.category
+      JOIN products p ON oi.order_item_product_id = p.product_id
+      JOIN orders o ON oi.order_item_order_id = o.order_id
+      WHERE o.order_status != 'cancelled'${currentDateFilter.replace('order_created_at', 'o.order_created_at')}
+      GROUP BY p.product_category
     `);
 
     // Top products
     const topProducts = await db.allAsync(`
       SELECT 
-        p.name,
-        p.category,
-        COUNT(oi.id) as sales,
-        COALESCE(SUM(oi.price * oi.quantity), 0) as revenue
+        p.product_name as name,
+        p.product_category as category,
+        COUNT(oi.order_item_id) as sales,
+        COALESCE(SUM(oi.order_item_price * oi.order_item_quantity), 0) as revenue
       FROM order_items oi
-      JOIN products p ON oi.product_id = p.id
-      JOIN orders o ON oi.order_id = o.id
-      WHERE o.status != 'cancelled' ${dateFilter.replace(
-        "created_at",
-        "o.created_at"
-      )}
-      GROUP BY oi.product_id
+      JOIN products p ON oi.order_item_product_id = p.product_id
+      JOIN orders o ON oi.order_item_order_id = o.order_id
+      WHERE o.order_status != 'cancelled'${currentDateFilter.replace('order_created_at', 'o.order_created_at')}
+      GROUP BY oi.order_item_product_id
       ORDER BY sales DESC
       LIMIT 5
     `);
@@ -137,16 +126,16 @@ router.get("/dashboard", async (req, res) => {
     // Recent orders
     const recentOrders = await db.allAsync(`
       SELECT 
-        o.id,
-        o.total,
-        o.status,
-        o.created_at,
-        u.username as customer_name,
-        u.email as customer_email,
-        (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) as item_count
+        o.order_id as id,
+        o.order_total as total,
+        o.order_status as status,
+        o.order_created_at as created_at,
+        u.user_username as customer_name,
+        u.user_email as customer_email,
+        (SELECT COUNT(*) FROM order_items WHERE order_item_order_id = o.order_id) as item_count
       FROM orders o
-      LEFT JOIN users u ON o.user_id = u.id
-      ORDER BY o.created_at DESC
+      LEFT JOIN users u ON o.order_user_id = u.user_id
+      ORDER BY o.order_created_at DESC
       LIMIT 5
     `);
 

@@ -22,10 +22,10 @@ router.post('/create-link', authenticateToken, async (req, res) => {
     // If we have a user_id but no explicit customer name/email, resolve from users table
     if (user_id && (!customer_name || !customer_email)) {
       try {
-        const u = await db.getAsync('SELECT username, email FROM users WHERE id = ?', [user_id]);
+        const u = await db.getAsync('SELECT user_username, user_email FROM users WHERE user_id = ?', [user_id]);
         if (u) {
-          if (!customer_name && u.username) customer_name = u.username;
-          if (!customer_email && u.email) customer_email = u.email;
+          if (!customer_name && u.user_username) customer_name = u.user_username;
+          if (!customer_email && u.user_email) customer_email = u.user_email;
         }
       } catch (e) {
         // ignore lookup errors — insertion will still proceed with whatever data available
@@ -39,9 +39,9 @@ router.post('/create-link', authenticateToken, async (req, res) => {
     // Calculate total
     let total = 0;
     for (const it of items) {
-      const p = await db.getAsync('SELECT * FROM products WHERE id = ?', [it.product_id]);
+      const p = await db.getAsync('SELECT * FROM products WHERE product_id = ?', [it.product_id]);
       if (!p) return res.status(404).json({ error: `Product ${it.product_id} not found` });
-      total += p.price * it.quantity;
+      total += p.product_price * it.quantity;
     }
 
     // Create order as pending (we'll attach items on payment webhook or after redirect depending on flow)
@@ -51,11 +51,11 @@ router.post('/create-link', authenticateToken, async (req, res) => {
     const insertCols = [];
     const params = [];
 
-    if (cols.includes('user_id')) { insertCols.push('user_id'); params.push(user_id || null); }
-    if (cols.includes('customer_name')) { insertCols.push('customer_name'); params.push(customer_name || null); }
-    if (cols.includes('customer_email')) { insertCols.push('customer_email'); params.push(customer_email || null); }
-    if (cols.includes('total')) { insertCols.push('total'); params.push(total.toFixed(2)); }
-    if (cols.includes('status')) { insertCols.push('status'); params.push('pending'); }
+    if (cols.includes('order_user_id')) { insertCols.push('order_user_id'); params.push(user_id || null); }
+    if (cols.includes('order_customer_name')) { insertCols.push('order_customer_name'); params.push(customer_name || null); }
+    if (cols.includes('order_customer_email')) { insertCols.push('order_customer_email'); params.push(customer_email || null); }
+    if (cols.includes('order_total')) { insertCols.push('order_total'); params.push(total.toFixed(2)); }
+    if (cols.includes('order_status')) { insertCols.push('order_status'); params.push('pending'); }
 
     if (insertCols.length === 0) {
       throw new Error('Orders table has no writable columns for insert')
@@ -68,10 +68,10 @@ router.post('/create-link', authenticateToken, async (req, res) => {
 
     // Create order_items immediately to keep consistency
     for (const it of items) {
-      const p = await db.getAsync('SELECT * FROM products WHERE id = ?', [it.product_id]);
+      const p = await db.getAsync('SELECT * FROM products WHERE product_id = ?', [it.product_id]);
       await db.runAsync(
-        `INSERT INTO order_items (order_id, product_id, product_name, quantity, price) VALUES (?, ?, ?, ?, ?)`,
-        [orderId, p.id, p.name, it.quantity, p.price]
+        `INSERT INTO order_items (order_item_order_id, order_item_product_id, order_item_product_name, order_item_quantity, order_item_price) VALUES (?, ?, ?, ?, ?)`,
+        [orderId, p.product_id, p.product_name, it.quantity, p.product_price]
       );
     }
 
@@ -82,11 +82,11 @@ router.post('/create-link', authenticateToken, async (req, res) => {
     const payInsertCols = [];
     const payParams = [];
 
-    if (payCols.includes('order_id')) { payInsertCols.push('order_id'); payParams.push(orderId); }
-    if (payCols.includes('amount')) { payInsertCols.push('amount'); payParams.push(total.toFixed(2)); }
-    if (payCols.includes('method')) { payInsertCols.push('method'); payParams.push(method_hint || null); }
-    if (payCols.includes('status')) { payInsertCols.push('status'); payParams.push('pending'); }
-    if (payCols.includes('metadata')) { payInsertCols.push('metadata'); payParams.push(null); }
+    if (payCols.includes('payment_order_id')) { payInsertCols.push('payment_order_id'); payParams.push(orderId); }
+    if (payCols.includes('payment_amount')) { payInsertCols.push('payment_amount'); payParams.push(total.toFixed(2)); }
+    if (payCols.includes('payment_method')) { payInsertCols.push('payment_method'); payParams.push(method_hint || null); }
+    if (payCols.includes('payment_status')) { payInsertCols.push('payment_status'); payParams.push('pending'); }
+    if (payCols.includes('payment_metadata')) { payInsertCols.push('payment_metadata'); payParams.push(null); }
 
     if (payInsertCols.length === 0) {
       throw new Error('Payments table has no writable columns for insert')
@@ -99,7 +99,7 @@ router.post('/create-link', authenticateToken, async (req, res) => {
 
     // Attach payment_id to order if column present
     try {
-      await db.runAsync('UPDATE orders SET payment_id = ? WHERE id = ?', [paymentId, orderId]);
+      await db.runAsync('UPDATE orders SET payment_id = ? WHERE order_id = ?', [paymentId, orderId]);
     } catch (e) {
       // ignore if column not present
     }
@@ -130,19 +130,19 @@ router.get('/redirect-simulate', async (req, res) => {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const metadata = JSON.stringify({ otp, sent_at: new Date().toISOString() });
       try {
-        await db.runAsync('UPDATE payments SET metadata = ? WHERE id = ?', [metadata, payment_id]);
+        await db.runAsync('UPDATE payments SET payment_metadata = ? WHERE payment_id = ?', [metadata, payment_id]);
       } catch (e) {
         // ignore if metadata column missing
       }
 
-      // Try to resolve a recipient email: prefer order.customer_email, else lookup user email
+      // Try to resolve a recipient email: prefer order.order_customer_email, else lookup user email
       let recipient = null;
       try {
-        const orderRow = await db.getAsync('SELECT customer_email, user_id FROM orders WHERE id = ?', [order_id]);
-        if (orderRow && orderRow.customer_email) recipient = orderRow.customer_email;
-        else if (orderRow && orderRow.user_id) {
-          const user = await db.getAsync('SELECT email FROM users WHERE id = ?', [orderRow.user_id]);
-          if (user && user.email) recipient = user.email;
+        const orderRow = await db.getAsync('SELECT order_customer_email, order_user_id FROM orders WHERE order_id = ?', [order_id]);
+        if (orderRow && orderRow.order_customer_email) recipient = orderRow.order_customer_email;
+        else if (orderRow && orderRow.order_user_id) {
+          const user = await db.getAsync('SELECT user_email FROM users WHERE user_id = ?', [orderRow.order_user_id]);
+          if (user && user.user_email) recipient = user.user_email;
         }
       } catch (e) {
         // ignore lookup errors
@@ -180,10 +180,10 @@ router.get('/redirect-simulate', async (req, res) => {
 
     // Default behavior: immediately complete payment (no OTP)
     // Mark payment completed
-    await db.runAsync('UPDATE payments SET status = ?, provider_txn_id = ? WHERE id = ?', ['completed', `SIM-${Date.now()}`, payment_id]);
+    await db.runAsync('UPDATE payments SET payment_status = ?, payment_provider_txn_id = ? WHERE payment_id = ?', ['completed', `SIM-${Date.now()}`, payment_id]);
 
     // Update order status
-    await db.runAsync('UPDATE orders SET status = ? WHERE id = ?', ['processing', order_id]);
+    await db.runAsync('UPDATE orders SET order_status = ? WHERE order_id = ?', ['processing', order_id]);
 
     if (return_url) {
       // Redirect back to app (client handles confirmation)
@@ -204,19 +204,19 @@ router.post('/verify-otp', async (req, res) => {
     if (!payment_id || !order_id || !otp) return res.status(400).json({ error: 'payment_id, order_id and otp are required' });
 
     // Read payment metadata
-    const payment = await db.getAsync('SELECT * FROM payments WHERE id = ?', [payment_id]);
+    const payment = await db.getAsync('SELECT * FROM payments WHERE payment_id = ?', [payment_id]);
     if (!payment) return res.status(404).json({ error: 'Payment not found' });
 
     let metadata = null;
-    try { metadata = payment.metadata ? JSON.parse(payment.metadata) : null; } catch (e) { metadata = null; }
+    try { metadata = payment.payment_metadata ? JSON.parse(payment.payment_metadata) : null; } catch (e) { metadata = null; }
 
     if (!metadata || metadata.otp !== String(otp)) {
       return res.status(400).json({ error: 'Invalid OTP' });
     }
 
     // OTP valid -> mark payment and order completed
-    await db.runAsync('UPDATE payments SET status = ?, provider_txn_id = ? WHERE id = ?', ['completed', `SIM-${Date.now()}`, payment_id]);
-    await db.runAsync('UPDATE orders SET status = ? WHERE id = ?', ['processing', order_id]);
+    await db.runAsync('UPDATE payments SET payment_status = ?, payment_provider_txn_id = ? WHERE payment_id = ?', ['completed', `SIM-${Date.now()}`, payment_id]);
+    await db.runAsync('UPDATE orders SET order_status = ? WHERE order_id = ?', ['processing', order_id]);
 
     if (return_url) {
       return res.redirect(return_url + `?orderId=${order_id}&paymentId=${payment_id}`);
@@ -239,25 +239,26 @@ router.post('/initiate-otp', authenticateToken, async (req, res) => {
 
     if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: 'items required' });
 
-    // Build payload to persist (stringified)
-    const payload = { items, return_url: return_url || null, method_hint: method_hint || null, user_id };
+    // Build payload to persist (stringified) - includes items, return_url, method, and user_id
+    const payload = JSON.stringify({ items, return_url: return_url || null, method_hint: method_hint || null, user_id });
 
     // generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
-    // insert into otp_requests
-    const insertSql = `INSERT INTO otp_requests (otp, payload) VALUES (?, ?)`;
-    const insertRes = await db.runAsync(insertSql, [otp, JSON.stringify(payload)]);
+    // Get user email for OTP
+    let recipient = req.user && req.user.email ? req.user.email : null;
+    if (!recipient && user_id) {
+      try {
+        const u = await db.getAsync('SELECT user_email FROM users WHERE user_id = ?', [user_id]);
+        if (u && u.user_email) recipient = u.user_email;
+      } catch (e) {}
+    }
+
+    // insert into otp_requests with prefixed columns - now includes otp_payload
+    const insertSql = `INSERT INTO otp_requests (otp_email, otp_code, otp_payload, otp_attempts, otp_expires_at) VALUES (?, ?, ?, ?, ?)`;
+    const insertRes = await db.runAsync(insertSql, [recipient || null, otp, payload, 0, expiresAt.toISOString()]);
     const requestId = insertRes.lastID;
-
-    // try to determine recipient email
-    let recipient = null;
-    try {
-      if (user_id) {
-        const u = await db.getAsync('SELECT email FROM users WHERE id = ?', [user_id]);
-        if (u && u.email) recipient = u.email;
-      }
-    } catch (e) {}
 
     if (recipient) {
       try { await sendOtpEmail(recipient, otp, requestId); } catch (e) { console.warn('OTP email send failed:', e.message || e); }
@@ -265,7 +266,7 @@ router.post('/initiate-otp', authenticateToken, async (req, res) => {
       console.log('No recipient for OTP request', requestId);
     }
 
-    res.json({ requestId });
+    res.json({ requestId, otp_demo: otp }); // otp_demo for testing only - remove in production
   } catch (err) {
     console.error('initiate-otp error:', err);
     res.status(500).json({ error: err.message });
@@ -279,129 +280,118 @@ router.post('/confirm-otp', authenticateToken, async (req, res) => {
     const { requestId, otp } = req.body || {};
     if (!requestId || !otp) return res.status(400).json({ error: 'requestId and otp required' });
 
-    const reqRow = await db.getAsync('SELECT * FROM otp_requests WHERE id = ?', [requestId]);
+    const reqRow = await db.getAsync('SELECT * FROM otp_requests WHERE otp_id = ?', [requestId]);
     if (!reqRow) return res.status(404).json({ error: 'OTP request not found' });
 
-    if (String(reqRow.otp) !== String(otp)) {
-      await db.runAsync('UPDATE otp_requests SET attempts = attempts + 1 WHERE id = ?', [requestId]);
+    // Check if OTP has expired
+    if (new Date(reqRow.otp_expires_at) < new Date()) {
+      return res.status(400).json({ error: 'OTP has expired' });
+    }
+
+    // Check attempt limit (max 5 attempts) - check before OTP validation
+    if (reqRow.otp_attempts >= 5) {
+      return res.status(400).json({ error: 'Too many OTP attempts. Request new OTP' });
+    }
+
+    // Check if OTP matches
+    if (String(reqRow.otp_code) !== String(otp)) {
+      await db.runAsync('UPDATE otp_requests SET otp_attempts = otp_attempts + 1 WHERE otp_id = ?', [requestId]);
       return res.status(400).json({ error: 'Invalid OTP' });
     }
 
-    // parse payload and create order/payment as in create-link
-    const payload = JSON.parse(reqRow.payload);
-    const { items, return_url, method_hint, user_id } = payload;
+    // Parse payload from otp_payload column
+    let payload = null;
+    try {
+      payload = reqRow.otp_payload ? JSON.parse(reqRow.otp_payload) : null;
+    } catch (e) {
+      console.error('Failed to parse OTP payload:', e);
+      return res.status(400).json({ error: 'Invalid OTP request data' });
+    }
 
-    // Calculate total and create order
+    if (!payload || !Array.isArray(payload.items) || payload.items.length === 0) {
+      return res.status(400).json({ error: 'No items found in OTP request' });
+    }
+
+    const { items, return_url, method_hint } = payload;
+    const user_id = req.user && req.user.id ? req.user.id : null;
+
+    // Calculate total and gather product details
     let total = 0;
+    const productDetails = [];
     for (const it of items) {
-      const p = await db.getAsync('SELECT * FROM products WHERE id = ?', [it.product_id]);
+      const p = await db.getAsync('SELECT * FROM products WHERE product_id = ?', [it.product_id]);
       if (!p) return res.status(404).json({ error: `Product ${it.product_id} not found` });
-      total += p.price * it.quantity;
+      total += p.product_price * it.quantity;
+      productDetails.push({ ...p, quantity: it.quantity });
     }
 
-    const info = await db.allAsync("PRAGMA table_info(orders)");
-    const cols = info.map(c => c.name);
-    const insertCols = [];
-    const params = [];
-    if (cols.includes('user_id')) { insertCols.push('user_id'); params.push(user_id || null); }
-    if (cols.includes('total')) { insertCols.push('total'); params.push(total.toFixed(2)); }
-    if (cols.includes('status')) { insertCols.push('status'); params.push('pending'); }
-    if (cols.includes('customer_name') || cols.includes('customer_email')) {
-      // try to resolve from users table
-      let cname = null, cemail = null;
-      if (user_id) {
-        const u = await db.getAsync('SELECT username,email FROM users WHERE id = ?', [user_id]);
-        if (u) { cname = u.username; cemail = u.email; }
+    // Get customer info from users table
+    let customer_name = null, customer_email = null;
+    if (user_id) {
+      const u = await db.getAsync('SELECT user_username, user_email FROM users WHERE user_id = ?', [user_id]);
+      if (u) {
+        customer_name = u.user_username;
+        customer_email = u.user_email;
       }
-      if (cols.includes('customer_name')) { insertCols.push('customer_name'); params.push(cname); }
-      if (cols.includes('customer_email')) { insertCols.push('customer_email'); params.push(cemail); }
     }
 
-    const placeholders = insertCols.map(() => '?').join(',');
-    const sql = `INSERT INTO orders (${insertCols.join(',')}) VALUES (${placeholders})`;
-    const orderRes = await db.runAsync(sql, params);
-    const orderId = orderRes.lastID;
+    // Create order with all fields
+    const orderResult = await db.runAsync(
+      `INSERT INTO orders (order_user_id, order_customer_name, order_customer_email, order_total, order_status) VALUES (?, ?, ?, ?, ?)`,
+      [user_id, customer_name, customer_email, total.toFixed(2), 'processing']
+    );
+    const orderId = orderResult.lastID;
 
-    // order_items
-    for (const it of items) {
-      const p = await db.getAsync('SELECT * FROM products WHERE id = ?', [it.product_id]);
+    // Create order_items
+    for (const detail of productDetails) {
       await db.runAsync(
-        `INSERT INTO order_items (order_id, product_id, product_name, quantity, price) VALUES (?, ?, ?, ?, ?)`,
-        [orderId, p.id, p.name, it.quantity, p.price]
+        `INSERT INTO order_items (order_item_order_id, order_item_product_id, order_item_product_name, order_item_quantity, order_item_price) VALUES (?, ?, ?, ?, ?)`,
+        [orderId, detail.product_id, detail.product_name, detail.quantity, detail.product_price]
       );
     }
 
-    // payments
-    const payInfo = await db.allAsync("PRAGMA table_info(payments)");
-    const payCols = payInfo.map(c => c.name);
-    const payInsertCols = [];
-    const payParams = [];
-    if (payCols.includes('order_id')) { payInsertCols.push('order_id'); payParams.push(orderId); }
-    if (payCols.includes('amount')) { payInsertCols.push('amount'); payParams.push(total.toFixed(2)); }
-    if (payCols.includes('method')) { payInsertCols.push('method'); payParams.push(method_hint || null); }
-    if (payCols.includes('status')) { payInsertCols.push('status'); payParams.push('completed'); }
-    if (payCols.includes('metadata')) { payInsertCols.push('metadata'); payParams.push(null); }
-    const payPlaceholders = payInsertCols.map(() => '?').join(',');
-    const paySql = `INSERT INTO payments (${payInsertCols.join(',')}) VALUES (${payPlaceholders})`;
-    const paymentRes = await db.runAsync(paySql, payParams);
-    const paymentId = paymentRes.lastID;
+    // Create payment record
+    const paymentResult = await db.runAsync(
+      `INSERT INTO payments (payment_order_id, payment_amount, payment_method, payment_status) VALUES (?, ?, ?, ?)`,
+      [orderId, total.toFixed(2), method_hint || 'gcash', 'completed']
+    );
+    const paymentId = paymentResult.lastID;
 
-    // attach payment_id to order if column exists
-    try { await db.runAsync('UPDATE orders SET payment_id = ? WHERE id = ?', [paymentId, orderId]); } catch (e) {}
+    // Link payment to order
+    try { await db.runAsync('UPDATE orders SET payment_id = ? WHERE order_id = ?', [paymentId, orderId]); } catch (e) {}
 
-    // cleanup otp_requests
-    await db.runAsync('DELETE FROM otp_requests WHERE id = ?', [requestId]);
+    // Cleanup OTP request
+    await db.runAsync('DELETE FROM otp_requests WHERE otp_id = ?', [requestId]);
 
-    // Build fake link as before
-    const fakeLink = `${req.protocol}://${req.get('host')}/api/payments/redirect-simulate?payment_id=${paymentId}&order_id=${orderId}&return_url=${encodeURIComponent(return_url || '')}`;
-
-    // Fetch the canonical created order and its items so the client can render the receipt immediately
+    // Fetch complete order for response
     const createdOrder = await db.getAsync(
-      'SELECT o.*, u.username AS username, u.email AS user_email FROM orders o LEFT JOIN users u ON o.user_id = u.id WHERE o.id = ?',
+      'SELECT o.*, u.user_username, u.user_email FROM orders o LEFT JOIN users u ON o.order_user_id = u.user_id WHERE o.order_id = ?',
       [orderId]
     );
-    const createdItems = await db.allAsync('SELECT * FROM order_items WHERE order_id = ?', [orderId]);
-    const latestPayment = await db.getAsync('SELECT * FROM payments WHERE order_id = ? ORDER BY id DESC LIMIT 1', [orderId]);
+    const createdItems = await db.allAsync('SELECT * FROM order_items WHERE order_item_order_id = ?', [orderId]);
+    const latestPayment = await db.getAsync('SELECT * FROM payments WHERE payment_order_id = ? ORDER BY payment_id DESC LIMIT 1', [orderId]);
 
-    const normalized = {
+    // Build response with normalized fields
+    const orderResponse = {
       ...createdOrder,
-      customer_name: createdOrder && createdOrder.username ? createdOrder.username : (createdOrder && createdOrder.customer_name ? createdOrder.customer_name : null),
-      customer_email: createdOrder && createdOrder.user_email ? createdOrder.user_email : (createdOrder && createdOrder.customer_email ? createdOrder.customer_email : null),
-      items: createdItems || [],
+      items: createdItems,
       payment: latestPayment || null,
-      payment_id: latestPayment ? latestPayment.id : null
-    };
-
-    // Build a receipt-shaped object matching what OrderConfirmation expects
-    const itemsForReceipt = (normalized.items || []).map(i => ({
-      product_id: i.product_id || i.id,
-      product_name: i.product_name || i.name || `Product #${i.product_id || i.id}`,
-      quantity: i.quantity || 1,
-      price: parseFloat(i.price || 0)
-    }));
-
-    const subtotal = itemsForReceipt.reduce((s, it) => s + (it.price * it.quantity), 0);
-    const receiptTotal = parseFloat(normalized.total || total || subtotal);
-
-    const built = {
-      id: normalized.id,
-      orderNumber: normalized.id,
-      customer_name: normalized.customer_name || 'Guest',
-      customer_email: normalized.customer_email || '',
-      payment_method: (normalized.payment && normalized.payment.method) || (latestPayment && latestPayment.method) || 'N/A',
-      items: itemsForReceipt,
-      subtotal,
+      payment_id: paymentId,
+      orderNumber: orderId,
+      id: orderId,
+      customer_name: customer_name || 'Guest',
+      customer_email: customer_email || '',
+      payment_method: method_hint || 'gcash',
+      subtotal: total,
       tax: 0,
-      total: receiptTotal
+      total: total
     };
 
-    // Log the built receipt for easier debugging (dev only)
-    try {
-      console.log('confirm-otp built receipt:', JSON.stringify(built))
-    } catch (e) {}
+    const fakeLink = return_url ? `${return_url}?orderId=${orderId}&paymentId=${paymentId}` : null;
 
-    // Return the built receipt object under several keys to be robust for clients
-    res.json({ order: built, orderId, paymentId, payment_link: fakeLink, orderData: built, receipt: built });
+    console.log('confirm-otp success - orderId:', orderId, 'paymentId:', paymentId, 'items:', createdItems.length);
+
+    res.json({ order: orderResponse, orderId, paymentId, payment_link: fakeLink, requestId });
   } catch (err) {
     console.error('confirm-otp error:', err);
     res.status(500).json({ error: err.message });
@@ -416,8 +406,8 @@ router.post('/webhook', async (req, res) => {
     // Example expected webhook shape: { type: 'payment.paid', data: { payment_id, order_id, provider_txn_id, amount } }
     if (event && event.type === 'payment.paid' && event.data) {
       const { payment_id, order_id, provider_txn_id, amount } = event.data;
-      await db.runAsync('UPDATE payments SET status = ?, provider_txn_id = ? WHERE id = ?', ['completed', provider_txn_id || null, payment_id]);
-      await db.runAsync('UPDATE orders SET status = ? WHERE id = ?', ['processing', order_id]);
+      await db.runAsync('UPDATE payments SET payment_status = ?, payment_provider_txn_id = ? WHERE payment_id = ?', ['completed', provider_txn_id || null, payment_id]);
+      await db.runAsync('UPDATE orders SET order_status = ? WHERE order_id = ?', ['processing', order_id]);
     }
 
     // Respond quickly to acknowledge
@@ -431,7 +421,7 @@ router.post('/webhook', async (req, res) => {
 // Optional: read payment
 router.get('/:id', async (req, res) => {
   try {
-    const payment = await db.getAsync('SELECT * FROM payments WHERE id = ?', [req.params.id]);
+    const payment = await db.getAsync('SELECT * FROM payments WHERE payment_id = ?', [req.params.id]);
     if (!payment) return res.status(404).json({ error: 'Payment not found' });
     res.json(payment);
   } catch (err) {

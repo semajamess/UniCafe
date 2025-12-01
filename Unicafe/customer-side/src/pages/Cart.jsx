@@ -80,7 +80,7 @@ const Cart = () => {
                       {item.description || 'Delicious item'}
                     </p>
                     <p className="text-lg font-bold text-primary-600">
-                      ₱{item.price.toFixed(2)}
+                      ₱{parseFloat(item.price || 0).toFixed(2)}
                     </p>
                   </div>
 
@@ -111,7 +111,7 @@ const Cart = () => {
                   <div className="text-right min-w-[100px]">
                     <p className="text-sm text-gray-600 mb-1">Subtotal</p>
                     <p className="text-xl font-bold text-gray-800">
-                      ₱{(item.price * item.quantity).toFixed(2)}
+                      ₱{(parseFloat(item.price || 0) * item.quantity).toFixed(2)}
                     </p>
                   </div>
 

@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:3000/api/cafe';
 
 const Orders = () => {
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -50,20 +50,19 @@ const Orders = () => {
       
       // Transform backend data to match frontend structure
       const transformedOrders = data.map(order => ({
-        id: `#ORD-${order.id}`,
+        id: `#ORD-${order.order_id}`,
         customer: { 
-          // Show username (resolved from user_id). Also display raw user_id below for clarity.
-          name: order.customer_name || 'Guest',
-          email: order.customer_email || '',
-          id: order.user_id || null,
+          name: order.user_username || 'Guest',
+          email: order.user_email || '',
+          id: order.order_user_id || null,
         },
         // items array may not be included in list endpoint; use count when available
         items: order.items || [],
         itemsCount: order.item_count || (order.items ? order.items.length : 0),
-        total: parseFloat(order.total),
-        status: order.status,
+        total: parseFloat(order.order_total),
+        status: order.order_status,
         paymentMethod: order.payment_method || "N/A",
-        date: new Date(order.created_at),
+        date: new Date(order.order_created_at),
         notes: order.notes || "",
       }));
       
