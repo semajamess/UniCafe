@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 
-const API_URL = 'http://localhost:3000/api/cafe';
+const API_URL = "http://localhost:3000/api/cafe";
 
 const Orders = () => {
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -36,24 +36,24 @@ const Orders = () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      
-      if (selectedStatus !== 'all') {
-        params.append('status', selectedStatus);
+
+      if (selectedStatus !== "all") {
+        params.append("status", selectedStatus);
       }
-      
+
       if (searchTerm) {
-        params.append('search', searchTerm);
+        params.append("search", searchTerm);
       }
-      
+
       const response = await fetch(`${API_URL}/orders?${params.toString()}`);
       const data = await response.json();
-      
+
       // Transform backend data to match frontend structure
-      const transformedOrders = data.map(order => ({
+      const transformedOrders = data.map((order) => ({
         id: `#ORD-${order.order_id}`,
-        customer: { 
-          name: order.user_username || 'Guest',
-          email: order.user_email || '',
+        customer: {
+          name: order.user_username || "Guest",
+          email: order.user_email || "",
           id: order.order_user_id || null,
         },
         // items array may not be included in list endpoint; use count when available
@@ -65,10 +65,10 @@ const Orders = () => {
         date: new Date(order.order_created_at),
         notes: order.notes || "",
       }));
-      
+
       setOrders(transformedOrders);
     } catch (error) {
-      console.error('Error fetching orders:', error);
+      console.error("Error fetching orders:", error);
     } finally {
       setLoading(false);
     }
@@ -76,11 +76,9 @@ const Orders = () => {
 
   const statusConfig = {
     all: { label: "All Orders", color: "slate", icon: Package },
-    pending: { label: "Pending", color: "yellow", icon: Clock },
     processing: { label: "Processing", color: "blue", icon: Package },
     ready: { label: "Ready", color: "purple", icon: Truck },
     completed: { label: "Completed", color: "green", icon: CheckCircle },
-    cancelled: { label: "Cancelled", color: "red", icon: XCircle },
   };
 
   const getStatusBadge = (status) => {
@@ -98,16 +96,16 @@ const Orders = () => {
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       // Extract numeric ID from "#ORD-123" format
-      const numericId = orderId.replace('#ORD-', '');
-      
+      const numericId = orderId.replace("#ORD-", "");
+
       const response = await fetch(`${API_URL}/orders/${numericId}/status`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ status: newStatus }),
       });
-      
+
       if (response.ok) {
         // Update local state
         setOrders(
@@ -117,29 +115,29 @@ const Orders = () => {
         );
       }
     } catch (error) {
-      console.error('Error updating order status:', error);
+      console.error("Error updating order status:", error);
     }
   };
 
   const handleViewOrder = async (order) => {
     try {
       // Extract numeric ID from "#ORD-123" format
-      const numericId = order.id.replace('#ORD-', '');
-      
+      const numericId = order.id.replace("#ORD-", "");
+
       // Fetch full order details with items
       const response = await fetch(`${API_URL}/orders/${numericId}`);
       const orderDetails = await response.json();
-      
+
       // Transform to match frontend structure
       const transformedOrder = {
         ...order,
         items: orderDetails.items || [],
       };
-      
+
       setSelectedOrder(transformedOrder);
       setShowOrderDetails(true);
     } catch (error) {
-      console.error('Error fetching order details:', error);
+      console.error("Error fetching order details:", error);
       // Fallback to showing order without items
       setSelectedOrder(order);
       setShowOrderDetails(true);
@@ -148,8 +146,8 @@ const Orders = () => {
 
   const orderStats = {
     total: orders.length,
-    pending: orders.filter((o) => o.status === "pending").length,
     processing: orders.filter((o) => o.status === "processing").length,
+    ready: orders.filter((o) => o.status === "ready").length,
     completed: orders.filter((o) => o.status === "completed").length,
   };
 
@@ -158,7 +156,9 @@ const Orders = () => {
       {/* Page Header */}
       <div>
         <h1 className="text-3xl font-bold text-slate-900">Orders</h1>
-        <p className="text-slate-500 mt-1">Manage and track all customer orders</p>
+        <p className="text-slate-500 mt-1">
+          Manage and track all customer orders
+        </p>
       </div>
 
       {/* Stats Cards */}
@@ -167,7 +167,9 @@ const Orders = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-slate-500">Total Orders</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">{orderStats.total}</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">
+                {orderStats.total}
+              </p>
             </div>
             <div className="bg-slate-100 p-3 rounded-lg">
               <Package className="w-6 h-6 text-slate-600" />
@@ -177,19 +179,10 @@ const Orders = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-500">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600 mt-1">{orderStats.pending}</p>
-            </div>
-            <div className="bg-yellow-100 p-3 rounded-lg">
-              <Clock className="w-6 h-6 text-yellow-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-          <div className="flex items-center justify-between">
-            <div>
               <p className="text-sm text-slate-500">Processing</p>
-              <p className="text-2xl font-bold text-blue-600 mt-1">{orderStats.processing}</p>
+              <p className="text-2xl font-bold text-blue-600 mt-1">
+                {orderStats.processing}
+              </p>
             </div>
             <div className="bg-blue-100 p-3 rounded-lg">
               <Package className="w-6 h-6 text-blue-600" />
@@ -199,8 +192,23 @@ const Orders = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between">
             <div>
+              <p className="text-sm text-slate-500">Ready</p>
+              <p className="text-2xl font-bold text-purple-600 mt-1">
+                {orderStats.ready}
+              </p>
+            </div>
+            <div className="bg-purple-100 p-3 rounded-lg">
+              <Truck className="w-6 h-6 text-purple-600" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+          <div className="flex items-center justify-between">
+            <div>
               <p className="text-sm text-slate-500">Completed</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">{orderStats.completed}</p>
+              <p className="text-2xl font-bold text-green-600 mt-1">
+                {orderStats.completed}
+              </p>
             </div>
             <div className="bg-green-100 p-3 rounded-lg">
               <CheckCircle className="w-6 h-6 text-green-600" />
@@ -252,25 +260,49 @@ const Orders = () => {
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">Order ID</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">Customer</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">Items</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">Total</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">Date & Time</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">Status</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">Actions</th>
+                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">
+                  Order ID
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">
+                  Customer
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">
+                  Items
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">
+                  Total
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">
+                  Date & Time
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">
+                  Status
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-semibold text-slate-600">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {orders.map((order) => (
-                <tr key={order.id} className="hover:bg-slate-50 transition-colors">
+                <tr
+                  key={order.id}
+                  className="hover:bg-slate-50 transition-colors"
+                >
                   <td className="py-4 px-6">
-                    <span className="font-medium text-slate-900">{order.id}</span>
+                    <span className="font-medium text-slate-900">
+                      {order.id}
+                    </span>
                   </td>
                   <td className="py-4 px-6">
                     <div>
-                      <p className="font-medium text-slate-900">{order.customer.name}</p>
-                      <p className="text-sm text-slate-500">{order.customer.email}{order.customer.id ? ` — ID:${order.customer.id}` : ''}</p>
+                      <p className="font-medium text-slate-900">
+                        {order.customer.name}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {order.customer.email}
+                        {order.customer.id ? ` — ID:${order.customer.id}` : ""}
+                      </p>
                     </div>
                   </td>
                   <td className="py-4 px-6">
@@ -279,16 +311,26 @@ const Orders = () => {
                     </span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className="font-semibold text-slate-900">${order.total.toFixed(2)}</span>
+                    <span className="font-semibold text-slate-900">
+                      ${order.total.toFixed(2)}
+                    </span>
                   </td>
                   <td className="py-4 px-6">
                     <div className="text-sm">
-                      <p className="text-slate-900">{format(order.date, "MMM dd, yyyy")}</p>
-                      <p className="text-slate-500">{format(order.date, "hh:mm a")}</p>
+                      <p className="text-slate-900">
+                        {format(order.date, "MMM dd, yyyy")}
+                      </p>
+                      <p className="text-slate-500">
+                        {format(order.date, "hh:mm a")}
+                      </p>
                     </div>
                   </td>
                   <td className="py-4 px-6">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(order.status)}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(
+                        order.status
+                      )}`}
+                    >
                       {statusConfig[order.status].label}
                     </span>
                   </td>
@@ -301,22 +343,24 @@ const Orders = () => {
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      {order.status === "pending" && (
+                      {order.status === "processing" && (
                         <button
-                          onClick={() => handleStatusChange(order.id, "processing")}
-                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                          title="Accept Order"
+                          onClick={() => handleStatusChange(order.id, "ready")}
+                          className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                          title="Mark as Ready"
                         >
                           <Check className="w-4 h-4" />
                         </button>
                       )}
-                      {(order.status === "pending" || order.status === "processing") && (
+                      {order.status === "ready" && (
                         <button
-                          onClick={() => handleStatusChange(order.id, "cancelled")}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Cancel Order"
+                          onClick={() =>
+                            handleStatusChange(order.id, "completed")
+                          }
+                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                          title="Mark as Completed"
                         >
-                          <X className="w-4 h-4" />
+                          <Check className="w-4 h-4" />
                         </button>
                       )}
                     </div>
@@ -345,7 +389,9 @@ const Orders = () => {
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in">
             <div className="flex items-center justify-between p-6 border-b border-slate-200">
               <div>
-                <h2 className="text-2xl font-bold text-slate-900">Order Details</h2>
+                <h2 className="text-2xl font-bold text-slate-900">
+                  Order Details
+                </h2>
                 <p className="text-slate-500 mt-1">{selectedOrder.id}</p>
               </div>
               <button
@@ -359,37 +405,56 @@ const Orders = () => {
             <div className="p-6 space-y-6">
               {/* Customer Info */}
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-3">Customer Information</h3>
+                <h3 className="text-lg font-semibold text-slate-900 mb-3">
+                  Customer Information
+                </h3>
                 <div className="bg-slate-50 rounded-lg p-4 space-y-2">
                   <p className="text-sm">
                     <span className="text-slate-500">Name:</span>{" "}
-                    <span className="font-medium text-slate-900">{selectedOrder.customer.name}</span>
+                    <span className="font-medium text-slate-900">
+                      {selectedOrder.customer.name}
+                    </span>
                   </p>
                   <p className="text-sm">
                     <span className="text-slate-500">Email:</span>{" "}
-                    <span className="font-medium text-slate-900">{selectedOrder.customer.email}</span>
+                    <span className="font-medium text-slate-900">
+                      {selectedOrder.customer.email}
+                    </span>
                   </p>
                 </div>
               </div>
 
               {/* Order Items */}
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-3">Order Items</h3>
+                <h3 className="text-lg font-semibold text-slate-900 mb-3">
+                  Order Items
+                </h3>
                 <div className="space-y-2">
                   {selectedOrder.items && selectedOrder.items.length > 0 ? (
                     selectedOrder.items.map((item, index) => (
-                      <div key={index} className="flex justify-between items-center bg-slate-50 rounded-lg p-3">
+                      <div
+                        key={index}
+                        className="flex justify-between items-center bg-slate-50 rounded-lg p-3"
+                      >
                         <div>
-                          <p className="font-medium text-slate-900">{item.product_name || item.name}</p>
-                          <p className="text-sm text-slate-500">Qty: {item.quantity}</p>
+                          <p className="font-medium text-slate-900">
+                            {item.product_name || item.name}
+                          </p>
+                          <p className="text-sm text-slate-500">
+                            Qty: {item.quantity}
+                          </p>
                         </div>
-                        <p className="font-semibold text-slate-900">${(item.price * item.quantity).toFixed(2)}</p>
+                        <p className="font-semibold text-slate-900">
+                          ${(item.price * item.quantity).toFixed(2)}
+                        </p>
                       </div>
                     ))
                   ) : (
                     <div className="bg-slate-50 rounded-lg p-4 text-center">
                       <Package className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                      <p className="text-sm text-slate-500">No items in this order</p>
+                      <p className="text-sm text-slate-500">
+                        No items in this order
+                      </p>
                     </div>
                   )}
                 </div>
@@ -399,15 +464,21 @@ const Orders = () => {
               <div className="border-t border-slate-200 pt-4">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-slate-600">Subtotal:</span>
-                  <span className="font-medium text-slate-900">${selectedOrder.total.toFixed(2)}</span>
+                  <span className="font-medium text-slate-900">
+                    ${selectedOrder.total.toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-slate-600">Tax (10%):</span>
-                  <span className="font-medium text-slate-900">${(selectedOrder.total * 0.1).toFixed(2)}</span>
+                  <span className="font-medium text-slate-900">
+                    ${(selectedOrder.total * 0.1).toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center text-lg font-bold pt-2 border-t border-slate-200">
                   <span className="text-slate-900">Total:</span>
-                  <span className="text-amber-600">${(selectedOrder.total * 1.1).toFixed(2)}</span>
+                  <span className="text-amber-600">
+                    ${(selectedOrder.total * 1.1).toFixed(2)}
+                  </span>
                 </div>
               </div>
 
@@ -415,11 +486,17 @@ const Orders = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-slate-500 mb-1">Payment Method</p>
-                  <p className="font-medium text-slate-900">{selectedOrder.paymentMethod}</p>
+                  <p className="font-medium text-slate-900">
+                    {selectedOrder.paymentMethod}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-500 mb-1">Status</p>
-                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(selectedOrder.status)}`}>
+                  <span
+                    className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(
+                      selectedOrder.status
+                    )}`}
+                  >
                     {statusConfig[selectedOrder.status].label}
                   </span>
                 </div>
@@ -428,35 +505,17 @@ const Orders = () => {
               {/* Notes */}
               {selectedOrder.notes && (
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Order Notes</h3>
-                  <p className="text-slate-600 bg-slate-50 rounded-lg p-3">{selectedOrder.notes}</p>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                    Order Notes
+                  </h3>
+                  <p className="text-slate-600 bg-slate-50 rounded-lg p-3">
+                    {selectedOrder.notes}
+                  </p>
                 </div>
               )}
 
               {/* Action Buttons */}
               <div className="flex space-x-3 pt-4">
-                {selectedOrder.status === "pending" && (
-                  <>
-                    <button
-                      onClick={() => {
-                        handleStatusChange(selectedOrder.id, "processing");
-                        setShowOrderDetails(false);
-                      }}
-                      className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
-                    >
-                      Accept Order
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleStatusChange(selectedOrder.id, "cancelled");
-                        setShowOrderDetails(false);
-                      }}
-                      className="flex-1 bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition-colors font-medium"
-                    >
-                      Reject Order
-                    </button>
-                  </>
-                )}
                 {selectedOrder.status === "processing" && (
                   <button
                     onClick={() => {

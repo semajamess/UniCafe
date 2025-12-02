@@ -1,14 +1,14 @@
-import express from 'express';
-import db from '../database.js';
-import { authenticateToken } from './auth.js';
+import express from "express";
+import db from "../database.js";
+import { authenticateToken } from "./auth.js";
 
 const router = express.Router();
 
 // Get all orders (ADMIN can see all, CUSTOMER can filter by user_id)
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const { user_id, status } = req.query;
-    
+
     let query = `
       SELECT o.*, 
         u.user_username,
@@ -25,16 +25,16 @@ router.get('/', async (req, res) => {
 
     // Allow filtering by user_id for customer access
     if (user_id) {
-      query += ' AND o.order_user_id = ?';
+      query += " AND o.order_user_id = ?";
       params.push(user_id);
     }
 
     if (status) {
-      query += ' AND o.order_status = ?';
+      query += " AND o.order_status = ?";
       params.push(status);
     }
 
-    query += ' ORDER BY o.order_created_at DESC';
+    query += " ORDER BY o.order_created_at DESC";
 
     const orders = await db.allAsync(query, params);
 
@@ -45,61 +45,100 @@ router.get('/', async (req, res) => {
 });
 
 // Get order by ID with items (CUSTOMER ACCESSIBLE for order tracking)
-router.get('/:id', async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
-    const order = await db.getAsync('SELECT o.*, u.user_username, u.user_email FROM orders o LEFT JOIN users u ON o.order_user_id = u.user_id WHERE o.order_id = ?', [req.params.id]);
+    const order = await db.getAsync(
+      "SELECT o.*, u.user_username, u.user_email FROM orders o LEFT JOIN users u ON o.order_user_id = u.user_id WHERE o.order_id = ?",
+      [req.params.id]
+    );
 
     if (!order) {
-      return res.status(404).json({ error: 'Order not found' });
+      return res.status(404).json({ error: "Order not found" });
     }
 
-    const items = await db.allAsync('SELECT * FROM order_items WHERE order_item_order_id = ?', [req.params.id]);
+    const items = await db.allAsync(
+      "SELECT * FROM order_items WHERE order_item_order_id = ?",
+      [req.params.id]
+    );
 
     // Fetch latest payment for this order (if any)
-    const latestPayment = await db.getAsync('SELECT * FROM payments WHERE payment_order_id = ? ORDER BY payment_id DESC LIMIT 1', [req.params.id]);
+    const latestPayment = await db.getAsync(
+      "SELECT * FROM payments WHERE payment_order_id = ? ORDER BY payment_id DESC LIMIT 1",
+      [req.params.id]
+    );
 
-    res.json({ ...order, items, payment: latestPayment || null, payment_id: latestPayment ? latestPayment.payment_id : null });
+    res.json({
+      ...order,
+      items,
+      payment: latestPayment || null,
+      payment_id: latestPayment ? latestPayment.payment_id : null,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // Create new order (CUSTOMER CAN CREATE ORDERS) - require authentication
-router.post('/', authenticateToken, async (req, res) => {
+router.post("/", authenticateToken, async (req, res) => {
   try {
-    const { items, payment_method, payment_metadata, provider_txn_id } = req.body;
+    const { items, payment_method, payment_metadata, provider_txn_id } =
+      req.body;
     const user_id = req.user && req.user.id ? req.user.id : null;
 
     // Calculate total
     let total = 0;
     const productDetails = [];
 
+    // Validate stock availability before creating order
     for (const item of items) {
-      const product = await db.getAsync('SELECT * FROM products WHERE product_id = ?', [item.product_id]);
+      const product = await db.getAsync(
+        "SELECT * FROM products WHERE product_id = ?",
+        [item.product_id]
+      );
       if (!product) {
-        return res.status(404).json({ error: `Product ${item.product_id} not found` });
+        return res
+          .status(404)
+          .json({ error: `Product ${item.product_id} not found` });
       }
+
+      // Check if sufficient stock is available
+      if (product.product_stock < item.quantity) {
+        return res.status(400).json({
+          error: `Insufficient stock for ${product.product_name}. Available: ${product.product_stock}, Requested: ${item.quantity}`,
+        });
+      }
+
       productDetails.push({ ...product, quantity: item.quantity });
       total += product.product_price * item.quantity;
     }
 
     // Create order linked to authenticated user
-    if (!user_id) return res.status(401).json({ error: 'Authenticated user required to create orders' });
+    if (!user_id)
+      return res
+        .status(401)
+        .json({ error: "Authenticated user required to create orders" });
 
     const orderResult = await db.runAsync(
       `INSERT INTO orders (order_user_id, order_total, order_status) 
        VALUES (?, ?, ?)`,
-      [user_id, total.toFixed(2), 'pending']
+      [user_id, total.toFixed(2), "pending"]
     );
 
     const orderId = orderResult.lastID;
 
-    // Create order items
+    // Create order items (DO NOT decrease stock yet - only decrease after OTP confirmation)
     for (const detail of productDetails) {
+      // Insert order item
       await db.runAsync(
         `INSERT INTO order_items (order_item_order_id, order_item_product_id, order_item_product_name, order_item_quantity, order_item_price) 
          VALUES (?, ?, ?, ?, ?)`,
-        [orderId, detail.product_id, detail.product_name, detail.quantity, detail.product_price]
+        [
+          orderId,
+          detail.product_id,
+          detail.product_name,
+          detail.quantity,
+          detail.product_price,
+        ]
       );
     }
 
@@ -109,13 +148,23 @@ router.post('/', authenticateToken, async (req, res) => {
       const paymentResult = await db.runAsync(
         `INSERT INTO payments (payment_order_id, payment_amount, payment_method, payment_provider_txn_id, payment_status, payment_metadata) 
          VALUES (?, ?, ?, ?, ?, ?)`,
-        [orderId, total.toFixed(2), payment_method, provider_txn_id || null, 'completed', payment_metadata ? JSON.stringify(payment_metadata) : null]
+        [
+          orderId,
+          total.toFixed(2),
+          payment_method,
+          provider_txn_id || null,
+          "completed",
+          payment_metadata ? JSON.stringify(payment_metadata) : null,
+        ]
       );
       paymentId = paymentResult.lastID;
 
       // Attach payment_id to order (if column exists)
       try {
-        await db.runAsync('UPDATE orders SET payment_id = ? WHERE order_id = ?', [paymentId, orderId]);
+        await db.runAsync(
+          "UPDATE orders SET payment_id = ? WHERE order_id = ?",
+          [paymentId, orderId]
+        );
       } catch (e) {
         // ignore if column does not exist
       }
@@ -123,56 +172,77 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // Fetch canonical order including joined user info and items
     const createdOrder = await db.getAsync(
-      'SELECT o.*, u.user_username, u.user_email FROM orders o LEFT JOIN users u ON o.order_user_id = u.user_id WHERE o.order_id = ?',
+      "SELECT o.*, u.user_username, u.user_email FROM orders o LEFT JOIN users u ON o.order_user_id = u.user_id WHERE o.order_id = ?",
       [orderId]
     );
-    const createdItems = await db.allAsync('SELECT * FROM order_items WHERE order_item_order_id = ?', [orderId]);
+    const createdItems = await db.allAsync(
+      "SELECT * FROM order_items WHERE order_item_order_id = ?",
+      [orderId]
+    );
 
     // Fetch latest payment for this order (if any) so we can return payment_id
-    const latestPayment = await db.getAsync('SELECT * FROM payments WHERE payment_order_id = ? ORDER BY payment_id DESC LIMIT 1', [orderId]);
+    const latestPayment = await db.getAsync(
+      "SELECT * FROM payments WHERE payment_order_id = ? ORDER BY payment_id DESC LIMIT 1",
+      [orderId]
+    );
 
-    res.status(201).json({ order: { ...createdOrder, items: createdItems, payment: latestPayment || null, payment_id: latestPayment ? latestPayment.payment_id : null }, message: 'Order created successfully' });
+    res
+      .status(201)
+      .json({
+        order: {
+          ...createdOrder,
+          items: createdItems,
+          payment: latestPayment || null,
+          payment_id: latestPayment ? latestPayment.payment_id : null,
+        },
+        message: "Order created successfully",
+      });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // Update order status (ADMIN ONLY)
-router.patch('/:id/status', async (req, res) => {
+router.patch("/:id/status", async (req, res) => {
   try {
     const { status } = req.body;
-    
-    if (!['pending', 'processing', 'completed', 'cancelled'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid status' });
+
+    if (!["pending", "processing", "completed", "cancelled"].includes(status)) {
+      return res.status(400).json({ error: "Invalid status" });
     }
 
-    await db.runAsync('UPDATE orders SET order_status = ? WHERE order_id = ?', [status, req.params.id]);
-    res.json({ id: req.params.id, status, message: 'Order status updated' });
+    await db.runAsync("UPDATE orders SET order_status = ? WHERE order_id = ?", [
+      status,
+      req.params.id,
+    ]);
+    res.json({ id: req.params.id, status, message: "Order status updated" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // Delete order (ADMIN ONLY)
-router.delete('/:id', async (req, res) => {
+router.delete("/:id", async (req, res) => {
   try {
-    await db.runAsync('DELETE FROM order_items WHERE order_item_order_id = ?', [req.params.id]);
-    await db.runAsync('DELETE FROM orders WHERE order_id = ?', [req.params.id]);
-    res.json({ message: 'Order deleted successfully' });
+    await db.runAsync("DELETE FROM order_items WHERE order_item_order_id = ?", [
+      req.params.id,
+    ]);
+    await db.runAsync("DELETE FROM orders WHERE order_id = ?", [req.params.id]);
+    res.json({ message: "Order deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // Get revenue statistics (ADMIN ONLY)
-router.get('/stats/revenue', async (req, res) => {
+router.get("/stats/revenue", async (req, res) => {
   try {
-    const { period = 'week' } = req.query;
-    
-    let dateFilter = '';
-    if (period === 'week') {
+    const { period = "week" } = req.query;
+
+    let dateFilter = "";
+    if (period === "week") {
       dateFilter = "AND order_created_at >= date('now', '-7 days')";
-    } else if (period === 'month') {
+    } else if (period === "month") {
       dateFilter = "AND order_created_at >= date('now', '-30 days')";
     }
 

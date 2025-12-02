@@ -1,45 +1,81 @@
-import { useState, useEffect, useCallback } from 'react'
-import { motion } from 'framer-motion'
-import { Search, Coffee, ShoppingCart, Filter, Phone, CheckCircle, X } from 'lucide-react'
-import { useCart } from '../context/CartContext'
-import { useAuth } from '../context/AuthContext'
-import { useNavigate } from 'react-router-dom'
-import AnimatedBackground from '../components/AnimatedBackground'
-import FloatingCart from '../components/FloatingCart'
+import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
+import {
+  Search,
+  Coffee,
+  ShoppingCart,
+  Filter,
+  Phone,
+  CheckCircle,
+  X,
+} from "lucide-react";
+import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import AnimatedBackground from "../components/AnimatedBackground";
+import FloatingCart from "../components/FloatingCart";
 
 // Separate ProductCard component to ensure isolated scope
 const ProductCard = ({ product, onAddToCart }) => {
-  const handleAddToCart = useCallback((e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    console.log('Adding to cart:', product.product_name, 'ID:', product.product_id)
-    onAddToCart(product)
-  }, [product, onAddToCart])
+  const isOutOfStock = product.product_stock === 0 || product.product_stock < 1;
+
+  const handleAddToCart = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (isOutOfStock) return;
+      console.log(
+        "Adding to cart:",
+        product.product_name,
+        "ID:",
+        product.product_id
+      );
+      onAddToCart(product);
+    },
+    [product, onAddToCart, isOutOfStock]
+  );
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: 0.05 }}
-      whileHover={{ y: -8 }}
-      className="group"
+      whileHover={!isOutOfStock ? { y: -8 } : {}}
+      className={`group ${isOutOfStock ? "opacity-60" : ""}`}
     >
-      <div className="glass-effect rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 h-full flex flex-col">
+      <div
+        className={`glass-effect rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 h-full flex flex-col ${
+          isOutOfStock ? "border-2 border-red-300" : ""
+        }`}
+      >
         <div className="relative h-48 bg-gradient-to-br from-primary-100 to-orange-100 overflow-hidden">
           {product.product_image_url ? (
-            <img 
-              src={product.product_image_url} 
+            <img
+              src={product.product_image_url}
               alt={product.product_name}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+              className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 ${
+                isOutOfStock ? "grayscale" : ""
+              }`}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <Coffee className="w-20 h-20 text-primary-600 group-hover:scale-110 transition-transform duration-300" />
+              <Coffee
+                className={`w-20 h-20 group-hover:scale-110 transition-transform duration-300 ${
+                  isOutOfStock ? "text-gray-400" : "text-primary-600"
+                }`}
+              />
             </div>
           )}
           {product.product_category && (
             <div className="absolute top-3 left-3 bg-white/90 px-3 py-1 rounded-full text-xs font-semibold text-gray-700">
               {product.product_category}
+            </div>
+          )}
+          {isOutOfStock && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+              <span className="bg-red-500 text-white px-4 py-2 rounded-full font-bold text-sm">
+                Out of Stock
+              </span>
             </div>
           )}
         </div>
@@ -49,9 +85,23 @@ const ProductCard = ({ product, onAddToCart }) => {
             {product.product_name}
           </h3>
           <p className="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow">
-            {product.product_description || 'Freshly made and delicious'}
+            {product.product_description || "Freshly made and delicious"}
           </p>
-          
+
+          <div className="mb-3 flex items-center gap-2">
+            <div
+              className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                product.product_stock > 5
+                  ? "bg-green-100 text-green-700"
+                  : product.product_stock > 0
+                  ? "bg-yellow-100 text-yellow-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+            >
+              Stock: {product.product_stock} available
+            </div>
+          </div>
+
           <div className="flex items-center justify-between mt-auto">
             <span className="text-2xl font-bold text-primary-600">
               ₱{parseFloat(product.product_price).toFixed(2)}
@@ -59,7 +109,12 @@ const ProductCard = ({ product, onAddToCart }) => {
             <button
               type="button"
               onClick={handleAddToCart}
-              className="bg-primary-600 text-white p-2.5 rounded-full hover:bg-primary-700 transition-colors shadow-lg"
+              disabled={isOutOfStock}
+              className={`p-2.5 rounded-full transition-colors shadow-lg ${
+                isOutOfStock
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-primary-600 text-white hover:bg-primary-700"
+              }`}
             >
               <ShoppingCart className="w-5 h-5" />
             </button>
@@ -67,182 +122,206 @@ const ProductCard = ({ product, onAddToCart }) => {
         </div>
       </div>
     </motion.div>
-  )
-}
+  );
+};
 
 const Menu = () => {
-  const [products, setProducts] = useState([])
-  const [filteredProducts, setFilteredProducts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('all')
-  const { addToCart } = useCart()
-  const { user, isAuthenticated, needsPhoneNumber, updatePhone, token } = useAuth()
-  const navigate = useNavigate()
-  const [showModal, setShowModal] = useState(false)
-  const [showPhoneModal, setShowPhoneModal] = useState(false)
-  const [phoneNumber, setPhoneNumber] = useState('')
-  const [phoneError, setPhoneError] = useState('')
-  const [phoneLoading, setPhoneLoading] = useState(false)
-  const [showPhoneSuccess, setShowPhoneSuccess] = useState(false)
-  const [checkingPhone, setCheckingPhone] = useState(false)
+  const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const { addToCart } = useCart();
+  const { user, isAuthenticated, needsPhoneNumber, updatePhone, token } =
+    useAuth();
+  const navigate = useNavigate();
+  const [showModal, setShowModal] = useState(false);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [phoneLoading, setPhoneLoading] = useState(false);
+  const [showPhoneSuccess, setShowPhoneSuccess] = useState(false);
+  const [checkingPhone, setCheckingPhone] = useState(false);
 
   // Check if phone modal should be shown on mount - fetch fresh user data first
   useEffect(() => {
     const checkUserPhone = async () => {
-      if (!isAuthenticated || !token) return
-      
+      if (!isAuthenticated || !token) return;
+
       // If user already has phone in local state, don't show modal
       if (user?.phone) {
-        setShowPhoneModal(false)
-        return
+        setShowPhoneModal(false);
+        return;
       }
-      
+
       // Only check for Google-only users who might need phone
       if (!needsPhoneNumber) {
-        setShowPhoneModal(false)
-        return
+        setShowPhoneModal(false);
+        return;
       }
-      
+
       // Fetch fresh profile data to check if phone exists in DB
-      setCheckingPhone(true)
+      setCheckingPhone(true);
       try {
-        const response = await fetch('http://localhost:3000/api/customer/auth/profile', {
-          headers: {
-            'Authorization': `Bearer ${token}`
+        const response = await fetch(
+          "http://localhost:3000/api/customer/auth/profile",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           }
-        })
-        
+        );
+
         if (response.ok) {
-          const profileData = await response.json()
+          const profileData = await response.json();
           // If user already has phone in database, don't show modal
           if (profileData.phone) {
             // Update local storage with phone data
-            const storedUser = localStorage.getItem('user')
+            const storedUser = localStorage.getItem("user");
             if (storedUser) {
-              const userData = JSON.parse(storedUser)
-              userData.phone = profileData.phone
-              localStorage.setItem('user', JSON.stringify(userData))
+              const userData = JSON.parse(storedUser);
+              userData.phone = profileData.phone;
+              localStorage.setItem("user", JSON.stringify(userData));
             }
-            setShowPhoneModal(false)
+            setShowPhoneModal(false);
           } else {
             // User doesn't have phone, show modal
-            setShowPhoneModal(true)
+            setShowPhoneModal(true);
           }
         }
       } catch (error) {
-        console.error('Error checking user phone:', error)
+        console.error("Error checking user phone:", error);
         // Fall back to original logic if check fails
         if (needsPhoneNumber) {
-          setShowPhoneModal(true)
+          setShowPhoneModal(true);
         }
       } finally {
-        setCheckingPhone(false)
+        setCheckingPhone(false);
       }
-    }
-    
-    checkUserPhone()
-  }, [isAuthenticated, needsPhoneNumber, token, user?.phone])
+    };
 
-  const handleAddToCart = useCallback((product) => {
-    console.log('Menu - Add attempt:', product.product_name, 'ID:', product.product_id)
-    if (!isAuthenticated) {
-      setShowModal(true)
-      setTimeout(() => {
-        setShowModal(false)
-        navigate('/login')
-      }, 1400)
-      return
-    }
+    checkUserPhone();
+  }, [isAuthenticated, needsPhoneNumber, token, user?.phone]);
 
-    addToCart(product)
-  }, [addToCart, isAuthenticated, navigate])
+  const handleAddToCart = useCallback(
+    (product) => {
+      console.log(
+        "Menu - Add attempt:",
+        product.product_name,
+        "ID:",
+        product.product_id
+      );
+      if (!isAuthenticated) {
+        setShowModal(true);
+        setTimeout(() => {
+          setShowModal(false);
+          navigate("/login");
+        }, 1400);
+        return;
+      }
+
+      addToCart(product);
+    },
+    [addToCart, isAuthenticated, navigate]
+  );
 
   useEffect(() => {
-    fetchProducts()
-  }, [])
+    fetchProducts();
+  }, []);
 
   useEffect(() => {
-    filterProducts()
-  }, [searchQuery, selectedCategory, products])
+    filterProducts();
+  }, [searchQuery, selectedCategory, products]);
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/customer/products')
+      const response = await fetch(
+        "http://localhost:3000/api/customer/products"
+      );
       if (response.ok) {
-        const data = await response.json()
-        const availableProducts = data.filter(p => p.product_is_available === 1)
-        setProducts(availableProducts)
-        setFilteredProducts(availableProducts)
+        const data = await response.json();
+        const availableProducts = data.filter(
+          (p) => p.product_is_available === 1
+        );
+        setProducts(availableProducts);
+        setFilteredProducts(availableProducts);
       }
     } catch (error) {
-      console.error('Error fetching products:', error)
+      console.error("Error fetching products:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const filterProducts = () => {
-    let filtered = [...products]
+    let filtered = [...products];
 
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(p => {
-        const productCategory = p.product_category || ''
-        return productCategory.toLowerCase() === selectedCategory.toLowerCase()
-      })
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter((p) => {
+        const productCategory = p.product_category || "";
+        return productCategory.toLowerCase() === selectedCategory.toLowerCase();
+      });
     }
 
     if (searchQuery) {
-      filtered = filtered.filter(p =>
-        p.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.product_description && p.product_description.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
+      filtered = filtered.filter(
+        (p) =>
+          p.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (p.product_description &&
+            p.product_description
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase()))
+      );
     }
 
-    setFilteredProducts(filtered)
-  }
+    setFilteredProducts(filtered);
+  };
 
-  const categories = ['all', 'food', 'drinks']
+  const categories = ["all", "food", "drinks"];
 
   const validatePhoneNumber = (phone) => {
     // Philippine mobile number format: 09XXXXXXXXX (11 digits starting with 09)
-    const phoneRegex = /^09\d{9}$/
-    return phoneRegex.test(phone)
-  }
+    const phoneRegex = /^09\d{9}$/;
+    return phoneRegex.test(phone);
+  };
 
   const handlePhoneSubmit = async (e) => {
-    e.preventDefault()
-    setPhoneError('')
-    
+    e.preventDefault();
+    setPhoneError("");
+
     if (!validatePhoneNumber(phoneNumber)) {
-      setPhoneError('Please enter a valid Philippine mobile number (09XXXXXXXXX)')
-      return
+      setPhoneError(
+        "Please enter a valid Philippine mobile number (09XXXXXXXXX)"
+      );
+      return;
     }
 
-    setPhoneLoading(true)
-    const result = await updatePhone(phoneNumber)
-    setPhoneLoading(false)
+    setPhoneLoading(true);
+    const result = await updatePhone(phoneNumber);
+    setPhoneLoading(false);
 
     if (result.success) {
-      setShowPhoneModal(false)
-      setShowPhoneSuccess(true)
+      setShowPhoneModal(false);
+      setShowPhoneSuccess(true);
       setTimeout(() => {
-        setShowPhoneSuccess(false)
-      }, 2500)
+        setShowPhoneSuccess(false);
+      }, 2500);
     } else {
-      setPhoneError(result.error || 'Failed to update phone number')
+      setPhoneError(result.error || "Failed to update phone number");
     }
-  }
+  };
 
   return (
     <div className="min-h-screen">
       {showModal && !isAuthenticated && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-            <div className="bg-white rounded-2xl shadow-xl p-6 text-center">
-              <h2 className="text-lg font-bold mb-1">Please sign up first!</h2>
-              <p className="text-sm text-gray-600">You must log in to add items.</p>
-            </div>
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-6 text-center">
+            <h2 className="text-lg font-bold mb-1">Please sign up first!</h2>
+            <p className="text-sm text-gray-600">
+              You must log in to add items.
+            </p>
           </div>
+        </div>
       )}
 
       {/* Phone Number Modal for Google Users */}
@@ -263,14 +342,17 @@ const Menu = () => {
             >
               <X className="w-5 h-5" />
             </button>
-            
+
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Phone className="w-8 h-8 text-amber-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-800 mb-2">Add Your Phone Number</h2>
+              <h2 className="text-xl font-bold text-gray-800 mb-2">
+                Add Your Phone Number
+              </h2>
               <p className="text-sm text-gray-600">
-                To use E-Wallet payments, we need your phone number for SMS verification.
+                To use E-Wallet payments, we need your phone number for SMS
+                verification.
               </p>
             </div>
 
@@ -280,7 +362,7 @@ const Menu = () => {
                   {phoneError}
                 </div>
               )}
-              
+
               <div className="mb-4">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Phone Number
@@ -296,7 +378,9 @@ const Menu = () => {
                     maxLength={11}
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Philippine mobile number format</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Philippine mobile number format
+                </p>
               </div>
 
               <div className="flex gap-3">
@@ -312,7 +396,7 @@ const Menu = () => {
                   disabled={phoneLoading}
                   className="flex-1 py-3 rounded-xl font-semibold bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 transition-all disabled:opacity-50"
                 >
-                  {phoneLoading ? 'Saving...' : 'Save'}
+                  {phoneLoading ? "Saving..." : "Save"}
                 </button>
               </div>
             </form>
@@ -336,16 +420,19 @@ const Menu = () => {
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="w-12 h-12 text-green-500" />
             </div>
-            <h2 className="text-xl font-bold text-gray-800 mb-2">Phone Added!</h2>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">
+              Phone Added!
+            </h2>
             <p className="text-sm text-gray-600">
-              Your phone number has been saved. You can now use E-Wallet payments.
+              Your phone number has been saved. You can now use E-Wallet
+              payments.
             </p>
           </motion.div>
         </motion.div>
       )}
 
       <FloatingCart />
-      
+
       <section className="bg-white shadow-sm sticky top-16 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -369,8 +456,8 @@ const Menu = () => {
                     onClick={() => setSelectedCategory(category)}
                     className={`px-6 py-2 rounded-full font-semibold transition-all ${
                       selectedCategory === category
-                        ? 'bg-primary-600 text-white shadow-lg'
-                        : 'glass-effect text-gray-700 hover:bg-white/80'
+                        ? "bg-primary-600 text-white shadow-lg"
+                        : "glass-effect text-gray-700 hover:bg-white/80"
                     }`}
                   >
                     {category.charAt(0).toUpperCase() + category.slice(1)}
@@ -406,12 +493,13 @@ const Menu = () => {
           ) : (
             <>
               <div className="mb-6 text-gray-700">
-                <span className="font-semibold">{filteredProducts.length}</span> products found
+                <span className="font-semibold">{filteredProducts.length}</span>{" "}
+                products found
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {filteredProducts.map((product) => (
-                  <ProductCard 
-                    key={product.product_id} 
+                  <ProductCard
+                    key={product.product_id}
                     product={product}
                     onAddToCart={(prod) => handleAddToCart(prod)}
                   />
@@ -422,7 +510,7 @@ const Menu = () => {
         </div>
       </section>
     </div>
-  )
-}
+  );
+};
 
-export default Menu
+export default Menu;
