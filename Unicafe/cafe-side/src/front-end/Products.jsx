@@ -233,14 +233,11 @@ const Products = () => {
 
     try {
       const productId = selectedProduct.product_id || selectedProduct.id;
-      const response = await fetch(
-        `${API_URL}/products/${productId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        }
-      );
+      const response = await fetch(`${API_URL}/products/${productId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
       if (response.ok) {
         await fetchProducts();
@@ -273,21 +270,19 @@ const Products = () => {
     try {
       // Soft delete - set is_available to 0
       const productId = productToDelete.product_id || productToDelete.id;
-      const response = await fetch(
-        `${API_URL}/products/${productId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...productToDelete,
-            is_available: 0,
-          }),
-        }
-      );
+      const response = await fetch(`${API_URL}/products/${productId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...productToDelete,
+          is_available: 0,
+        }),
+      });
 
       if (response.ok) {
         await fetchProducts();
-        const productName = productToDelete.product_name || productToDelete.name;
+        const productName =
+          productToDelete.product_name || productToDelete.name;
         setShowDeleteConfirm(false);
         setProductToDelete(null);
         setDeleteConfirmText("");
@@ -306,17 +301,14 @@ const Products = () => {
     try {
       // Update existing product with new data and reactivate
       const productId = existingProduct.product_id || existingProduct.id;
-      const response = await fetch(
-        `${API_URL}/products/${productId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...formData,
-            is_available: 1,
-          }),
-        }
-      );
+      const response = await fetch(`${API_URL}/products/${productId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          is_available: 1,
+        }),
+      });
 
       if (response.ok) {
         await fetchProducts();
