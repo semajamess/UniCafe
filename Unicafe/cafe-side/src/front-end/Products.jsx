@@ -232,8 +232,9 @@ const Products = () => {
     }
 
     try {
+      const productId = selectedProduct.product_id || selectedProduct.id;
       const response = await fetch(
-        `${API_URL}/products/${selectedProduct.id}`,
+        `${API_URL}/products/${productId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -271,8 +272,9 @@ const Products = () => {
 
     try {
       // Soft delete - set is_available to 0
+      const productId = productToDelete.product_id || productToDelete.id;
       const response = await fetch(
-        `${API_URL}/products/${productToDelete.id}`,
+        `${API_URL}/products/${productId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -285,7 +287,7 @@ const Products = () => {
 
       if (response.ok) {
         await fetchProducts();
-        const productName = productToDelete.name;
+        const productName = productToDelete.product_name || productToDelete.name;
         setShowDeleteConfirm(false);
         setProductToDelete(null);
         setDeleteConfirmText("");
@@ -303,8 +305,9 @@ const Products = () => {
   const handleReactivate = async () => {
     try {
       // Update existing product with new data and reactivate
+      const productId = existingProduct.product_id || existingProduct.id;
       const response = await fetch(
-        `${API_URL}/products/${existingProduct.id}`,
+        `${API_URL}/products/${productId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
