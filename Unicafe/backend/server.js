@@ -20,6 +20,7 @@ import cafeOrdersRoutes from "./routes/cafe-side/orders.js";
 import cafeCustomersRoutes from "./routes/cafe-side/customers.js";
 import cafePaymentsRoutes from "./routes/cafe-side/payments.js";
 import cafeStatsRoutes from "./routes/cafe-side/stats.js";
+import cafePosRoutes from "./routes/cafe-side/pos.js";
 
 dotenv.config();
 
@@ -60,6 +61,7 @@ app.use("/api/cafe/orders", cafeOrdersRoutes);
 app.use("/api/cafe/customers", cafeCustomersRoutes);
 app.use("/api/cafe/payments", cafePaymentsRoutes);
 app.use("/api/cafe/stats", cafeStatsRoutes);
+app.use("/api/cafe/pos", cafePosRoutes);
 
 // Seed database endpoint (for initial setup)
 app.post("/api/seed", async (req, res) => {

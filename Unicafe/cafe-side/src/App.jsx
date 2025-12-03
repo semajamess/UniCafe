@@ -3,6 +3,7 @@ import { useState } from "react";
 import AdminLayout from "./layouts/AdminLayout";
 import Login from "./front-end/Login";
 import Dashboard from "./front-end/Dashboard";
+import POS from "./front-end/POS";
 import Products from "./front-end/Products";
 import Orders from "./front-end/Orders";
 import Payments from "./front-end/Payments";
@@ -20,6 +21,7 @@ function App() {
         <Route path="/" element={<AdminLayout />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="pos" element={<POS />} />
           <Route path="products" element={<Products />} />
           <Route path="orders" element={<Orders />} />
           <Route path="payments" element={<Payments />} />

@@ -8,11 +8,13 @@ import {
   Coffee,
   X,
   CreditCard,
+  Monitor,
 } from "lucide-react";
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "POS", href: "/pos", icon: Monitor },
     { name: "Products", href: "/products", icon: Package },
     { name: "Orders", href: "/orders", icon: ShoppingCart },
     { name: "Payments", href: "/payments", icon: CreditCard },
