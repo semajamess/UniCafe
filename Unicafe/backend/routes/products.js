@@ -1,38 +1,41 @@
-import express from 'express';
-import db from '../database.js';
-import { searchDrinksAutocomplete, searchFoodAutocomplete } from '../services/apiService.js';
+import express from "express";
+import db from "../database.js";
+import {
+  searchDrinksAutocomplete,
+  searchFoodAutocomplete,
+} from "../services/apiService.js";
 
 const router = express.Router();
 
 // Autocomplete search endpoint (MUST BE BEFORE /:id)
-router.get('/autocomplete', async (req, res) => {
+router.get("/autocomplete", async (req, res) => {
   try {
     const { q, type } = req.query;
     if (!q || q.length < 1) {
       return res.json([]);
     }
-    
+
     let results = [];
-    if (type === 'Drinks') {
+    if (type === "Drinks") {
       results = await searchDrinksAutocomplete(q);
       // Mark category for drinks
-      results = results.map(r => ({ ...r, category: 'Drinks' }));
-    } else if (type === 'Food') {
+      results = results.map((r) => ({ ...r, category: "Drinks" }));
+    } else if (type === "Food") {
       results = await searchFoodAutocomplete(q);
       // Mark category for food
-      results = results.map(r => ({ ...r, category: 'Food' }));
+      results = results.map((r) => ({ ...r, category: "Food" }));
     } else {
       // Search both
       const [drinks, food] = await Promise.all([
         searchDrinksAutocomplete(q),
-        searchFoodAutocomplete(q)
+        searchFoodAutocomplete(q),
       ]);
       results = [
-        ...drinks.map(r => ({ ...r, category: 'Drinks' })),
-        ...food.map(r => ({ ...r, category: 'Food' }))
+        ...drinks.map((r) => ({ ...r, category: "Drinks" })),
+        ...food.map((r) => ({ ...r, category: "Food" })),
       ];
     }
-    
+
     res.json(results);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -40,14 +43,14 @@ router.get('/autocomplete', async (req, res) => {
 });
 
 // Check if product exists (including deactivated ones)
-router.get('/check-exists', async (req, res) => {
+router.get("/check-exists", async (req, res) => {
   try {
     const { name } = req.query;
     const product = await db.getAsync(
       `SELECT p.* FROM products p WHERE p.product_name = ?`,
       [name]
     );
-    
+
     if (product) {
       res.json({ exists: true, product });
     } else {
@@ -59,7 +62,7 @@ router.get('/check-exists', async (req, res) => {
 });
 
 // Get deactivated products for autocomplete
-router.get('/deactivated', async (req, res) => {
+router.get("/deactivated", async (req, res) => {
   try {
     const { q } = req.query;
     const products = await db.allAsync(
@@ -73,29 +76,29 @@ router.get('/deactivated', async (req, res) => {
 });
 
 // Get all products (CUSTOMER ACCESSIBLE - with filters)
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const { category, available, search } = req.query;
-    
+
     let query = `SELECT p.* FROM products p WHERE 1=1`;
     const params = [];
 
     if (category) {
-      query += ' AND p.product_category = ?';
+      query += " AND p.product_category = ?";
       params.push(category);
     }
 
     if (available !== undefined) {
-      query += ' AND p.product_is_available = ?';
-      params.push(available === 'true' ? 1 : 0);
+      query += " AND p.product_is_available = ?";
+      params.push(available === "true" ? 1 : 0);
     }
 
     if (search) {
-      query += ' AND p.product_name LIKE ?';
+      query += " AND p.product_name LIKE ?";
       params.push(`%${search}%`);
     }
 
-    query += ' ORDER BY p.product_created_at DESC';
+    query += " ORDER BY p.product_created_at DESC";
 
     const products = await db.allAsync(query, params);
     res.json(products);
@@ -105,12 +108,15 @@ router.get('/', async (req, res) => {
 });
 
 // Get product by ID (CUSTOMER ACCESSIBLE)
-router.get('/:id', async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
-    const product = await db.getAsync(`SELECT p.* FROM products p WHERE p.product_id = ?`, [req.params.id]);
-    
+    const product = await db.getAsync(
+      `SELECT p.* FROM products p WHERE p.product_id = ?`,
+      [req.params.id]
+    );
+
     if (!product) {
-      return res.status(404).json({ error: 'Product not found' });
+      return res.status(404).json({ error: "Product not found" });
     }
     res.json(product);
   } catch (error) {
@@ -119,29 +125,38 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create product (ADMIN ONLY)
-router.post('/', async (req, res) => {
+router.post("/", async (req, res) => {
   try {
-    const { name, description, price, stock, image_url, is_available } = req.body;
-    
+    const { name, description, price, stock, image_url, is_available } =
+      req.body;
+
     // Category should be one of the allowed enum values ('Drinks'|'Food')
     let category = req.body.category;
-    if (!category) category = 'Food';
+    if (!category) category = "Food";
 
     const result = await db.runAsync(
       `INSERT INTO products (product_category, product_name, product_description, product_price, product_stock, product_image_url, product_is_available) 
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [category, name, description, price, stock || 0, image_url, is_available !== undefined ? is_available : 1]
+      [
+        category,
+        name,
+        description,
+        price,
+        stock || 0,
+        image_url,
+        is_available !== undefined ? is_available : 1,
+      ]
     );
 
-    res.status(201).json({ 
-      product_id: result.lastID, 
-      product_category: category, 
-      product_name: name, 
-      product_description: description, 
+    res.status(201).json({
+      product_id: result.lastID,
+      product_category: category,
+      product_name: name,
+      product_description: description,
       product_price: price,
-      product_stock: stock, 
-      product_image_url: image_url, 
-      product_is_available: is_available
+      product_stock: stock,
+      product_image_url: image_url,
+      product_is_available: is_available,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -149,28 +164,100 @@ router.post('/', async (req, res) => {
 });
 
 // Update product (ADMIN ONLY)
-router.put('/:id', async (req, res) => {
+router.put("/:id", async (req, res) => {
   try {
-    const { category, name, description, price, stock, image_url, is_available } = req.body;
+    const {
+      category,
+      name,
+      description,
+      price,
+      stock,
+      image_url,
+      is_available,
+    } = req.body;
 
     await db.runAsync(
       `UPDATE products 
        SET product_category = ?, product_name = ?, product_description = ?, product_price = ?, product_stock = ?, product_image_url = ?, product_is_available = ? 
        WHERE product_id = ?`,
-      [category, name, description, price, stock, image_url, is_available, req.params.id]
+      [
+        category,
+        name,
+        description,
+        price,
+        stock,
+        image_url,
+        is_available,
+        req.params.id,
+      ]
     );
 
-    res.json({ product_id: req.params.id, product_category: category, product_name: name, product_description: description, product_price: price, product_stock: stock, product_image_url: image_url, product_is_available: is_available });
+    res.json({
+      product_id: req.params.id,
+      product_category: category,
+      product_name: name,
+      product_description: description,
+      product_price: price,
+      product_stock: stock,
+      product_image_url: image_url,
+      product_is_available: is_available,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update product stock (ADMIN ONLY) - PATCH endpoint for stock updates
+router.patch("/:id/stock", async (req, res) => {
+  try {
+    const { quantity, operation } = req.body; // operation: 'set', 'add', 'subtract'
+
+    if (quantity === undefined) {
+      return res.status(400).json({ error: "quantity is required" });
+    }
+
+    const op = operation || "set"; // default to 'set'
+
+    let updateQuery;
+    if (op === "add") {
+      updateQuery = `UPDATE products SET product_stock = product_stock + ? WHERE product_id = ?`;
+    } else if (op === "subtract") {
+      updateQuery = `UPDATE products SET product_stock = MAX(0, product_stock - ?) WHERE product_id = ?`;
+    } else {
+      // 'set' or default
+      updateQuery = `UPDATE products SET product_stock = ? WHERE product_id = ?`;
+    }
+
+    await db.runAsync(updateQuery, [quantity, req.params.id]);
+
+    // Fetch updated product
+    const updatedProduct = await db.getAsync(
+      "SELECT * FROM products WHERE product_id = ?",
+      [req.params.id]
+    );
+
+    if (!updatedProduct) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    res.json({
+      message: `Product stock ${op} operation completed`,
+      product_id: updatedProduct.product_id,
+      product_name: updatedProduct.product_name,
+      product_stock: updatedProduct.product_stock,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // Delete product (ADMIN ONLY)
-router.delete('/:id', async (req, res) => {
+router.delete("/:id", async (req, res) => {
   try {
-    await db.runAsync('DELETE FROM products WHERE product_id = ?', [req.params.id]);
-    res.json({ message: 'Product deleted successfully' });
+    await db.runAsync("DELETE FROM products WHERE product_id = ?", [
+      req.params.id,
+    ]);
+    res.json({ message: "Product deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

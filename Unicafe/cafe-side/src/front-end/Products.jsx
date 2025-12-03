@@ -1,15 +1,7 @@
 import { useState, useEffect } from "react";
-import {
-  Plus,
-  Search,
-  Edit2,
-  Trash2,
-  X,
-  Coffee,
-  Loader,
-} from "lucide-react";
+import { Plus, Search, Edit2, Trash2, X, Coffee, Loader } from "lucide-react";
 
-const API_URL = 'http://localhost:3000/api/cafe';
+const API_URL = "http://localhost:3000/api/cafe";
 
 const Products = () => {
   const [showModal, setShowModal] = useState(false);
@@ -28,7 +20,10 @@ const Products = () => {
   const [autocompleteSuggestions, setAutocompleteSuggestions] = useState([]);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [successMessage, setSuccessMessage] = useState({ title: "", message: "" });
+  const [successMessage, setSuccessMessage] = useState({
+    title: "",
+    message: "",
+  });
 
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -50,18 +45,21 @@ const Products = () => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (showAutocomplete && !event.target.closest('.autocomplete-container')) {
+      if (
+        showAutocomplete &&
+        !event.target.closest(".autocomplete-container")
+      ) {
         setShowAutocomplete(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showAutocomplete]);
 
   // Clear autocomplete suggestions when modal mode changes (only used in add)
   useEffect(() => {
-    if (modalMode !== 'add') {
+    if (modalMode !== "add") {
       setShowAutocomplete(false);
       setAutocompleteSuggestions([]);
     }
@@ -74,7 +72,7 @@ const Products = () => {
       const data = await response.json();
       setProducts(data);
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error("Error fetching products:", error);
     } finally {
       setLoading(false);
     }
@@ -82,19 +80,21 @@ const Products = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/customer/categories`);
+      const response = await fetch(
+        `http://localhost:3000/api/customer/categories`
+      );
       const data = await response.json();
       setCategories(data);
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.error("Error fetching categories:", error);
     }
   };
 
   const handleNameChange = async (value) => {
     setFormData({ ...formData, name: value });
-    
+
     // Only fetch recommendations/autocomplete when adding a new product
-    if (modalMode !== 'add') {
+    if (modalMode !== "add") {
       setShowAutocomplete(false);
       setAutocompleteSuggestions([]);
       return;
@@ -103,36 +103,52 @@ const Products = () => {
     if (value.length >= 1) {
       try {
         // First, get deactivated products
-        console.log('Fetching deactivated products for:', value);
-        const dbResponse = await fetch(`${API_URL}/products/deactivated?q=${value}`);
+        console.log("Fetching deactivated products for:", value);
+        const dbResponse = await fetch(
+          `${API_URL}/products/deactivated?q=${value}`
+        );
         const deactivatedProducts = await dbResponse.json();
-        console.log('Deactivated products response:', deactivatedProducts);
-        
+        console.log("Deactivated products response:", deactivatedProducts);
+
         // Then get API suggestions
-        const categoryName = formData.category || '';
-        console.log('Fetching API suggestions for:', value, 'category:', categoryName);
-        const apiResponse = await fetch(`${API_URL}/products/autocomplete?q=${value}&type=${categoryName}`);
+        const categoryName = formData.category || "";
+        console.log(
+          "Fetching API suggestions for:",
+          value,
+          "category:",
+          categoryName
+        );
+        const apiResponse = await fetch(
+          `${API_URL}/products/autocomplete?q=${value}&type=${categoryName}`
+        );
         const apiSuggestions = await apiResponse.json();
-        console.log('API suggestions response:', apiSuggestions);
-        
+        console.log("API suggestions response:", apiSuggestions);
+
         // Combine results
-        const deactivatedList = Array.isArray(deactivatedProducts) ? deactivatedProducts.map(p => ({ 
-          ...p, 
-          isDeactivated: true,
-        })) : [];
-        
-        const apiList = Array.isArray(apiSuggestions) ? apiSuggestions.filter(s => 
-          !deactivatedList.find(d => d.name.toLowerCase() === s.name.toLowerCase())
-        ) : [];
-        
+        const deactivatedList = Array.isArray(deactivatedProducts)
+          ? deactivatedProducts.map((p) => ({
+              ...p,
+              isDeactivated: true,
+            }))
+          : [];
+
+        const apiList = Array.isArray(apiSuggestions)
+          ? apiSuggestions.filter(
+              (s) =>
+                !deactivatedList.find(
+                  (d) => d.name.toLowerCase() === s.name.toLowerCase()
+                )
+            )
+          : [];
+
         const combined = [...deactivatedList, ...apiList];
-        
-        console.log('Final autocomplete results:', combined);
-        console.log('showAutocomplete will be:', combined.length > 0);
+
+        console.log("Final autocomplete results:", combined);
+        console.log("showAutocomplete will be:", combined.length > 0);
         setAutocompleteSuggestions(combined);
         setShowAutocomplete(combined.length > 0);
       } catch (error) {
-        console.error('Error fetching autocomplete:', error);
+        console.error("Error fetching autocomplete:", error);
         setAutocompleteSuggestions([]);
         setShowAutocomplete(false);
       }
@@ -149,11 +165,11 @@ const Products = () => {
       setFormData({
         ...formData,
         name: suggestion.name,
-        category: suggestion.category || suggestion.category_name || '',
-        description: suggestion.description || '',
-        price: suggestion.price || '',
-        stock: suggestion.stock || '',
-        image_url: suggestion.image_url || '',
+        category: suggestion.category || suggestion.category_name || "",
+        description: suggestion.description || "",
+        price: suggestion.price || "",
+        stock: suggestion.stock || "",
+        image_url: suggestion.image_url || "",
       });
       setShowReactivateModal(true);
     } else {
@@ -161,11 +177,11 @@ const Products = () => {
       setFormData({
         ...formData,
         name: suggestion.name,
-        category: suggestion.category || suggestion.category_name || '',
-        description: suggestion.description || '',
-        image_url: suggestion.image_url || '',
-        price: '',
-        stock: '',
+        category: suggestion.category || suggestion.category_name || "",
+        description: suggestion.description || "",
+        image_url: suggestion.image_url || "",
+        price: "",
+        stock: "",
       });
     }
     setShowAutocomplete(false);
@@ -192,12 +208,19 @@ const Products = () => {
     setSelectedProduct(product);
     setFormData({
       name: product.product_name || product.name,
-      category: product.product_category || product.category || product.category_name || '',
+      category:
+        product.product_category ||
+        product.category ||
+        product.category_name ||
+        "",
       price: product.product_price || product.price,
       stock: product.product_stock || product.stock || 0,
       description: product.product_description || product.description || "",
       image_url: product.product_image_url || product.image_url || "",
-      is_available: product.product_is_available !== undefined ? product.product_is_available : product.is_available,
+      is_available:
+        product.product_is_available !== undefined
+          ? product.product_is_available
+          : product.is_available,
     });
     setShowModal(true);
   };
@@ -207,14 +230,15 @@ const Products = () => {
       alert("Please type SAVE to confirm changes");
       return;
     }
-    
+
     try {
-      const response = await fetch(`${API_URL}/products/${selectedProduct.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+      const productId = selectedProduct.product_id || selectedProduct.id;
+      const response = await fetch(`${API_URL}/products/${productId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
-      
+
       if (response.ok) {
         await fetchProducts();
         setShowModal(false);
@@ -222,12 +246,12 @@ const Products = () => {
         setSaveConfirmText("");
         setSuccessMessage({
           title: "Product Updated!",
-          message: `${formData.name} has been successfully updated.`
+          message: `${formData.name} has been successfully updated.`,
         });
         setShowSuccessModal(true);
       }
     } catch (error) {
-      console.error('Error saving product:', error);
+      console.error("Error saving product:", error);
     }
   };
 
@@ -242,47 +266,50 @@ const Products = () => {
       alert("Please type DELETE to confirm");
       return;
     }
-    
+
     try {
       // Soft delete - set is_available to 0
-      const response = await fetch(`${API_URL}/products/${productToDelete.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          ...productToDelete, 
-          is_available: 0 
-        })
+      const productId = productToDelete.product_id || productToDelete.id;
+      const response = await fetch(`${API_URL}/products/${productId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...productToDelete,
+          is_available: 0,
+        }),
       });
-      
+
       if (response.ok) {
         await fetchProducts();
-        const productName = productToDelete.name;
+        const productName =
+          productToDelete.product_name || productToDelete.name;
         setShowDeleteConfirm(false);
         setProductToDelete(null);
         setDeleteConfirmText("");
         setSuccessMessage({
           title: "Product Deactivated!",
-          message: `${productName} has been successfully deactivated. You can reactivate it anytime.`
+          message: `${productName} has been successfully deactivated. You can reactivate it anytime.`,
         });
         setShowSuccessModal(true);
       }
     } catch (error) {
-      console.error('Error deactivating product:', error);
+      console.error("Error deactivating product:", error);
     }
   };
 
   const handleReactivate = async () => {
     try {
       // Update existing product with new data and reactivate
-      const response = await fetch(`${API_URL}/products/${existingProduct.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          ...formData, 
-          is_available: 1 
-        })
+      const productId = existingProduct.product_id || existingProduct.id;
+      const response = await fetch(`${API_URL}/products/${productId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          is_available: 1,
+        }),
       });
-      
+
       if (response.ok) {
         await fetchProducts();
         setShowModal(false);
@@ -290,24 +317,24 @@ const Products = () => {
         setExistingProduct(null);
         setSuccessMessage({
           title: "Product Reactivated!",
-          message: `${formData.name} is now available again.`
+          message: `${formData.name} is now available again.`,
         });
         setShowSuccessModal(true);
       }
     } catch (error) {
-      console.error('Error reactivating product:', error);
+      console.error("Error reactivating product:", error);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Show save confirmation modal for edits
     if (modalMode === "edit") {
       setShowSaveConfirm(true);
       return;
     }
-    
+
     try {
       const productData = {
         ...formData,
@@ -317,53 +344,69 @@ const Products = () => {
 
       if (modalMode === "add") {
         // Check if product already exists but is deactivated
-        const checkResponse = await fetch(`${API_URL}/products/check-exists?name=${encodeURIComponent(formData.name)}`);
+        const checkResponse = await fetch(
+          `${API_URL}/products/check-exists?name=${encodeURIComponent(
+            formData.name
+          )}`
+        );
         const existingData = await checkResponse.json();
-        
+
         if (existingData.exists && !existingData.product.is_available) {
           setExistingProduct(existingData.product);
           setShowReactivateModal(true);
           return;
         }
-        
+
         const response = await fetch(`${API_URL}/products`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(productData),
         });
-        
+
         if (response.ok) {
           await fetchProducts();
           setShowModal(false);
           setSuccessMessage({
             title: "Product Added!",
-            message: `${formData.name} has been successfully added to the menu.`
+            message: `${formData.name} has been successfully added to the menu.`,
           });
           setShowSuccessModal(true);
         }
       } else {
-        const response = await fetch(`${API_URL}/products/${selectedProduct.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(productData),
-        });
-        
+        const response = await fetch(
+          `${API_URL}/products/${selectedProduct.id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(productData),
+          }
+        );
+
         if (response.ok) {
           await fetchProducts();
           setShowModal(false);
         }
       }
     } catch (error) {
-      console.error('Error saving product:', error);
+      console.error("Error saving product:", error);
     }
   };
 
   const filteredProducts = products.filter((product) => {
-    const name = product.product_name || product.name || '';
+    const name = product.product_name || product.name || "";
     const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
-    const prodCategory = product.product_category || product.category || product.category_name || '';
-    const matchesCategory = selectedCategory === "all" || prodCategory.toLowerCase() === selectedCategory.toLowerCase();
-    const isActive = (product.product_is_available !== undefined ? product.product_is_available : product.is_available) === 1;
+    const prodCategory =
+      product.product_category ||
+      product.category ||
+      product.category_name ||
+      "";
+    const matchesCategory =
+      selectedCategory === "all" ||
+      prodCategory.toLowerCase() === selectedCategory.toLowerCase();
+    const isActive =
+      (product.product_is_available !== undefined
+        ? product.product_is_available
+        : product.is_available) === 1;
     return matchesSearch && matchesCategory && isActive;
   });
 
@@ -373,7 +416,9 @@ const Products = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Products</h1>
-          <p className="text-slate-500 mt-1">Manage your cafe menu and inventory</p>
+          <p className="text-slate-500 mt-1">
+            Manage your cafe menu and inventory
+          </p>
         </div>
         <button
           onClick={handleAddProduct}
@@ -404,7 +449,9 @@ const Products = () => {
           >
             <option value="all">All Categories</option>
             {categories.map((cat) => (
-              <option key={cat.id} value={cat.name}>{cat.name}</option>
+              <option key={cat.id} value={cat.name}>
+                {cat.name}
+              </option>
             ))}
           </select>
         </div>
@@ -424,16 +471,26 @@ const Products = () => {
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
-                  {(product.product_image_url || product.image_url) ? (
-                    <img src={product.product_image_url || product.image_url} alt={product.product_name || product.name} className="w-16 h-16 rounded-lg object-cover" />
+                  {product.product_image_url || product.image_url ? (
+                    <img
+                      src={product.product_image_url || product.image_url}
+                      alt={product.product_name || product.name}
+                      className="w-16 h-16 rounded-lg object-cover"
+                    />
                   ) : (
                     <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center text-3xl">
                       ☕
                     </div>
                   )}
                   <div>
-                    <h3 className="font-bold text-lg text-slate-900">{product.product_name || product.name}</h3>
-                    <span className="text-sm text-amber-600 font-semibold">{product.product_category || product.category || product.category_name}</span>
+                    <h3 className="font-bold text-lg text-slate-900">
+                      {product.product_name || product.name}
+                    </h3>
+                    <span className="text-sm text-amber-600 font-semibold">
+                      {product.product_category ||
+                        product.category ||
+                        product.category_name}
+                    </span>
                   </div>
                 </div>
                 <div className="flex space-x-2">
@@ -451,18 +508,49 @@ const Products = () => {
                   </button>
                 </div>
               </div>
-              
-              <p className="text-sm text-slate-600 mb-4 line-clamp-2">{product.product_description || product.description}</p>
-              
+
+              <p className="text-sm text-slate-600 mb-4 line-clamp-2">
+                {product.product_description || product.description}
+              </p>
+
               <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                 <div>
-                  <div className="text-2xl font-bold text-slate-900">₱{parseFloat(product.product_price || product.price || 0).toFixed(2)}</div>
-                  <div className="text-xs text-slate-500 mt-1">Stock: {product.product_stock || product.stock || 0} units</div>
+                  <div className="text-2xl font-bold text-slate-900">
+                    ₱
+                    {parseFloat(
+                      product.product_price || product.price || 0
+                    ).toFixed(2)}
+                  </div>
+                  <div
+                    className={`text-xs font-semibold mt-1 px-2 py-1 rounded inline-block ${
+                      (product.product_stock || product.stock || 0) > 10
+                        ? "bg-green-100 text-green-700"
+                        : (product.product_stock || product.stock || 0) > 0
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {product.product_stock || product.stock || 0} in stock
+                  </div>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  (product.product_is_available !== undefined ? product.product_is_available : product.is_available) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                }`}>
-                  {(product.product_is_available !== undefined ? product.product_is_available : product.is_available) ? 'Available' : 'Unavailable'}
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    (
+                      product.product_is_available !== undefined
+                        ? product.product_is_available
+                        : product.is_available
+                    )
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {(
+                    product.product_is_available !== undefined
+                      ? product.product_is_available
+                      : product.is_available
+                  )
+                    ? "Available"
+                    : "Unavailable"}
                 </span>
               </div>
             </div>
@@ -497,95 +585,140 @@ const Products = () => {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="relative autocomplete-container">
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Product Name</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Product Name
+                </label>
                 <input
                   type="text"
                   required
                   value={formData.name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  onFocus={() => formData.name.length >= 1 && setShowAutocomplete(true)}
+                  onFocus={() =>
+                    formData.name.length >= 1 && setShowAutocomplete(true)
+                  }
                   className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                   placeholder="e.g., Cappuccino"
                 />
-                {modalMode === 'add' && showAutocomplete && autocompleteSuggestions.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border-2 border-amber-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
-                    {autocompleteSuggestions.map((suggestion, index) => (
-                      <div
-                        key={index}
-                        onClick={() => handleSelectSuggestion(suggestion)}
-                        className="px-4 py-3 hover:bg-amber-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors"
-                      >
-                        <div className="flex items-center space-x-3">
-                          {suggestion.image_url && (
-                            <img src={suggestion.image_url} alt={suggestion.name} className="w-10 h-10 rounded-lg object-cover" />
-                          )}
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2">
-                              <div className="font-semibold text-slate-900">{suggestion.name}</div>
-                              {suggestion.isDeactivated && (
-                                <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">Deactivated</span>
-                              )}
-                            </div>
-                            <div className="text-xs text-slate-500">
-                              {suggestion.isDeactivated ? 'Click to reactivate' : 'From API - Enter price & stock manually'}
+                {modalMode === "add" &&
+                  showAutocomplete &&
+                  autocompleteSuggestions.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border-2 border-amber-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                      {autocompleteSuggestions.map((suggestion, index) => (
+                        <div
+                          key={index}
+                          onClick={() => handleSelectSuggestion(suggestion)}
+                          className="px-4 py-3 hover:bg-amber-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors"
+                        >
+                          <div className="flex items-center space-x-3">
+                            {suggestion.image_url && (
+                              <img
+                                src={suggestion.image_url}
+                                alt={suggestion.name}
+                                className="w-10 h-10 rounded-lg object-cover"
+                              />
+                            )}
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <div className="font-semibold text-slate-900">
+                                  {suggestion.name}
+                                </div>
+                                {suggestion.isDeactivated && (
+                                  <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">
+                                    Deactivated
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-slate-500">
+                                {suggestion.isDeactivated
+                                  ? "Click to reactivate"
+                                  : "From API - Enter price & stock manually"}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  )}
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Category (Auto-filled from API)</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Category (Auto-filled from API)
+                </label>
                 <select
                   required
                   value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, category: e.target.value })
+                  }
                   className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-slate-50"
                   disabled={modalMode === "add"}
                 >
-                  {modalMode === 'add' && <option value="">Auto-detected</option>}
+                  {modalMode === "add" && (
+                    <option value="">Auto-detected</option>
+                  )}
                   {categories.map((cat) => (
-                    <option key={cat.id} value={cat.name || cat.id}>{cat.name}</option>
+                    <option key={cat.id} value={cat.name || cat.id}>
+                      {cat.name}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Price (₱) *</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Price (₱) *
+                  </label>
                   <input
                     type="number"
                     required
                     step="0.01"
                     min="0"
                     value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, price: e.target.value })
+                    }
                     className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                     placeholder="99.00"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Stock Quantity *</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Stock Quantity *
+                  </label>
                   <input
                     type="number"
                     required
                     min="0"
                     value={formData.stock}
-                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, stock: e.target.value })
+                    }
                     className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                     placeholder="50"
                   />
+                  {modalMode === "edit" && (
+                    <p className="text-xs text-slate-500 mt-2">
+                      Current stock:{" "}
+                      {selectedProduct?.product_stock ||
+                        selectedProduct?.stock ||
+                        0}{" "}
+                      units
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Description</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Description
+                </label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   rows="3"
                   className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
                   placeholder="Product description..."
@@ -593,11 +726,15 @@ const Products = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Image URL</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Image URL
+                </label>
                 <input
                   type="url"
                   value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, image_url: e.target.value })
+                  }
                   className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                   placeholder="https://..."
                 />
@@ -608,10 +745,15 @@ const Products = () => {
                   type="checkbox"
                   id="is_available"
                   checked={formData.is_available}
-                  onChange={(e) => setFormData({ ...formData, is_available: e.target.checked })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, is_available: e.target.checked })
+                  }
                   className="w-5 h-5 text-amber-600 border-2 border-slate-300 rounded focus:ring-2 focus:ring-amber-500"
                 />
-                <label htmlFor="is_available" className="text-sm font-semibold text-slate-700">
+                <label
+                  htmlFor="is_available"
+                  className="text-sm font-semibold text-slate-700"
+                >
                   Available for sale
                 </label>
               </div>
@@ -641,9 +783,14 @@ const Products = () => {
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
-            <h3 className="text-xl font-bold text-slate-900 mb-4">Deactivate Product?</h3>
+            <h3 className="text-xl font-bold text-slate-900 mb-4">
+              Deactivate Product?
+            </h3>
             <p className="text-slate-600 mb-4">
-              This will deactivate <span className="font-bold">{productToDelete?.name}</span>. The product will be hidden from customers but can be reactivated later.
+              This will deactivate{" "}
+              <span className="font-bold">{productToDelete?.name}</span>. The
+              product will be hidden from customers but can be reactivated
+              later.
             </p>
             <div className="mb-6">
               <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -684,9 +831,12 @@ const Products = () => {
       {showSaveConfirm && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
-            <h3 className="text-xl font-bold text-slate-900 mb-4">Confirm Changes</h3>
+            <h3 className="text-xl font-bold text-slate-900 mb-4">
+              Confirm Changes
+            </h3>
             <p className="text-slate-600 mb-4">
-              You are about to save changes to <span className="font-bold">{selectedProduct?.name}</span>.
+              You are about to save changes to{" "}
+              <span className="font-bold">{selectedProduct?.name}</span>.
             </p>
             <div className="mb-6">
               <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -727,9 +877,12 @@ const Products = () => {
       {showReactivateModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
-            <h3 className="text-xl font-bold text-amber-600 mb-4">Product Already Exists!</h3>
+            <h3 className="text-xl font-bold text-amber-600 mb-4">
+              Product Already Exists!
+            </h3>
             <p className="text-slate-600 mb-4">
-              <span className="font-bold">{existingProduct?.name}</span> already exists but is currently deactivated.
+              <span className="font-bold">{existingProduct?.name}</span> already
+              exists but is currently deactivated.
             </p>
             <p className="text-slate-600 mb-6">
               Would you like to reactivate it with the new information?
@@ -762,21 +915,29 @@ const Products = () => {
             <div className="text-center">
               {/* Success Icon */}
               <div className="mx-auto mb-4 w-16 h-16 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+                <svg
+                  className="w-8 h-8 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="3"
+                    d="M5 13l4 4L19 7"
+                  ></path>
                 </svg>
               </div>
-              
+
               {/* Title */}
               <h3 className="text-2xl font-bold text-slate-800 mb-2">
                 {successMessage.title}
               </h3>
-              
+
               {/* Message */}
-              <p className="text-slate-600 mb-6">
-                {successMessage.message}
-              </p>
-              
+              <p className="text-slate-600 mb-6">{successMessage.message}</p>
+
               {/* Close Button */}
               <button
                 onClick={() => setShowSuccessModal(false)}
