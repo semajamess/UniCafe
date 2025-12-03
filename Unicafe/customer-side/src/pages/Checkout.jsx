@@ -11,6 +11,7 @@ const Checkout = () => {
   const { cart, getTotalPrice, clearCart } = useCart()
   const { user, isAuthenticated, token } = useAuth()
   const [loading, setLoading] = useState(false)
+  const [orderCompleted, setOrderCompleted] = useState(false) // Prevent redirect after successful order
   const [otpModal, setOtpModal] = useState({ open: false, requestId: null })
   const [otpValue, setOtpValue] = useState('')
   const [successModal, setSuccessModal] = useState({ open: false, orderData: null, orderId: null })
@@ -208,6 +209,9 @@ const Checkout = () => {
       setOtpModal({ open: false, requestId: null })
       setOtpValue('')
       
+      // Mark order as completed BEFORE clearing cart to prevent redirect
+      setOrderCompleted(true)
+      
       // Clear the cart immediately after successful payment
       clearCart()
       
@@ -246,7 +250,7 @@ const Checkout = () => {
     navigate('/')
   }
 
-  if (cart.length === 0) {
+  if (cart.length === 0 && !orderCompleted) {
     navigate('/cart')
     return null
   }

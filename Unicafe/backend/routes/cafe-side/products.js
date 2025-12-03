@@ -1,7 +1,46 @@
 import express from 'express';
 import db from '../../database.js';
+import {
+  searchDrinksAutocomplete,
+  searchFoodAutocomplete,
+} from '../../services/apiService.js';
 
 const router = express.Router();
+
+// Autocomplete search endpoint (MUST BE BEFORE /:id)
+router.get('/autocomplete', async (req, res) => {
+  try {
+    const { q, type } = req.query;
+    if (!q || q.length < 1) {
+      return res.json([]);
+    }
+
+    let results = [];
+    if (type === 'Drinks') {
+      results = await searchDrinksAutocomplete(q);
+      // Mark category for drinks
+      results = results.map((r) => ({ ...r, category: 'Drinks' }));
+    } else if (type === 'Food') {
+      results = await searchFoodAutocomplete(q);
+      // Mark category for food
+      results = results.map((r) => ({ ...r, category: 'Food' }));
+    } else {
+      // Search both
+      const [drinks, food] = await Promise.all([
+        searchDrinksAutocomplete(q),
+        searchFoodAutocomplete(q),
+      ]);
+      results = [
+        ...drinks.map((r) => ({ ...r, category: 'Drinks' })),
+        ...food.map((r) => ({ ...r, category: 'Food' })),
+      ];
+    }
+
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Check if product exists
 router.get('/check-exists', async (req, res) => {
