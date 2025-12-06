@@ -117,9 +117,9 @@ const Contact = () => {
                   <div>
                     <h3 className="font-bold text-gray-800 mb-1">Visit Us</h3>
                     <p className="text-gray-600">
-                      123 University Avenue
+                      123 Main Street
                       <br />
-                      Campus Building A, Ground Floor
+                      Downtown District, Ground Floor
                       <br />
                       City, State 12345
                     </p>

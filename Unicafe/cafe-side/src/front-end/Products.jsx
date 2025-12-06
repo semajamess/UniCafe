@@ -44,6 +44,14 @@ const Products = () => {
   }, []);
 
   useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      fetchProducts();
+    }, 500);
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchTerm, selectedCategory]);
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (
         showAutocomplete &&
@@ -68,7 +76,19 @@ const Products = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/products`);
+      const params = new URLSearchParams();
+
+      if (selectedCategory !== 'all') {
+        params.append('category', selectedCategory);
+      }
+
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
+
+      params.append('available', 'true');
+
+      const response = await fetch(`${API_URL}/products?${params.toString()}`);
       const data = await response.json();
       setProducts(data);
     } catch (error) {
@@ -392,23 +412,7 @@ const Products = () => {
     }
   };
 
-  const filteredProducts = products.filter((product) => {
-    const name = product.product_name || product.name || "";
-    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
-    const prodCategory =
-      product.product_category ||
-      product.category ||
-      product.category_name ||
-      "";
-    const matchesCategory =
-      selectedCategory === "all" ||
-      prodCategory.toLowerCase() === selectedCategory.toLowerCase();
-    const isActive =
-      (product.product_is_available !== undefined
-        ? product.product_is_available
-        : product.is_available) === 1;
-    return matchesSearch && matchesCategory && isActive;
-  });
+  const filteredProducts = products;
 
   return (
     <div className="space-y-6 animate-fade-in">

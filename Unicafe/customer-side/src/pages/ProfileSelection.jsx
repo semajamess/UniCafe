@@ -80,8 +80,8 @@ const ProfileSelection = () => {
         if (data.token) {
           localStorage.setItem('token', data.token);
         }
-        // Navigate to menu
-        navigate('/menu');
+        // Force page reload to reflect changes, then navigate
+        window.location.href = '/menu';
       } else {
         alert(data.error || 'Failed to save profile');
       }

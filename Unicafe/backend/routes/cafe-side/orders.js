@@ -58,14 +58,23 @@ router.get('/:id', async (req, res) => {
 router.patch('/:id/status', async (req, res) => {
   try {
     const { status } = req.body;
+    console.log(`Updating order ${req.params.id} to status: ${status}`);
     
-    if (!['pending', 'processing', 'completed', 'cancelled'].includes(status)) {
+    if (!['pending', 'processing', 'ready', 'completed', 'cancelled'].includes(status)) {
+      console.log(`Invalid status rejected: ${status}`);
       return res.status(400).json({ error: 'Invalid status' });
     }
 
-    await db.runAsync('UPDATE orders SET order_status = ? WHERE order_id = ?', [status, req.params.id]);
-    res.json({ id: req.params.id, status, message: 'Order status updated' });
+    const result = await db.runAsync('UPDATE orders SET order_status = ? WHERE order_id = ?', [status, req.params.id]);
+    console.log(`Update result:`, result);
+    
+    // Verify the update
+    const updated = await db.getAsync('SELECT order_id, order_status FROM orders WHERE order_id = ?', [req.params.id]);
+    console.log(`Updated order:`, updated);
+    
+    res.json({ id: req.params.id, status, message: 'Order status updated', updatedOrder: updated });
   } catch (error) {
+    console.error('Error updating order status:', error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -401,7 +401,7 @@ const POS = () => {
                 <p className="text-slate-500 font-medium">Loading products...</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                 {filteredProducts.map((product) => {
                   const inCart = cart.find((item) => item.productId === product.product_id);
                   const isOutOfStock = product.product_stock <= 0;

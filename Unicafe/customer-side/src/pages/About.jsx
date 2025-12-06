@@ -21,7 +21,7 @@ const About = () => {
             transition={{ delay: 0.1 }}
             className="text-xl text-gray-700 max-w-3xl mx-auto"
           >
-            Where passion for coffee meets student life
+            Where passion for coffee meets community
           </motion.p>
         </div>
       </section>
@@ -37,12 +37,12 @@ const About = () => {
               <h2 className="text-4xl font-bold gradient-text mb-6">Our Story</h2>
               <div className="space-y-4 text-gray-700 text-lg">
                 <p>
-                  UniCafé was born from a simple idea: students deserve great coffee without breaking the bank. 
-                  Founded in 2020, we started as a small coffee cart on campus and quickly became the heartbeat 
-                  of student life.
+                  UniCafé was born from a simple idea: everyone deserves great coffee at affordable prices. 
+                  Founded in 2020, we started as a small coffee shop and quickly became the heartbeat 
+                  of our community.
                 </p>
                 <p>
-                  Today, we're proud to serve thousands of students, faculty, and staff every week, providing 
+                  Today, we're proud to serve thousands of customers every week, providing 
                   not just exceptional coffee, but a welcoming space where ideas flow and friendships flourish.
                 </p>
                 <p>
@@ -64,7 +64,7 @@ const About = () => {
                   Our Mission
                 </h3>
                 <p className="text-gray-700 text-lg">
-                  To fuel student success, one cup at a time. We're committed to providing 
+                  To fuel your day, one cup at a time. We're committed to providing 
                   quality coffee, affordable prices, and a community space where everyone belongs.
                 </p>
               </div>
@@ -97,12 +97,12 @@ const About = () => {
               {
                 icon: <Heart className="w-12 h-12" />,
                 title: 'Community Love',
-                description: 'Building connections and supporting our campus community every day.'
+                description: 'Building connections and supporting our local community every day.'
               },
               {
                 icon: <Users className="w-12 h-12" />,
-                title: 'Student Friendly',
-                description: 'Affordable pricing and flexible hours designed around student schedules.'
+                title: 'Customer Friendly',
+                description: 'Affordable pricing and flexible hours designed for your convenience.'
               },
               {
                 icon: <Award className="w-12 h-12" />,
@@ -141,7 +141,7 @@ const About = () => {
                 { number: '10K+', label: 'Happy Customers' },
                 { number: '50K+', label: 'Cups Served' },
                 { number: '4.9/5', label: 'Average Rating' },
-                { number: '24/7', label: 'Student Support' }
+                { number: '24/7', label: 'Customer Support' }
               ].map((stat, index) => (
                 <motion.div
                   key={index}

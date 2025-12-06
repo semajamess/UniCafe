@@ -11,6 +11,9 @@ import {
   CheckCircle,
   XCircle,
   Loader,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -21,16 +24,44 @@ const Orders = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusAction, setStatusAction] = useState(null); // { orderId, newStatus, orderData }
   const [orders, setOrders] = useState([]);
+  const [allOrders, setAllOrders] = useState([]); // For consistent stats
   const [loading, setLoading] = useState(false);
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    fetchAllOrders(); // Fetch all orders for stats on mount
+  }, []);
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
       fetchOrders();
+      setCurrentPage(1); // Reset to page 1 when filters change
     }, 500);
 
     return () => clearTimeout(debounceTimer);
   }, [searchTerm, selectedStatus]);
+
+  const fetchAllOrders = async () => {
+    try {
+      const response = await fetch(`${API_URL}/orders`);
+      const data = await response.json();
+
+      const transformedOrders = data.map((order) => ({
+        id: `#ORD-${order.order_id}`,
+        status: order.order_status,
+      }));
+
+      setAllOrders(transformedOrders);
+    } catch (error) {
+      console.error("Error fetching all orders:", error);
+    }
+  };
 
   const fetchOrders = async () => {
     try {
@@ -47,6 +78,8 @@ const Orders = () => {
 
       const response = await fetch(`${API_URL}/orders?${params.toString()}`);
       const data = await response.json();
+
+      console.log("Fetched orders from backend:", data.slice(0, 2)); // Log first 2 orders
 
       // Transform backend data to match frontend structure
       const transformedOrders = data.map((order) => ({
@@ -83,6 +116,7 @@ const Orders = () => {
 
   const getStatusBadge = (status) => {
     const config = statusConfig[status];
+    if (!config) return "bg-slate-100 text-slate-700";
     const colorClasses = {
       yellow: "bg-yellow-100 text-yellow-700",
       blue: "bg-blue-100 text-blue-700",
@@ -90,33 +124,49 @@ const Orders = () => {
       green: "bg-green-100 text-green-700",
       red: "bg-red-100 text-red-700",
     };
-    return colorClasses[config.color];
+    return colorClasses[config.color] || "bg-slate-100 text-slate-700";
   };
 
-  const handleStatusChange = async (orderId, newStatus) => {
-    try {
-      // Extract numeric ID from "#ORD-123" format
-      const numericId = orderId.replace("#ORD-", "");
+  const handleStatusChange = (orderId, newStatus) => {
+    const order = orders.find(o => o.id === orderId);
+    setStatusAction({ orderId, newStatus, orderData: order });
+    setShowStatusModal(true);
+  };
 
+  const confirmStatusChange = async () => {
+    if (!statusAction) return;
+    
+    try {
+      const numericId = statusAction.orderId.replace("#ORD-", "");
+      
       const response = await fetch(`${API_URL}/orders/${numericId}/status`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status: newStatus }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: statusAction.newStatus }),
       });
 
-      if (response.ok) {
-        // Update local state
-        setOrders(
-          orders.map((order) =>
-            order.id === orderId ? { ...order, status: newStatus } : order
-          )
-        );
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Server error:", errorData);
+        alert(`Failed to update status: ${errorData.error || 'Unknown error'}`);
+        return;
       }
+
+      const result = await response.json();
+      console.log("Status updated successfully:", result);
+
+      await Promise.all([fetchOrders(), fetchAllOrders()]);
+      setShowStatusModal(false);
+      setStatusAction(null);
     } catch (error) {
       console.error("Error updating order status:", error);
+      alert("Failed to update order status");
     }
+  };
+
+  const cancelStatusChange = () => {
+    setShowStatusModal(false);
+    setStatusAction(null);
   };
 
   const handleViewOrder = async (order) => {
@@ -138,17 +188,26 @@ const Orders = () => {
       setShowOrderDetails(true);
     } catch (error) {
       console.error("Error fetching order details:", error);
-      // Fallback to showing order without items
-      setSelectedOrder(order);
-      setShowOrderDetails(true);
+    }
+  };
+
+  // Pagination calculations
+  const totalPages = Math.ceil(orders.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedOrders = orders.slice(startIndex, endIndex);
+
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
     }
   };
 
   const orderStats = {
-    total: orders.length,
-    processing: orders.filter((o) => o.status === "processing").length,
-    ready: orders.filter((o) => o.status === "ready").length,
-    completed: orders.filter((o) => o.status === "completed").length,
+    total: allOrders.length,
+    processing: allOrders.filter((o) => o.status === "processing").length,
+    ready: allOrders.filter((o) => o.status === "ready").length,
+    completed: allOrders.filter((o) => o.status === "completed").length,
   };
 
   return (
@@ -284,14 +343,14 @@ const Orders = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {orders.map((order) => (
+              {paginatedOrders.map((order) => (
                 <tr
                   key={order.id}
                   className="hover:bg-slate-50 transition-colors"
                 >
                   <td className="py-4 px-6">
-                    <span className="font-medium text-slate-900">
-                      {order.id}
+                    <span className="font-medium text-blue-600">
+                     {order.id}
                     </span>
                   </td>
                   <td className="py-4 px-6">
@@ -311,8 +370,8 @@ const Orders = () => {
                     </span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className="font-semibold text-slate-900">
-                      ${order.total.toFixed(2)}
+                    <span className="font-semibold text-green-600">
+                      ₱{order.total.toFixed(2)}
                     </span>
                   </td>
                   <td className="py-4 px-6">
@@ -381,6 +440,48 @@ const Orders = () => {
             <p className="text-slate-500">No orders found</p>
           </div>
         ) : null}
+
+        {/* Pagination */}
+        {!loading && orders.length > 0 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50">
+            <p className="text-sm text-slate-600">
+              Showing <span className="font-semibold">{startIndex + 1}</span> to{" "}
+              <span className="font-semibold">{Math.min(endIndex, orders.length)}</span> of{" "}
+              <span className="font-semibold">{orders.length}</span> orders
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-3 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="flex gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => goToPage(page)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      currentPage === page
+                        ? "bg-amber-500 text-white"
+                        : "bg-white border border-slate-300 hover:bg-slate-50"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Order Details Modal */}
@@ -438,14 +539,14 @@ const Orders = () => {
                       >
                         <div>
                           <p className="font-medium text-slate-900">
-                            {item.product_name || item.name}
+                            {item.order_item_product_name || item.product_name || item.name}
                           </p>
                           <p className="text-sm text-slate-500">
-                            Qty: {item.quantity}
+                            Qty: {item.order_item_quantity || item.quantity}
                           </p>
                         </div>
                         <p className="font-semibold text-slate-900">
-                          ${(item.price * item.quantity).toFixed(2)}
+                          ₱{((item.order_item_price || item.price) * (item.order_item_quantity || item.quantity)).toFixed(2)}
                         </p>
                       </div>
                     ))
@@ -465,19 +566,19 @@ const Orders = () => {
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-slate-600">Subtotal:</span>
                   <span className="font-medium text-slate-900">
-                    ${selectedOrder.total.toFixed(2)}
+                    ₱{selectedOrder.total.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-slate-600">Tax (10%):</span>
                   <span className="font-medium text-slate-900">
-                    ${(selectedOrder.total * 0.1).toFixed(2)}
+                    ₱{(selectedOrder.total * 0.1).toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-lg font-bold pt-2 border-t border-slate-200">
                   <span className="text-slate-900">Total:</span>
                   <span className="text-amber-600">
-                    ${(selectedOrder.total * 1.1).toFixed(2)}
+                    ₱{(selectedOrder.total * 1.1).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -538,6 +639,67 @@ const Orders = () => {
                     Mark as Completed
                   </button>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status Change Confirmation Modal */}
+      {showStatusModal && statusAction && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-scale-in">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-5">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2 rounded-lg">
+                  <AlertCircle className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">Confirm Status Change</h2>
+                  <p className="text-sm text-amber-50">Update order status</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-6">
+                <p className="text-slate-700 mb-4">
+                  Are you sure you want to change the status of order{" "}
+                  <span className="font-bold">{statusAction.orderId}</span>?
+                </p>
+                
+                <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">Current Status:</span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusBadge(statusAction.orderData?.status)}`}>
+                      {statusConfig[statusAction.orderData?.status]?.label}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <ChevronRight className="w-5 h-5 text-slate-400" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">New Status:</span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusBadge(statusAction.newStatus)}`}>
+                      {statusConfig[statusAction.newStatus]?.label}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={cancelStatusChange}
+                  className="flex-1 px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmStatusChange}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
+                >
+                  Confirm Change
+                </button>
               </div>
             </div>
           </div>

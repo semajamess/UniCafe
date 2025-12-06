@@ -97,11 +97,19 @@ const Customers = () => {
                 >
                   <td className="py-4 px-6">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white font-semibold">
-                        {(customer.user_username || customer.username)
-                          ? (customer.user_username || customer.username).charAt(0).toUpperCase()
-                          : "U"}
-                      </div>
+                      {customer.user_profile_image ? (
+                        <img 
+                          src={customer.user_profile_image} 
+                          alt={customer.user_username || customer.username}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white font-semibold">
+                          {(customer.user_username || customer.username)
+                            ? (customer.user_username || customer.username).charAt(0).toUpperCase()
+                            : "U"}
+                        </div>
+                      )}
                       <div>
                         <p className="font-medium text-slate-900">
                           {customer.user_username || customer.username || "Unknown"}

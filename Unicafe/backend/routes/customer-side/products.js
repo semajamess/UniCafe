@@ -39,9 +39,22 @@ router.get('/autocomplete', async (req, res) => {
 // Get all products (CUSTOMER ACCESSIBLE - with filters)
 router.get('/', async (req, res) => {
   try {
-    const { category, available, search } = req.query;
+    const { category, available, search, mostOrdered } = req.query;
     
-    let query = `SELECT p.* FROM products p WHERE 1=1`;
+    let query = `SELECT p.* FROM products p`;
+    
+    // If mostOrdered is requested, join with order_items to get sales count
+    if (mostOrdered === 'true') {
+      query += ` LEFT JOIN order_items oi ON p.product_id = oi.order_item_product_id
+        WHERE p.product_is_available = 1
+        GROUP BY p.product_id
+        ORDER BY SUM(oi.order_item_quantity) DESC
+        LIMIT 6`;
+      const products = await db.allAsync(query);
+      return res.json(products);
+    }
+    
+    query += ' WHERE 1=1';
     const params = [];
 
     if (category) {

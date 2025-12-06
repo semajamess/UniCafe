@@ -27,6 +27,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ComposedChart,
 } from "recharts";
 
 const Dashboard = () => {
@@ -142,18 +143,26 @@ const Dashboard = () => {
     Beverages: "#ef4444",
   };
 
-  const categoryData = dashboardData.categoryData.map((cat) => ({
-    name: cat.category || "Unknown",
-    value: parseFloat(cat.revenue),
-    color: categoryColors[cat.category] || "#64748b",
-  }));
-
-  // Top products
-  const topProducts = dashboardData.topProducts.map((p) => ({
+  // Top products (limit to 5)
+  const topProducts = dashboardData.topProducts.slice(0, 5).map((p) => ({
     name: p.name,
-    sales: p.sales,
-    revenue: parseFloat(p.revenue),
+    sales: parseInt(p.sales) || 0,
+    revenue: parseFloat(p.revenue) || 0,
   }));
+  
+  console.log("Top Products data:", topProducts);
+
+  // Top 5 customers
+  const topCustomers = dashboardData.topCustomers?.map((c) => ({
+    name: c.name,
+    value: parseFloat(c.totalSpent),
+    orders: c.orders,
+    type: c.type,
+  })) || [];
+  
+  console.log("Top Customers for chart:", topCustomers);
+
+  const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
   // Recent orders
   const recentOrders = dashboardData.recentOrders.map((o) => ({
@@ -285,6 +294,7 @@ const Dashboard = () => {
                   boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
                 }}
               />
+              <Legend />
               <Area
                 type="monotone"
                 dataKey="revenue"
@@ -292,69 +302,70 @@ const Dashboard = () => {
                 strokeWidth={3}
                 fillOpacity={1}
                 fill="url(#colorRevenue)"
+                name="Revenue (₱)"
+              />
+              <Area
+                type="monotone"
+                dataKey="orders"
+                stroke="#3b82f6"
+                strokeWidth={2}
+                fillOpacity={0}
+                name="Orders"
               />
             </AreaChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Category Distribution */}
+        {/* Top 5 Customers */}
         <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-slate-100 hover:shadow-xl transition-shadow duration-300">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-slate-900">
-              Sales by Category
+              Top 5 Customers
             </h2>
-            <select
-              value={categoryPeriod}
-              onChange={(e) => setCategoryPeriod(e.target.value)}
-              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm font-semibold shadow-md cursor-pointer hover:shadow-lg transition-all appearance-none pr-10 focus:outline-none focus:ring-2 focus:ring-blue-700"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "right 0.5rem center",
-                backgroundSize: "1.5em 1.5em",
-              }}
-            >
-              <option value="week" className="bg-white text-slate-900">
-                This Week
-              </option>
-              <option value="month" className="bg-white text-slate-900">
-                This Month
-              </option>
-              <option value="all" className="bg-white text-slate-900">
-                All Time
-              </option>
-            </select>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={categoryData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) =>
-                  `${name} ${(percent * 100).toFixed(0)}%`
-                }
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-                strokeWidth={2}
-                stroke="#fff"
-              >
-                {categoryData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#fff",
-                  border: "2px solid #3b82f6",
-                  borderRadius: "12px",
-                  boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+          {topCustomers && topCustomers.length > 0 ? (
+            <div className="h-[350px]">
+              <ResponsiveContainer width="100%" height={350}>
+                <PieChart>
+                <Pie
+                  data={topCustomers}
+                  cx="50%"
+                  cy="45%"
+                  labelLine={false}
+                  outerRadius={90}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {topCustomers.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value) => [`₱${value.toFixed(2)}`, "Total Spent"]}
+                  contentStyle={{
+                    backgroundColor: "#fff",
+                    border: "2px solid #3b82f6",
+                    borderRadius: "12px",
+                    boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+                  }}
+                />
+                <Legend 
+                  layout="horizontal" 
+                  verticalAlign="bottom" 
+                  align="center"
+                  wrapperStyle={{ paddingTop: "20px" }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-[350px] flex items-center justify-center">
+              <p className="text-slate-400">No customer data available</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -362,54 +373,56 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Top Products */}
         <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">
-            Top Selling Products
-          </h2>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-600">
-                    Product
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-600">
-                    Sales
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-600">
-                    Revenue
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-600">
-                    Performance
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-slate-900">
+              Top 5 Selling Products
+            </h2>
+            <span className="text-xs font-semibold text-slate-600 uppercase">Units Sold</span>
+          </div>
+          <div className="flex gap-4">
+            {/* Chart */}
+            <div className="flex-1">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart 
+                  data={topProducts} 
+                  layout="vertical"
+                  margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis type="number" stroke="#64748b" />
+                  <YAxis 
+                    type="category" 
+                    dataKey="name" 
+                    stroke="#64748b"
+                    width={100}
+                    style={{ fontSize: "11px" }}
+                  />
+                  <Tooltip 
+                    formatter={(value) => `₱${value.toFixed(2)}`}
+                    contentStyle={{
+                      backgroundColor: "#fff",
+                      border: "2px solid #10b981",
+                      borderRadius: "12px",
+                      boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+                    }}
+                  />
+                  <Bar dataKey="revenue" fill="#10b981" name="Revenue (₱)" radius={[0, 8, 8, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            
+            {/* Units Sold Column */}
+            <div className="w-20 flex flex-col" style={{ height: '300px', paddingTop: '5px', paddingBottom: '5px' }}>
+              <div className="flex-1 flex flex-col justify-around">
                 {topProducts.map((product, index) => (
-                  <tr
-                    key={index}
-                    className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="py-3 px-4 text-sm font-medium text-slate-900">
-                      {product.name}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-slate-600">
-                      {product.sales}
-                    </td>
-                    <td className="py-3 px-4 text-sm font-medium text-slate-900">
-                      ${product.revenue}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="w-full bg-slate-200 rounded-full h-2">
-                        <div
-                          className="bg-gradient-to-r from-amber-500 to-amber-600 h-2 rounded-full transition-all duration-500"
-                          style={{ width: `${(product.sales / 342) * 100}%` }}
-                        ></div>
-                      </div>
-                    </td>
-                  </tr>
+                  <div key={index} className="flex items-center justify-center" style={{ height: `${100 / topProducts.length}%` }}>
+                    <div className="bg-blue-100 px-3 py-1.5 rounded-lg">
+                      <span className="text-base font-bold text-blue-600">{product.sales}</span>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
           </div>
         </div>
 

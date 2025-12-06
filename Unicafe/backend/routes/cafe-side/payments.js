@@ -18,7 +18,7 @@ router.get('/:id', async (req, res) => {
 // Get all payments (ADMIN ONLY)
 router.get('/', async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, method, search } = req.query;
 
     let query = `
       SELECT p.*, 
@@ -36,6 +36,17 @@ router.get('/', async (req, res) => {
     if (status) {
       query += ' AND p.payment_status = ?';
       params.push(status);
+    }
+
+    if (method) {
+      query += ' AND p.payment_method = ?';
+      params.push(method);
+    }
+
+    if (search) {
+      query += ' AND (u.user_username LIKE ? OR u.user_email LIKE ? OR p.payment_id LIKE ? OR o.order_id LIKE ?)';
+      const searchPattern = `%${search}%`;
+      params.push(searchPattern, searchPattern, searchPattern, searchPattern);
     }
 
     query += ' ORDER BY p.payment_created_at DESC';

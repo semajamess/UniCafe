@@ -139,6 +139,38 @@ router.get("/dashboard", async (req, res) => {
       LIMIT 5
     `);
 
+    // Top 5 Customers (including walk-in)
+    const customerDateFilter = currentDateFilter ? currentDateFilter.replace('order_created_at', 'o.order_created_at') : '';
+    console.log("Customer date filter:", customerDateFilter);
+    console.log("Full query:", `
+      SELECT 
+        COALESCE(u.user_username, o.order_customer_name, 'Walk-in Customer') as name,
+        COUNT(o.order_id) as orders,
+        COALESCE(SUM(o.order_total), 0) as totalSpent,
+        CASE WHEN u.user_id IS NULL THEN 'walk-in' ELSE 'registered' END as type
+      FROM orders o
+      LEFT JOIN users u ON o.order_user_id = u.user_id
+      WHERE o.order_status != 'cancelled'${customerDateFilter}
+      GROUP BY COALESCE(u.user_id, o.order_customer_name, 'Walk-in')
+      ORDER BY totalSpent DESC
+      LIMIT 5
+    `);
+    const topCustomers = await db.allAsync(`
+      SELECT 
+        COALESCE(u.user_username, o.order_customer_name, 'Walk-in Customers') as name,
+        COUNT(o.order_id) as orders,
+        COALESCE(SUM(o.order_total), 0) as totalSpent,
+        CASE WHEN u.user_id IS NULL THEN 'walk-in' ELSE 'registered' END as type
+      FROM orders o
+      LEFT JOIN users u ON o.order_user_id = u.user_id
+      WHERE o.order_status != 'cancelled'${customerDateFilter}
+      GROUP BY COALESCE(u.user_id, o.order_customer_name, 'Walk-in')
+      ORDER BY totalSpent DESC
+      LIMIT 5
+    `);
+
+    console.log("Top Customers Query Result:", JSON.stringify(topCustomers, null, 2));
+
     res.json({
       stats: {
         revenue: {
@@ -165,6 +197,7 @@ router.get("/dashboard", async (req, res) => {
       revenueOverTime,
       categoryData,
       topProducts,
+      topCustomers,
       recentOrders,
     });
   } catch (error) {

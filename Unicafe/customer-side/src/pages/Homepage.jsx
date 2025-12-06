@@ -23,14 +23,10 @@ const Homepage = () => {
 
   const fetchFeaturedProducts = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/customer/products')
+      const response = await fetch('http://localhost:3000/api/customer/products?mostOrdered=true')
       if (response.ok) {
         const products = await response.json()
-        const shuffled = products
-          .filter(p => p.product_is_available === 1)
-          .sort(() => 0.5 - Math.random())
-          .slice(0, 6)
-        setFeaturedProducts(shuffled)
+        setFeaturedProducts(products)
       }
     } catch (error) {
       console.error('Error fetching products:', error)
@@ -260,13 +256,13 @@ const Homepage = () => {
               },
               {
                 icon: <Star className="w-12 h-12" />,
-                title: 'Student Friendly',
-                description: 'Affordable prices and a cozy atmosphere perfect for studying'
+                title: 'Customer Friendly',
+                description: 'Affordable prices and a cozy atmosphere perfect for everyone'
               },
               {
                 icon: <Sparkles className="w-12 h-12" />,
                 title: 'Fast Service',
-                description: 'Quick ordering and preparation, so you never miss class'
+                description: 'Quick ordering and preparation for your busy lifestyle'
               }
             ].map((feature, index) => (
               <motion.div

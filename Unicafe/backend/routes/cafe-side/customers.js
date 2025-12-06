@@ -14,6 +14,7 @@ router.get("/", async (req, res) => {
         u.user_username,
         u.user_email,
         u.user_created_at,
+        u.user_profile_image,
         COUNT(DISTINCT o.order_id) as totalOrders,
         COALESCE(SUM(o.order_total), 0) as totalSpent,
         MAX(o.order_created_at) as lastOrder
@@ -28,7 +29,7 @@ router.get("/", async (req, res) => {
       params.push(`%${search}%`, `%${search}%`);
     }
 
-    query += " GROUP BY u.user_id ORDER BY totalSpent DESC";
+    query += " GROUP BY u.user_id, u.user_username, u.user_email, u.user_created_at, u.user_profile_image ORDER BY totalSpent DESC";
 
     const customers = await db.allAsync(query, params);
     res.json(customers);

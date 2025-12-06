@@ -16,22 +16,51 @@ const Payments = () => {
     fetchPayments()
   }, [])
 
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      fetchPayments()
+    }, 500)
+
+    return () => clearTimeout(debounceTimer)
+  }, [search, statusFilter, methodFilter])
+
   const fetchPayments = async () => {
     try {
       setLoading(true)
-      const res = await fetch(`${API_URL}/orders`)
+      const params = new URLSearchParams()
+
+      if (statusFilter !== 'all') {
+        params.append('status', statusFilter)
+      }
+
+      if (search) {
+        params.append('search', search)
+      }
+
+      if (methodFilter !== 'all') {
+        params.append('method', methodFilter)
+      }
+
+      const res = await fetch(`${API_URL}/payments?${params.toString()}`)
       const data = await res.json()
 
-      const mapped = data.map(o => ({
-        // Use payment_id when available so the Payments table shows the payment reference
-        id: o.payment_id || o.order_id,
-        paymentRef: o.payment_id ? `#PAY-${o.payment_id}` : null,
-        orderRef: `#ORD-${o.order_id}`,
-        amount: parseFloat(o.order_total || o.payment_amount || 0),
-        method: (o.payment_method || 'N/A'),
-        status: (o.order_status || 'pending'),
-        created_at: o.order_created_at,
-        customer_name: (o.user_username || o.user_email || o.order_customer_name || 'Guest')
+      const formatMethod = (method) => {
+        if (!method) return 'N/A'
+        return method.split('_').map(word => 
+          word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ')
+      }
+
+      const mapped = data.map(p => ({
+        id: p.payment_id,
+        paymentRef: `#PAY-${p.payment_id}`,
+        orderRef: `#ORD-${p.payment_order_id}`,
+        amount: parseFloat(p.payment_amount || 0),
+        method: formatMethod(p.payment_method),
+        status: (p.payment_status || 'pending'),
+        created_at: p.payment_created_at,
+        customer_name: (p.user_username || p.user_email || 'Guest'),
+        order_total: p.order_total
       }))
 
       setPayments(mapped)
@@ -42,22 +71,8 @@ const Payments = () => {
     }
   }
 
-  const methods = Array.from(new Set(payments.map(p => (p.method || 'N/A'))))
-  const statuses = Array.from(new Set(payments.map(p => (p.status || 'pending'))))
-
-  const filtered = payments.filter(p => {
-    if (statusFilter !== 'all' && p.status !== statusFilter) return false
-    if (methodFilter !== 'all' && p.method !== methodFilter) return false
-    if (search) {
-      const s = search.toLowerCase()
-      return (
-        p.orderRef.toLowerCase().includes(s) ||
-        (p.method || '').toLowerCase().includes(s) ||
-        p.customer_name.toLowerCase().includes(s)
-      )
-    }
-    return true
-  })
+  const methods = [{ value: 'cash', label: 'Cash' }, { value: 'gcash', label: 'E-Wallet' }, { value: 'bank_transfer', label: 'Bank Transfer' }]
+  const statuses = [{ value: 'completed', label: 'Completed' }, { value: 'failed', label: 'Failed' }]
 
   const openDetails = async (paymentOrOrder) => {
     try {
@@ -114,7 +129,7 @@ const Payments = () => {
               <span className="text-sm font-medium text-slate-600">Status</span>
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 border rounded-md">
                 <option value="all">All</option>
-                {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+                {statuses.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
             </div>
 
@@ -122,7 +137,7 @@ const Payments = () => {
               <span className="text-sm font-medium text-slate-600">Method</span>
               <select value={methodFilter} onChange={(e) => setMethodFilter(e.target.value)} className="px-3 py-2 border rounded-md">
                 <option value="all">All</option>
-                {methods.map(m => <option key={m} value={m}>{m}</option>)}
+                {methods.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
               </select>
             </div>
           </div>
@@ -131,6 +146,12 @@ const Payments = () => {
 
       {loading ? (
         <div className="py-12 text-center">Loading...</div>
+      ) : payments.length === 0 ? (
+        <div className="bg-white rounded-xl p-6 shadow-sm border-2 border-slate-100">
+          <div className="py-12 text-center text-slate-500">
+            No payments found
+          </div>
+        </div>
       ) : (
         <div className="bg-white rounded-xl p-6 shadow-sm border-2 border-slate-100">
           <div className="overflow-x-auto">
@@ -147,13 +168,30 @@ const Payments = () => {
                 </tr>
               </thead>
               <tbody>
-                          {filtered.map(p => (
+                          {payments.map(p => (
                             <tr key={p.id} className="border-t">
-                              <td className="py-4">{p.paymentRef || p.orderRef}</td>
+                              <td className="py-4 font-medium text-blue-600">{p.paymentRef || p.orderRef}</td>
                     <td className="py-4">{p.customer_name}</td>
-                    <td className="py-4">{p.method}</td>
-                    <td className="py-4 font-semibold">₱{p.amount.toFixed(2)}</td>
-                    <td className="py-4">{p.status}</td>
+                    <td className="py-4">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${
+                        p.method === 'Cash' ? 'bg-emerald-100 text-emerald-700' :
+                        p.method === 'E-Wallet' ? 'bg-blue-100 text-blue-700' :
+                        p.method === 'Bank Transfer' ? 'bg-purple-100 text-purple-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {p.method}
+                      </span>
+                    </td>
+                    <td className="py-4 font-semibold text-green-600">₱{p.amount.toFixed(2)}</td>
+                    <td className="py-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        p.status === 'completed' ? 'bg-green-100 text-green-700' :
+                        p.status === 'failed' ? 'bg-red-100 text-red-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
+                      </span>
+                    </td>
                     <td className="py-4">{p.created_at ? new Date(p.created_at).toLocaleString() : 'N/A'}</td>
                     <td className="py-4">
                       <button onClick={() => openDetails(p)} className="px-3 py-1 bg-amber-500 text-white rounded-md">View Order</button>
@@ -196,10 +234,10 @@ const Payments = () => {
                     {(selected.items || []).map((it, idx) => (
                       <div key={idx} className="flex items-center justify-between py-2 border-b last:border-b-0">
                         <div>
-                          <div className="font-medium">{it.order_item_product_name || it.product_name}</div>
-                          <div className="text-xs text-slate-500">Qty: {it.order_item_quantity || it.quantity}</div>
+                          <div className="font-medium">{it.order_item_product_name || it.product_name || 'Unknown Item'}</div>
+                          <div className="text-xs text-slate-500">Qty: {it.order_item_quantity || it.quantity || 1}</div>
                         </div>
-                        <div className="font-semibold">₱{parseFloat(it.order_item_price || it.price || 0).toFixed(2)}</div>
+                        <div className="font-semibold">₱{(parseFloat(it.order_item_price || it.price || 0) * (it.order_item_quantity || it.quantity || 1)).toFixed(2)}</div>
                       </div>
                     ))}
                   </div>

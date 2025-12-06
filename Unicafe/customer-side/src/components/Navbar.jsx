@@ -97,7 +97,7 @@ export default function Navbar() {
             
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
-                <Link to="/orders" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+                <Link to="/profile" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
                   {user?.profile_image ? (
                     <img 
                       src={user.profile_image} 
@@ -180,7 +180,7 @@ export default function Navbar() {
               {isAuthenticated ? (
                 <>
                   <Link
-                    to="/orders"
+                    to="/profile"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex items-center space-x-3 py-2 px-4 rounded-lg text-gray-700 hover:bg-amber-50"
                   >
