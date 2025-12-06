@@ -233,6 +233,41 @@ const Menu = () => {
     filterProducts();
   }, [searchQuery, selectedCategory, products]);
 
+  // Auto-sync products on interval and window focus
+  useEffect(() => {
+    const syncProducts = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:3000/api/customer/products"
+        );
+        if (response.ok) {
+          const data = await response.json();
+          const availableProducts = data.filter(
+            (p) => p.product_is_available === 1
+          );
+          setProducts(availableProducts);
+        }
+      } catch (error) {
+        console.error("Error syncing products:", error);
+      }
+    };
+
+    // Sync on window focus (when user switches back to tab)
+    const handleFocus = () => {
+      syncProducts();
+    };
+
+    // Sync every 15 seconds
+    const interval = setInterval(syncProducts, 15000);
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      if (interval) clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, []);
+
   const fetchProducts = async () => {
     try {
       const response = await fetch(

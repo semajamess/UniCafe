@@ -1,258 +1,315 @@
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
-import { CreditCard, User, Mail, Building2, Smartphone } from 'lucide-react'
-import Receipt from '../components/Receipt'
-import { useCart } from '../context/CartContext'
-import { useAuth } from '../context/AuthContext'
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { CreditCard, User, Mail, Building2, Smartphone } from "lucide-react";
+import Receipt from "../components/Receipt";
+import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 
 const Checkout = () => {
-  const navigate = useNavigate()
-  const { cart, getTotalPrice, clearCart } = useCart()
-  const { user, isAuthenticated, token } = useAuth()
-  const [loading, setLoading] = useState(false)
-  const [orderCompleted, setOrderCompleted] = useState(false) // Prevent redirect after successful order
-  const [otpModal, setOtpModal] = useState({ open: false, requestId: null })
-  const [otpValue, setOtpValue] = useState('')
-  const [successModal, setSuccessModal] = useState({ open: false, orderData: null, orderId: null })
+  const navigate = useNavigate();
+  const { cart, getTotalPrice, clearCart, syncCartWithProducts } = useCart();
+  const { user, isAuthenticated, token } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [orderCompleted, setOrderCompleted] = useState(false); // Prevent redirect after successful order
+  const [otpModal, setOtpModal] = useState({ open: false, requestId: null });
+  const [otpValue, setOtpValue] = useState("");
+  const [successModal, setSuccessModal] = useState({
+    open: false,
+    orderData: null,
+    orderId: null,
+  });
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    paymentMethod: 'bank_transfer'
-  })
+    name: "",
+    email: "",
+    paymentMethod: "bank_transfer",
+  });
+
+  // Sync cart with latest product data when page loads
+  useEffect(() => {
+    syncCartWithProducts();
+  }, []);
 
   // Auto-fill form if user is logged in
   useEffect(() => {
     if (isAuthenticated && user) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        name: user.username || '',
-        email: user.email || ''
-      }))
+        name: user.username || "",
+        email: user.email || "",
+      }));
     }
-  }, [isAuthenticated, user])
+  }, [isAuthenticated, user]);
 
   // Require authentication to place orders (standard practice)
   useEffect(() => {
     if (!isAuthenticated) {
       // Redirect user to login and return back to checkout after auth
-      navigate('/login', { state: { returnTo: window.location.pathname } })
+      navigate("/login", { state: { returnTo: window.location.pathname } });
     }
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, navigate]);
 
   const handleInputChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
-    })
-  }
+      [e.target.name]: e.target.value,
+    });
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
     try {
       const orderData = {
         customer_name: formData.name,
         customer_email: formData.email,
         payment_method: formData.paymentMethod,
-        items: cart.map(item => ({
+        items: cart.map((item) => ({
           product_id: item.id,
           quantity: item.quantity,
-          price: item.price
+          price: item.price,
         })),
         subtotal: getTotalPrice(),
         total: getTotalPrice(),
-        status: 'pending'
-      }
+        status: "pending",
+      };
 
       // All payment methods use OTP-backed initiation
       // bank_transfer uses email OTP, e_wallet uses SMS OTP
-      const returnUrl = window.location.origin + '/order-confirmation'
-      const initiateResp = await fetch('http://localhost:3000/api/customer/payments/initiate-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({ 
-          items: orderData.items, 
-          return_url: returnUrl, 
-          method_hint: formData.paymentMethod 
-        })
-      })
+      const returnUrl = window.location.origin + "/order-confirmation";
+      const initiateResp = await fetch(
+        "http://localhost:3000/api/customer/payments/initiate-otp",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            items: orderData.items,
+            return_url: returnUrl,
+            method_hint: formData.paymentMethod,
+          }),
+        }
+      );
 
       if (!initiateResp.ok) {
-        let msg = 'Failed to initiate payment. Please try again.'
-        try { const err = await initiateResp.json(); if (err && err.error) msg = err.error } catch (e) {}
-        alert(msg)
-        setLoading(false)
-        return
+        let msg = "Failed to initiate payment. Please try again.";
+        try {
+          const err = await initiateResp.json();
+          if (err && err.error) msg = err.error;
+        } catch (e) {}
+        alert(msg);
+        setLoading(false);
+        return;
       }
 
-      const initData = await initiateResp.json()
+      const initData = await initiateResp.json();
       // show OTP modal to the user
-      setOtpModal({ 
-        open: true, 
-        requestId: initData.requestId, 
-        channel: initData.channel || (formData.paymentMethod === 'e_wallet' ? 'sms' : 'email')
-      })
+      setOtpModal({
+        open: true,
+        requestId: initData.requestId,
+        channel:
+          initData.channel ||
+          (formData.paymentMethod === "e_wallet" ? "sms" : "email"),
+      });
     } catch (error) {
-      console.error('Error placing order:', error)
-      alert('An error occurred. Please try again.')
+      console.error("Error placing order:", error);
+      alert("An error occurred. Please try again.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleOtpSubmit = async (e) => {
-    e.preventDefault()
-    if (!otpModal.requestId) return
-    setLoading(true)
+    e.preventDefault();
+    if (!otpModal.requestId) return;
+    setLoading(true);
     try {
-      const resp = await fetch('http://localhost:3000/api/customer/payments/confirm-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ requestId: otpModal.requestId, otp: otpValue })
-      })
+      const resp = await fetch(
+        "http://localhost:3000/api/customer/payments/confirm-otp",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            requestId: otpModal.requestId,
+            otp: otpValue,
+          }),
+        }
+      );
 
-        if (!resp.ok) {
-        let msg = 'Invalid OTP or confirmation failed.'
-        try { const err = await resp.json(); if (err && err.error) msg = err.error } catch(e){}
-        alert(msg)
-        setLoading(false)
-        return
+      if (!resp.ok) {
+        let msg = "Invalid OTP or confirmation failed.";
+        try {
+          const err = await resp.json();
+          if (err && err.error) msg = err.error;
+        } catch (e) {}
+        alert(msg);
+        setLoading(false);
+        return;
       }
 
-      const data = await resp.json()
-      console.log('Confirm OTP response:', data)
-      console.log('data.order:', data.order)
-      console.log('data.order.items:', data.order?.items)
-      
+      const data = await resp.json();
+      console.log("Confirm OTP response:", data);
+      console.log("data.order:", data.order);
+      console.log("data.order.items:", data.order?.items);
+
       // Accept multiple response shapes: { order }, { orderData }, or direct order
-      let orderData = data.order || data.orderData || (typeof data === 'object' && Object.keys(data).length ? data : null)
-      console.log('orderData extracted:', orderData)
-      console.log('orderData.items before normalization:', orderData?.items)
+      let orderData =
+        data.order ||
+        data.orderData ||
+        (typeof data === "object" && Object.keys(data).length ? data : null);
+      console.log("orderData extracted:", orderData);
+      console.log("orderData.items before normalization:", orderData?.items);
 
       // Normalize items from API response if present
       if (orderData && orderData.items && Array.isArray(orderData.items)) {
-        console.log('Normalizing OTP items...')
+        console.log("Normalizing OTP items...");
         orderData = {
           ...orderData,
-          items: orderData.items.map(item => ({
+          items: orderData.items.map((item) => ({
             product_id: item.order_item_product_id || item.product_id,
-            product_name: item.order_item_product_name || item.product_name || item.name,
+            product_name:
+              item.order_item_product_name || item.product_name || item.name,
             quantity: item.order_item_quantity || item.quantity,
             price: item.order_item_price || item.price,
-            id: item.order_item_id || item.id
-          }))
-        }
-        console.log('Normalized OTP items:', orderData.items)
+            id: item.order_item_id || item.id,
+          })),
+        };
+        console.log("Normalized OTP items:", orderData.items);
       }
 
-      console.log('Final orderData for OTP flow:', orderData)
+      console.log("Final orderData for OTP flow:", orderData);
 
       // If backend returned only an orderId, fetch canonical order before navigating
-      const resolvedOrderId = data.orderId || (orderData && (orderData.order_id || orderData.id || orderData.orderNumber))
+      const resolvedOrderId =
+        data.orderId ||
+        (orderData &&
+          (orderData.order_id || orderData.id || orderData.orderNumber));
       if (!orderData && resolvedOrderId) {
         try {
-          const fetchResp = await fetch(`http://localhost:3000/api/customer/orders/${resolvedOrderId}`, {
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {})
+          const fetchResp = await fetch(
+            `http://localhost:3000/api/customer/orders/${resolvedOrderId}`,
+            {
+              headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
             }
-          })
+          );
           if (fetchResp.ok) {
-            const fetched = await fetchResp.json()
-            console.log('Fetched canonical order for receipt fallback:', fetched)
+            const fetched = await fetchResp.json();
+            console.log(
+              "Fetched canonical order for receipt fallback:",
+              fetched
+            );
             // Build a lightweight shape matching OrderConfirmation expectations
-            const items = (fetched.items || []).map(item => ({
+            const items = (fetched.items || []).map((item) => ({
               product_id: item.order_item_product_id || item.product_id,
-              product_name: item.order_item_product_name || item.product_name || item.name,
+              product_name:
+                item.order_item_product_name || item.product_name || item.name,
               quantity: item.order_item_quantity || item.quantity,
               price: item.order_item_price || item.price,
-              id: item.order_item_id || item.id
-            }))
-            const subtotal = items.reduce((s, i) => s + ((Number(i.price) || 0) * (Number(i.quantity) || 0)), 0)
-            const total = parseFloat(fetched.order_total || fetched.total || subtotal)
+              id: item.order_item_id || item.id,
+            }));
+            const subtotal = items.reduce(
+              (s, i) => s + (Number(i.price) || 0) * (Number(i.quantity) || 0),
+              0
+            );
+            const total = parseFloat(
+              fetched.order_total || fetched.total || subtotal
+            );
             orderData = {
               orderNumber: fetched.order_id || fetched.id,
               id: fetched.order_id || fetched.id,
-              customer_name: fetched.user_username || fetched.customer_name || 'Guest',
-              customer_email: fetched.user_email || fetched.customer_email || '',
-              payment_method: (fetched.payment && (fetched.payment.payment_method || fetched.payment.method)) || fetched.payment_method || 'N/A',
+              customer_name:
+                fetched.user_username || fetched.customer_name || "Guest",
+              customer_email:
+                fetched.user_email || fetched.customer_email || "",
+              payment_method:
+                (fetched.payment &&
+                  (fetched.payment.payment_method || fetched.payment.method)) ||
+                fetched.payment_method ||
+                "N/A",
               items,
               subtotal,
               tax: fetched.tax || 0,
-              total
-            }
+              total,
+            };
           }
         } catch (e) {
-          console.warn('Failed to fetch order for receipt fallback:', e)
+          console.warn("Failed to fetch order for receipt fallback:", e);
         }
       }
 
       // Close OTP modal
-      setOtpModal({ open: false, requestId: null })
-      setOtpValue('')
+      setOtpModal({ open: false, requestId: null });
+      setOtpValue("");
 
       // Persist the order receipt in sessionStorage as a durable fallback
       try {
-        if (orderData) sessionStorage.setItem('latestOrder', JSON.stringify(orderData))
-        else if (resolvedOrderId) sessionStorage.removeItem('latestOrder')
+        if (orderData)
+          sessionStorage.setItem("latestOrder", JSON.stringify(orderData));
+        else if (resolvedOrderId) sessionStorage.removeItem("latestOrder");
       } catch (e) {
-        console.warn('sessionStorage not available for receipt fallback', e)
+        console.warn("sessionStorage not available for receipt fallback", e);
       }
 
       // Close OTP modal and navigate directly to the full receipt page so the
       // user sees the Order Confirmation (receipt) immediately.
-      setOtpModal({ open: false, requestId: null })
-      setOtpValue('')
-      
+      setOtpModal({ open: false, requestId: null });
+      setOtpValue("");
+
       // Mark order as completed BEFORE clearing cart to prevent redirect
-      setOrderCompleted(true)
-      
+      setOrderCompleted(true);
+
       // Clear the cart immediately after successful payment
-      clearCart()
-      
-      const finalOrderId = resolvedOrderId || (orderData && (orderData.id || orderData.orderNumber))
-      console.log('FINAL NAVIGATION - orderData:', orderData)
-      console.log('FINAL NAVIGATION - orderData.items:', orderData?.items)
-      console.log('FINAL NAVIGATION - orderId:', finalOrderId)
-      
+      clearCart();
+
+      const finalOrderId =
+        resolvedOrderId ||
+        (orderData && (orderData.id || orderData.orderNumber));
+      console.log("FINAL NAVIGATION - orderData:", orderData);
+      console.log("FINAL NAVIGATION - orderData.items:", orderData?.items);
+      console.log("FINAL NAVIGATION - orderId:", finalOrderId);
+
       // Test: create a simple object to verify navigation state works
-      const testState = { 
-        orderData: orderData ? JSON.parse(JSON.stringify(orderData)) : null, 
-        orderId: finalOrderId 
-      }
-      console.log('TEST STATE BEING SENT:', testState)
-      console.log('TEST STATE items:', testState.orderData?.items)
-      
-      navigate('/order-confirmation', { state: testState })
+      const testState = {
+        orderData: orderData ? JSON.parse(JSON.stringify(orderData)) : null,
+        orderId: finalOrderId,
+      };
+      console.log("TEST STATE BEING SENT:", testState);
+      console.log("TEST STATE items:", testState.orderData?.items);
+
+      navigate("/order-confirmation", { state: testState });
     } catch (err) {
-      console.error('OTP confirm error:', err)
-      alert('An error occurred verifying OTP. Please try again.')
+      console.error("OTP confirm error:", err);
+      alert("An error occurred verifying OTP. Please try again.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Handlers for the success modal shown after OTP confirmation
   const handleViewReceipt = () => {
-    const od = successModal.orderData
-    const oid = successModal.orderId
-    setSuccessModal({ open: false, orderData: null, orderId: null })
-    navigate('/order-confirmation', { state: { orderData: od, orderId: oid } })
-  }
+    const od = successModal.orderData;
+    const oid = successModal.orderId;
+    setSuccessModal({ open: false, orderData: null, orderId: null });
+    navigate("/order-confirmation", { state: { orderData: od, orderId: oid } });
+  };
 
   const handleModalContinue = () => {
-    setSuccessModal({ open: false, orderData: null, orderId: null })
-    navigate('/')
-  }
+    setSuccessModal({ open: false, orderData: null, orderId: null });
+    navigate("/");
+  };
 
   if (cart.length === 0 && !orderCompleted) {
-    navigate('/cart')
-    return null
+    navigate("/cart");
+    return null;
   }
 
   return (
@@ -274,8 +331,10 @@ const Checkout = () => {
               onSubmit={handleSubmit}
               className="glass-effect rounded-2xl p-8 shadow-lg"
             >
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">Customer Information</h2>
-              
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">
+                Customer Information
+              </h2>
+
               <div className="space-y-6">
                 <div>
                   <label className="block text-gray-700 font-semibold mb-2">
@@ -315,42 +374,54 @@ const Checkout = () => {
                     Payment Method *
                   </label>
                   <div className="space-y-3">
-                    <label className={`flex items-center space-x-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
-                      formData.paymentMethod === 'bank_transfer' 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-primary-500'
-                    }`}>
+                    <label
+                      className={`flex items-center space-x-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
+                        formData.paymentMethod === "bank_transfer"
+                          ? "border-primary-500 bg-primary-50"
+                          : "border-gray-300 hover:border-primary-500"
+                      }`}
+                    >
                       <input
                         type="radio"
                         name="paymentMethod"
                         value="bank_transfer"
-                        checked={formData.paymentMethod === 'bank_transfer'}
+                        checked={formData.paymentMethod === "bank_transfer"}
                         onChange={handleInputChange}
                         className="w-5 h-5 text-primary-600"
                       />
                       <Building2 className="w-5 h-5 text-blue-600" />
                       <div className="flex-1">
-                        <span className="font-medium text-gray-700">Bank Transfer</span>
-                        <p className="text-sm text-gray-500">OTP verification via email</p>
+                        <span className="font-medium text-gray-700">
+                          Bank Transfer
+                        </span>
+                        <p className="text-sm text-gray-500">
+                          OTP verification via email
+                        </p>
                       </div>
                     </label>
-                    <label className={`flex items-center space-x-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
-                      formData.paymentMethod === 'e_wallet' 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-primary-500'
-                    }`}>
+                    <label
+                      className={`flex items-center space-x-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
+                        formData.paymentMethod === "e_wallet"
+                          ? "border-primary-500 bg-primary-50"
+                          : "border-gray-300 hover:border-primary-500"
+                      }`}
+                    >
                       <input
                         type="radio"
                         name="paymentMethod"
                         value="e_wallet"
-                        checked={formData.paymentMethod === 'e_wallet'}
+                        checked={formData.paymentMethod === "e_wallet"}
                         onChange={handleInputChange}
                         className="w-5 h-5 text-primary-600"
                       />
                       <Smartphone className="w-5 h-5 text-green-600" />
                       <div className="flex-1">
-                        <span className="font-medium text-gray-700">E-Wallet</span>
-                        <p className="text-sm text-gray-500">OTP verification via SMS</p>
+                        <span className="font-medium text-gray-700">
+                          E-Wallet
+                        </span>
+                        <p className="text-sm text-gray-500">
+                          OTP verification via SMS
+                        </p>
                       </div>
                     </label>
                   </div>
@@ -364,11 +435,11 @@ const Checkout = () => {
                 whileTap={{ scale: loading ? 1 : 0.98 }}
                 className={`w-full mt-8 py-4 rounded-xl font-bold text-white shadow-lg transition-all ${
                   loading
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-primary-500 to-primary-600 hover:shadow-xl'
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-primary-500 to-primary-600 hover:shadow-xl"
                 }`}
               >
-                {loading ? 'Processing...' : 'Place Order'}
+                {loading ? "Processing..." : "Place Order"}
               </motion.button>
             </motion.form>
           </div>
@@ -379,8 +450,10 @@ const Checkout = () => {
               animate={{ opacity: 1, x: 0 }}
               className="glass-effect rounded-2xl p-6 shadow-lg sticky top-24"
             >
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">Order Summary</h2>
-              
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">
+                Order Summary
+              </h2>
+
               <div className="space-y-4 mb-6 max-h-64 overflow-y-auto">
                 {cart.map((item) => (
                   <div key={item.id} className="flex justify-between text-sm">
@@ -398,7 +471,9 @@ const Checkout = () => {
               <div className="border-t border-gray-300 pt-4 space-y-3">
                 <div className="flex justify-between text-gray-700">
                   <span>Subtotal</span>
-                  <span className="font-semibold">₱{getTotalPrice().toFixed(2)}</span>
+                  <span className="font-semibold">
+                    ₱{getTotalPrice().toFixed(2)}
+                  </span>
                 </div>
                 <div className="border-t border-gray-300 pt-3">
                   <div className="flex justify-between text-xl font-bold text-gray-800">
@@ -419,14 +494,15 @@ const Checkout = () => {
           <div className="bg-white rounded-xl p-6 w-full max-w-md">
             <h3 className="text-xl font-bold mb-4">Enter OTP</h3>
             <p className="mb-4 text-sm text-gray-600">
-              {otpModal.channel === 'sms' 
-                ? 'We sent a one-time code to your phone number via SMS. Enter it below to complete payment.'
-                : 'We sent a one-time code to your email. Enter it below to complete payment.'}
+              {otpModal.channel === "sms"
+                ? "We sent a one-time code to your phone number via SMS. Enter it below to complete payment."
+                : "We sent a one-time code to your email. Enter it below to complete payment."}
             </p>
-            {otpModal.channel === 'sms' && (
+            {otpModal.channel === "sms" && (
               <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-xs text-yellow-700">
-                  <strong>Demo Mode:</strong> For testing, use OTP code <code className="bg-yellow-100 px-1 rounded">123456</code>
+                  <strong>Demo Mode:</strong> For testing, use OTP code{" "}
+                  <code className="bg-yellow-100 px-1 rounded">123456</code>
                 </p>
               </div>
             )}
@@ -440,8 +516,22 @@ const Checkout = () => {
                 required
               />
               <div className="flex gap-3 justify-end">
-                <button type="button" onClick={() => setOtpModal({ open: false, requestId: null, channel: null })} className="px-4 py-2 rounded-lg bg-gray-200">Cancel</button>
-                <button type="submit" disabled={loading} className="px-4 py-2 rounded-lg bg-primary-600 text-white">{loading ? 'Verifying...' : 'Verify OTP'}</button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOtpModal({ open: false, requestId: null, channel: null })
+                  }
+                  className="px-4 py-2 rounded-lg bg-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-2 rounded-lg bg-primary-600 text-white"
+                >
+                  {loading ? "Verifying..." : "Verify OTP"}
+                </button>
               </div>
             </form>
           </div>
@@ -452,25 +542,45 @@ const Checkout = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-3xl">
             <h3 className="text-xl font-bold mb-2">Payment Verified</h3>
-            <p className="text-sm text-gray-600 mb-4">Your payment was confirmed successfully. Below is your receipt.</p>
+            <p className="text-sm text-gray-600 mb-4">
+              Your payment was confirmed successfully. Below is your receipt.
+            </p>
 
             <div className="mb-4">
               {successModal.orderData ? (
                 <Receipt order={successModal.orderData} />
               ) : (
-                <div className="p-4 bg-gray-50 rounded text-sm text-gray-600">Loading receipt...</div>
+                <div className="p-4 bg-gray-50 rounded text-sm text-gray-600">
+                  Loading receipt...
+                </div>
               )}
             </div>
 
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setSuccessModal({ open: false, orderData: null, orderId: null })} className="px-4 py-2 rounded-lg bg-gray-200">Close</button>
-              <button onClick={handleViewReceipt} className="px-4 py-2 rounded-lg bg-primary-600 text-white">Open Full Receipt</button>
+              <button
+                onClick={() =>
+                  setSuccessModal({
+                    open: false,
+                    orderData: null,
+                    orderId: null,
+                  })
+                }
+                className="px-4 py-2 rounded-lg bg-gray-200"
+              >
+                Close
+              </button>
+              <button
+                onClick={handleViewReceipt}
+                className="px-4 py-2 rounded-lg bg-primary-600 text-white"
+              >
+                Open Full Receipt
+              </button>
             </div>
           </div>
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Checkout
+export default Checkout;
