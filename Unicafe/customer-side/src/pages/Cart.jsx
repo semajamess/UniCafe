@@ -1,16 +1,29 @@
-import { motion } from 'framer-motion'
-import { ShoppingCart, Trash2, Plus, Minus, ArrowRight } from 'lucide-react'
-import { useCart } from '../context/CartContext'
-import { Link } from 'react-router-dom'
+import { motion } from "framer-motion";
+import { ShoppingCart, Trash2, Plus, Minus, ArrowRight } from "lucide-react";
+import { useCart } from "../context/CartContext";
+import { Link } from "react-router-dom";
+import { useEffect } from "react";
 
 const Cart = () => {
-  const { cart, removeFromCart, updateQuantity, getTotalPrice, getTotalItems } = useCart()
+  const {
+    cart,
+    removeFromCart,
+    updateQuantity,
+    getTotalPrice,
+    getTotalItems,
+    syncCartWithProducts,
+  } = useCart();
+
+  // Sync cart with latest product data when page loads
+  useEffect(() => {
+    syncCartWithProducts();
+  }, []);
 
   const handleQuantityChange = (productId, newQuantity) => {
     if (newQuantity >= 1) {
-      updateQuantity(productId, newQuantity)
+      updateQuantity(productId, newQuantity);
     }
-  }
+  };
 
   if (cart.length === 0) {
     return (
@@ -22,8 +35,12 @@ const Cart = () => {
             className="text-center"
           >
             <ShoppingCart className="w-32 h-32 text-gray-300 mx-auto mb-6" />
-            <h2 className="text-3xl font-bold text-gray-700 mb-4">Your cart is empty</h2>
-            <p className="text-gray-600 mb-8">Add some delicious items from our menu!</p>
+            <h2 className="text-3xl font-bold text-gray-700 mb-4">
+              Your cart is empty
+            </h2>
+            <p className="text-gray-600 mb-8">
+              Add some delicious items from our menu!
+            </p>
             <Link to="/menu">
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -37,7 +54,7 @@ const Cart = () => {
           </motion.div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -64,8 +81,8 @@ const Cart = () => {
                 <div className="flex items-center space-x-6">
                   <div className="w-24 h-24 bg-gradient-to-br from-primary-100 to-orange-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
                     {item.image_url ? (
-                      <img 
-                        src={item.image_url} 
+                      <img
+                        src={item.image_url}
                         alt={item.name}
                         className="w-full h-full object-cover"
                       />
@@ -75,9 +92,11 @@ const Cart = () => {
                   </div>
 
                   <div className="flex-grow">
-                    <h3 className="text-xl font-bold text-gray-800 mb-1">{item.name}</h3>
+                    <h3 className="text-xl font-bold text-gray-800 mb-1">
+                      {item.name}
+                    </h3>
                     <p className="text-gray-600 text-sm mb-2 line-clamp-1">
-                      {item.description || 'Delicious item'}
+                      {item.description || "Delicious item"}
                     </p>
                     <p className="text-lg font-bold text-primary-600">
                       ₱{parseFloat(item.price || 0).toFixed(2)}
@@ -88,20 +107,24 @@ const Cart = () => {
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                      onClick={() =>
+                        handleQuantityChange(item.id, item.quantity - 1)
+                      }
                       className="bg-gray-200 hover:bg-gray-300 text-gray-700 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
                     >
                       <Minus className="w-4 h-4" />
                     </motion.button>
-                    
+
                     <span className="text-lg font-bold text-gray-800 w-8 text-center">
                       {item.quantity}
                     </span>
-                    
+
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                      onClick={() =>
+                        handleQuantityChange(item.id, item.quantity + 1)
+                      }
                       className="bg-primary-600 hover:bg-primary-700 text-white w-8 h-8 rounded-full flex items-center justify-center transition-colors"
                     >
                       <Plus className="w-4 h-4" />
@@ -111,7 +134,8 @@ const Cart = () => {
                   <div className="text-right min-w-[100px]">
                     <p className="text-sm text-gray-600 mb-1">Subtotal</p>
                     <p className="text-xl font-bold text-gray-800">
-                      ₱{(parseFloat(item.price || 0) * item.quantity).toFixed(2)}
+                      ₱
+                      {(parseFloat(item.price || 0) * item.quantity).toFixed(2)}
                     </p>
                   </div>
 
@@ -134,12 +158,16 @@ const Cart = () => {
               animate={{ opacity: 1, x: 0 }}
               className="glass-effect rounded-2xl p-6 shadow-lg sticky top-24"
             >
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">Order Summary</h2>
-              
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">
+                Order Summary
+              </h2>
+
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between text-gray-700">
                   <span>Subtotal</span>
-                  <span className="font-semibold">₱{getTotalPrice().toFixed(2)}</span>
+                  <span className="font-semibold">
+                    ₱{getTotalPrice().toFixed(2)}
+                  </span>
                 </div>
                 <div className="border-t border-gray-300 pt-4">
                   <div className="flex justify-between text-lg font-bold text-gray-800">
@@ -172,7 +200,7 @@ const Cart = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Cart
+export default Cart;

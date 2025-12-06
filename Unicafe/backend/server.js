@@ -13,6 +13,7 @@ import customerProductsRoutes from "./routes/customer-side/products.js";
 import customerCategoriesRoutes from "./routes/customer-side/categories.js";
 import customerOrdersRoutes from "./routes/customer-side/orders.js";
 import customerPaymentsRoutes from "./routes/customer-side/payments.js";
+import customerContactRoutes from "./routes/customer-side/contact.js";
 
 // Import cafe-side routes
 import cafeProductsRoutes from "./routes/cafe-side/products.js";
@@ -54,6 +55,7 @@ app.use("/api/customer/categories", customerCategoriesRoutes);
 app.use("/api/customer/products", customerProductsRoutes);
 app.use("/api/customer/orders", customerOrdersRoutes);
 app.use("/api/customer/payments", customerPaymentsRoutes);
+app.use("/api/customer/contact", customerContactRoutes);
 
 // API Routes - Cafe Side (Admin)
 app.use("/api/cafe/products", cafeProductsRoutes);

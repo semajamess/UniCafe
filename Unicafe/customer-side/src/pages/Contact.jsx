@@ -1,39 +1,67 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Mail, Phone, MapPin, Send, Clock, CheckCircle } from 'lucide-react'
-import AnimatedBackground from '../components/AnimatedBackground'
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Mail, Phone, MapPin, Send, Clock, CheckCircle } from "lucide-react";
+import AnimatedBackground from "../components/AnimatedBackground";
+import SuccessModal from "../components/SuccessModal";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
-  })
-  const [submitted, setSubmitted] = useState(false)
-  const [loading, setLoading] = useState(false)
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [messageId, setMessageId] = useState(null);
 
   const handleInputChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
-    })
-  }
+      [e.target.name]: e.target.value,
+    });
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false)
-      setSubmitted(true)
-      setFormData({ name: '', email: '', subject: '', message: '' })
-      
-      setTimeout(() => {
-        setSubmitted(false)
-      }, 5000)
-    }, 1500)
-  }
+    try {
+      const response = await fetch(
+        "http://localhost:3000/api/customer/contact",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setLoading(false);
+        setSubmitted(true);
+        setMessageId(data.messageId);
+        setFormData({ name: "", email: "", subject: "", message: "" });
+      } else {
+        setLoading(false);
+        alert(data.error || "Failed to send message. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+      setLoading(false);
+      alert(
+        "Error sending message. Please check your connection and try again."
+      );
+    }
+  };
+
+  const handleCloseModal = () => {
+    setSubmitted(false);
+    setMessageId(null);
+  };
 
   return (
     <div className="pt-20 min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
@@ -72,8 +100,9 @@ const Contact = () => {
                   Let's Connect
                 </h2>
                 <p className="text-gray-700 text-lg mb-8">
-                  Have a question, feedback, or just want to say hi? We're here to help! 
-                  Reach out through any of the channels below or fill out the contact form.
+                  Have a question, feedback, or just want to say hi? We're here
+                  to help! Reach out through any of the channels below or fill
+                  out the contact form.
                 </p>
               </div>
 
@@ -88,8 +117,10 @@ const Contact = () => {
                   <div>
                     <h3 className="font-bold text-gray-800 mb-1">Visit Us</h3>
                     <p className="text-gray-600">
-                      123 University Avenue<br />
-                      Campus Building A, Ground Floor<br />
+                      123 University Avenue
+                      <br />
+                      Campus Building A, Ground Floor
+                      <br />
                       City, State 12345
                     </p>
                   </div>
@@ -105,8 +136,10 @@ const Contact = () => {
                   <div>
                     <h3 className="font-bold text-gray-800 mb-1">Call Us</h3>
                     <p className="text-gray-600">
-                      +63 912 345 6789<br />
-                      Mon-Fri: 7AM - 9PM<br />
+                      +63 912 345 6789
+                      <br />
+                      Mon-Fri: 7AM - 9PM
+                      <br />
                       Sat-Sun: 8AM - 10PM
                     </p>
                   </div>
@@ -122,8 +155,10 @@ const Contact = () => {
                   <div>
                     <h3 className="font-bold text-gray-800 mb-1">Email Us</h3>
                     <p className="text-gray-600">
-                      hello@unicafe.com<br />
-                      support@unicafe.com<br />
+                      hello@unicafe.com
+                      <br />
+                      support@unicafe.com
+                      <br />
                       We reply within 24 hours
                     </p>
                   </div>
@@ -137,7 +172,9 @@ const Contact = () => {
                     <Clock className="w-6 h-6 text-primary-600" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-800 mb-1">Opening Hours</h3>
+                    <h3 className="font-bold text-gray-800 mb-1">
+                      Opening Hours
+                    </h3>
                     <div className="text-gray-600 space-y-1">
                       <p>Monday - Friday: 7:00 AM - 9:00 PM</p>
                       <p>Saturday: 8:00 AM - 10:00 PM</p>
@@ -154,8 +191,10 @@ const Contact = () => {
               viewport={{ once: true }}
             >
               <div className="glass-effect rounded-2xl p-8 shadow-2xl">
-                <h2 className="text-3xl font-bold text-gray-800 mb-6">Send us a Message</h2>
-                
+                <h2 className="text-3xl font-bold text-gray-800 mb-6">
+                  Send us a Message
+                </h2>
+
                 {submitted && (
                   <motion.div
                     initial={{ opacity: 0, y: -20 }}
@@ -237,8 +276,8 @@ const Contact = () => {
                     whileTap={{ scale: loading ? 1 : 0.98 }}
                     className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center space-x-2 ${
                       loading
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-primary-500 to-primary-600 hover:shadow-xl'
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-gradient-to-r from-primary-500 to-primary-600 hover:shadow-xl"
                     }`}
                   >
                     {loading ? (
@@ -279,8 +318,15 @@ const Contact = () => {
           </motion.div>
         </div>
       </section>
-    </div>
-  )
-}
 
-export default Contact
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={submitted}
+        onClose={handleCloseModal}
+        messageId={messageId}
+      />
+    </div>
+  );
+};
+
+export default Contact;
