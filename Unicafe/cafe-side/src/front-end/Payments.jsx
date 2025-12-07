@@ -54,7 +54,7 @@ const Payments = () => {
       const mapped = data.map(p => ({
         id: p.payment_id,
         paymentRef: `#PAY-${p.payment_id}`,
-        orderRef: `#ORD-${p.payment_order_id}`,
+        orderRef: `#ORD-${p.order_id}`,
         amount: parseFloat(p.payment_amount || 0),
         method: formatMethod(p.payment_method),
         status: (p.payment_status || 'pending'),

@@ -18,7 +18,7 @@ router.get("/", async (req, res) => {
         COALESCE(SUM(o.order_total), 0) as totalSpent,
         MAX(o.order_created_at) as lastOrder
       FROM users u
-      LEFT JOIN orders o ON u.user_id = o.order_user_id
+      LEFT JOIN orders o ON u.user_id = o.user_id
       WHERE 1=1
     `;
     const params = [];
@@ -50,7 +50,7 @@ router.get("/:id", async (req, res) => {
     }
 
     const orders = await db.allAsync(
-      "SELECT * FROM orders WHERE order_user_id = ? ORDER BY order_created_at DESC",
+      "SELECT * FROM orders WHERE user_id = ? ORDER BY order_created_at DESC",
       [req.params.id]
     );
 
@@ -60,7 +60,7 @@ router.get("/:id", async (req, res) => {
         COALESCE(SUM(order_total), 0) as totalSpent,
         MAX(order_created_at) as lastOrder
       FROM orders 
-      WHERE order_user_id = ? AND order_status != 'cancelled'`,
+      WHERE user_id = ? AND order_status != 'cancelled'`,
       [req.params.id]
     );
 

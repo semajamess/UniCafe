@@ -87,7 +87,7 @@ const Orders = () => {
         customer: {
           name: order.user_username || "Guest",
           email: order.user_email || "",
-          id: order.order_user_id || null,
+          id: order.user_id || null,
         },
         // items array may not be included in list endpoint; use count when available
         items: order.items || [],

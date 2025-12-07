@@ -70,17 +70,17 @@ console.log('✅ Cleared all order-related data');
 console.log('\n🌱 Seeding 75 orders with varied dates...');
 
 const insertOrder = db.prepare(`
-  INSERT INTO orders (order_user_id, order_customer_name, order_customer_email, order_total, order_status, order_created_at)
+  INSERT INTO orders (user_id, order_customer_name, order_customer_email, order_total, order_status, order_created_at)
   VALUES (?, ?, ?, ?, ?, ?)
 `);
 
 const insertOrderItem = db.prepare(`
-  INSERT INTO order_items (order_item_order_id, order_item_product_id, order_item_product_name, order_item_quantity, order_item_price)
+  INSERT INTO order_items (order_id, product_id, order_item_product_name, order_item_quantity, order_item_price)
   VALUES (?, ?, ?, ?, ?)
 `);
 
 const insertPayment = db.prepare(`
-  INSERT INTO payments (payment_order_id, payment_amount, payment_method, payment_status, payment_created_at)
+  INSERT INTO payments (order_id, payment_amount, payment_method, payment_status, payment_created_at)
   VALUES (?, ?, ?, ?, ?)
 `);
 

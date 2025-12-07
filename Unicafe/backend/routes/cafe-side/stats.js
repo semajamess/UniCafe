@@ -101,8 +101,8 @@ router.get("/dashboard", async (req, res) => {
         COUNT(oi.order_item_id) as itemCount,
         COALESCE(SUM(oi.order_item_price * oi.order_item_quantity), 0) as revenue
       FROM order_items oi
-      JOIN products p ON oi.order_item_product_id = p.product_id
-      JOIN orders o ON oi.order_item_order_id = o.order_id
+      JOIN products p ON oi.product_id = p.product_id
+      JOIN orders o ON oi.order_id = o.order_id
       WHERE o.order_status != 'cancelled'${currentDateFilter.replace('order_created_at', 'o.order_created_at')}
       GROUP BY p.product_category
     `);
@@ -115,10 +115,10 @@ router.get("/dashboard", async (req, res) => {
         COUNT(oi.order_item_id) as sales,
         COALESCE(SUM(oi.order_item_price * oi.order_item_quantity), 0) as revenue
       FROM order_items oi
-      JOIN products p ON oi.order_item_product_id = p.product_id
-      JOIN orders o ON oi.order_item_order_id = o.order_id
+      JOIN products p ON oi.product_id = p.product_id
+      JOIN orders o ON oi.order_id = o.order_id
       WHERE o.order_status != 'cancelled'${currentDateFilter.replace('order_created_at', 'o.order_created_at')}
-      GROUP BY oi.order_item_product_id
+      GROUP BY oi.product_id
       ORDER BY sales DESC
       LIMIT 5
     `);
@@ -132,9 +132,9 @@ router.get("/dashboard", async (req, res) => {
         o.order_created_at as created_at,
         u.user_username as customer_name,
         u.user_email as customer_email,
-        (SELECT COUNT(*) FROM order_items WHERE order_item_order_id = o.order_id) as item_count
+        (SELECT COUNT(*) FROM order_items WHERE order_id = o.order_id) as item_count
       FROM orders o
-      LEFT JOIN users u ON o.order_user_id = u.user_id
+      LEFT JOIN users u ON o.user_id = u.user_id
       ORDER BY o.order_created_at DESC
       LIMIT 5
     `);
@@ -149,7 +149,7 @@ router.get("/dashboard", async (req, res) => {
         COALESCE(SUM(o.order_total), 0) as totalSpent,
         CASE WHEN u.user_id IS NULL THEN 'walk-in' ELSE 'registered' END as type
       FROM orders o
-      LEFT JOIN users u ON o.order_user_id = u.user_id
+      LEFT JOIN users u ON o.user_id = u.user_id
       WHERE o.order_status != 'cancelled'${customerDateFilter}
       GROUP BY COALESCE(u.user_id, o.order_customer_name, 'Walk-in')
       ORDER BY totalSpent DESC
@@ -162,7 +162,7 @@ router.get("/dashboard", async (req, res) => {
         COALESCE(SUM(o.order_total), 0) as totalSpent,
         CASE WHEN u.user_id IS NULL THEN 'walk-in' ELSE 'registered' END as type
       FROM orders o
-      LEFT JOIN users u ON o.order_user_id = u.user_id
+      LEFT JOIN users u ON o.user_id = u.user_id
       WHERE o.order_status != 'cancelled'${customerDateFilter}
       GROUP BY COALESCE(u.user_id, o.order_customer_name, 'Walk-in')
       ORDER BY totalSpent DESC

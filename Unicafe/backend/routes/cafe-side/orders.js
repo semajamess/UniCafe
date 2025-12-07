@@ -13,12 +13,12 @@ router.get("/", async (req, res) => {
       SELECT o.*, 
         u.user_username,
         u.user_email,
-        (SELECT COUNT(*) FROM order_items WHERE order_item_order_id = o.order_id) as item_count,
-        (SELECT payment_method FROM payments WHERE payment_order_id = o.order_id ORDER BY payment_id DESC LIMIT 1) AS payment_method,
-        (SELECT payment_amount FROM payments WHERE payment_order_id = o.order_id ORDER BY payment_id DESC LIMIT 1) AS payment_amount,
-        (SELECT payment_id FROM payments WHERE payment_order_id = o.order_id ORDER BY payment_id DESC LIMIT 1) AS payment_id
+        (SELECT COUNT(*) FROM order_items WHERE order_id = o.order_id) as item_count,
+        (SELECT payment_method FROM payments WHERE order_id = o.order_id ORDER BY payment_id DESC LIMIT 1) AS payment_method,
+        (SELECT payment_amount FROM payments WHERE order_id = o.order_id ORDER BY payment_id DESC LIMIT 1) AS payment_amount,
+        (SELECT payment_id FROM payments WHERE order_id = o.order_id ORDER BY payment_id DESC LIMIT 1) AS payment_id
       FROM orders o
-      LEFT JOIN users u ON o.order_user_id = u.user_id
+      LEFT JOIN users u ON o.user_id = u.user_id
       WHERE 1=1
     `;
     const params = [];
@@ -41,7 +41,7 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const order = await db.getAsync(
-      "SELECT o.*, u.user_username, u.user_email FROM orders o LEFT JOIN users u ON o.order_user_id = u.user_id WHERE o.order_id = ?",
+      "SELECT o.*, u.user_username, u.user_email FROM orders o LEFT JOIN users u ON o.user_id = u.user_id WHERE o.order_id = ?",
       [req.params.id]
     );
 
@@ -50,11 +50,11 @@ router.get("/:id", async (req, res) => {
     }
 
     const items = await db.allAsync(
-      "SELECT * FROM order_items WHERE order_item_order_id = ?",
+      "SELECT * FROM order_items WHERE order_id = ?",
       [req.params.id]
     );
     const latestPayment = await db.getAsync(
-      "SELECT * FROM payments WHERE payment_order_id = ? ORDER BY payment_id DESC LIMIT 1",
+      "SELECT * FROM payments WHERE order_id = ? ORDER BY payment_id DESC LIMIT 1",
       [req.params.id]
     );
 
@@ -130,7 +130,7 @@ router.patch("/:id/status", async (req, res) => {
 // Delete order (ADMIN ONLY)
 router.delete("/:id", async (req, res) => {
   try {
-    await db.runAsync("DELETE FROM order_items WHERE order_item_order_id = ?", [
+    await db.runAsync("DELETE FROM order_items WHERE order_id = ?", [
       req.params.id,
     ]);
     await db.runAsync("DELETE FROM orders WHERE order_id = ?", [req.params.id]);

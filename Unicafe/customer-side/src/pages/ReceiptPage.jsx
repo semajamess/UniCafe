@@ -27,7 +27,7 @@ const normalizeOrder = (order) => {
   
   // Normalize items - handle both API response format and local format
   const normalizedItems = (order.items || []).map(item => ({
-    product_id: item.order_item_product_id || item.product_id || item.id,
+    product_id: item.product_id || item.product_id || item.id,
     product_name: item.order_item_product_name || item.product_name || item.name,
     quantity: item.order_item_quantity || item.quantity,
     price: item.order_item_price || item.price,

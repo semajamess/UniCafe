@@ -20,8 +20,8 @@ router.get("/customers/search", async (req, res) => {
         user_username,
         user_email,
         user_phone,
-        (SELECT COUNT(*) FROM orders WHERE order_user_id = users.user_id) as order_count,
-        (SELECT COALESCE(SUM(order_total), 0) FROM orders WHERE order_user_id = users.user_id AND order_status != 'cancelled') as total_spent
+        (SELECT COUNT(*) FROM orders WHERE user_id = users.user_id) as order_count,
+        (SELECT COALESCE(SUM(order_total), 0) FROM orders WHERE user_id = users.user_id AND order_status != 'cancelled') as total_spent
       FROM users
       WHERE user_username LIKE ? OR user_email LIKE ? OR user_phone LIKE ?
       LIMIT 10
@@ -107,7 +107,7 @@ router.post("/order", async (req, res) => {
     // Create the order
     const orderResult = await db.runAsync(
       `
-      INSERT INTO orders (order_user_id, order_customer_name, order_customer_email, order_total, order_status, order_created_at)
+      INSERT INTO orders (user_id, order_customer_name, order_customer_email, order_total, order_status, order_created_at)
       VALUES (?, ?, ?, ?, 'completed', datetime('now'))
     `,
       [
@@ -124,7 +124,7 @@ router.post("/order", async (req, res) => {
     for (const item of items) {
       await db.runAsync(
         `
-        INSERT INTO order_items (order_item_order_id, order_item_product_id, order_item_product_name, order_item_quantity, order_item_price)
+        INSERT INTO order_items (order_id, product_id, order_item_product_name, order_item_quantity, order_item_price)
         VALUES (?, ?, ?, ?, ?)
       `,
         [orderId, item.productId, item.name, item.quantity, item.price]
@@ -145,7 +145,7 @@ router.post("/order", async (req, res) => {
     // Create payment record
     const paymentResult = await db.runAsync(
       `
-      INSERT INTO payments (payment_order_id, payment_amount, payment_method, payment_status, payment_metadata, payment_created_at)
+      INSERT INTO payments (order_id, payment_amount, payment_method, payment_status, payment_metadata, payment_created_at)
       VALUES (?, ?, ?, 'completed', ?, datetime('now'))
     `,
       [
@@ -176,7 +176,7 @@ router.post("/order", async (req, res) => {
 
     const orderItems = await db.allAsync(
       `
-      SELECT * FROM order_items WHERE order_item_order_id = ?
+      SELECT * FROM order_items WHERE order_id = ?
     `,
       [orderId]
     );
@@ -226,8 +226,8 @@ router.get("/summary/today", async (req, res) => {
       SELECT 
         COUNT(*) as total_orders,
         COALESCE(SUM(order_total), 0) as total_revenue,
-        COUNT(CASE WHEN order_user_id IS NULL THEN 1 END) as guest_orders,
-        COUNT(CASE WHEN order_user_id IS NOT NULL THEN 1 END) as registered_orders
+        COUNT(CASE WHEN user_id IS NULL THEN 1 END) as guest_orders,
+        COUNT(CASE WHEN user_id IS NOT NULL THEN 1 END) as registered_orders
       FROM orders
       WHERE date(order_created_at) = date('now')
         AND order_status = 'completed'
@@ -239,7 +239,7 @@ router.get("/summary/today", async (req, res) => {
         COUNT(*) as count,
         SUM(p.payment_amount) as total
       FROM payments p
-      JOIN orders o ON p.payment_order_id = o.order_id
+      JOIN orders o ON p.order_id = o.order_id
       WHERE date(o.order_created_at) = date('now')
         AND o.order_status = 'completed'
       GROUP BY p.payment_method
@@ -263,10 +263,10 @@ router.get("/orders/recent", async (req, res) => {
         u.user_username,
         p.payment_method,
         p.payment_metadata,
-        (SELECT COUNT(*) FROM order_items WHERE order_item_order_id = o.order_id) as item_count
+        (SELECT COUNT(*) FROM order_items WHERE order_id = o.order_id) as item_count
       FROM orders o
-      LEFT JOIN users u ON o.order_user_id = u.user_id
-      LEFT JOIN payments p ON p.payment_order_id = o.order_id
+      LEFT JOIN users u ON o.user_id = u.user_id
+      LEFT JOIN payments p ON p.order_id = o.order_id
       WHERE date(o.order_created_at) = date('now')
       ORDER BY o.order_created_at DESC
       LIMIT 20
@@ -294,7 +294,7 @@ router.post("/order/:id/void", async (req, res) => {
 
     // Restore stock for voided items
     const items = await db.allAsync(
-      "SELECT * FROM order_items WHERE order_item_order_id = ?",
+      "SELECT * FROM order_items WHERE order_id = ?",
       [id]
     );
 
@@ -303,7 +303,7 @@ router.post("/order/:id/void", async (req, res) => {
         `
         UPDATE products SET product_stock = product_stock + ? WHERE product_id = ?
       `,
-        [item.order_item_quantity, item.order_item_product_id]
+        [item.order_item_quantity, item.product_id]
       );
     }
 
@@ -319,7 +319,7 @@ router.post("/order/:id/void", async (req, res) => {
       UPDATE payments 
       SET payment_status = 'voided', 
           payment_metadata = json_set(COALESCE(payment_metadata, '{}'), '$.voidReason', ?)
-      WHERE payment_order_id = ?
+      WHERE order_id = ?
     `,
       [reason || "No reason provided", id]
     );

@@ -18,13 +18,13 @@ router.get("/", authenticateToken, async (req, res) => {
       SELECT o.*, 
         u.user_username,
         u.user_email,
-        (SELECT COUNT(*) FROM order_items WHERE order_item_order_id = o.order_id) as item_count,
-        (SELECT payment_method FROM payments WHERE payment_order_id = o.order_id ORDER BY payment_id DESC LIMIT 1) AS payment_method,
-        (SELECT payment_amount FROM payments WHERE payment_order_id = o.order_id ORDER BY payment_id DESC LIMIT 1) AS payment_amount,
-        (SELECT payment_id FROM payments WHERE payment_order_id = o.order_id ORDER BY payment_id DESC LIMIT 1) AS payment_id
+        (SELECT COUNT(*) FROM order_items WHERE order_id = o.order_id) as item_count,
+        (SELECT payment_method FROM payments WHERE order_id = o.order_id ORDER BY payment_id DESC LIMIT 1) AS payment_method,
+        (SELECT payment_amount FROM payments WHERE order_id = o.order_id ORDER BY payment_id DESC LIMIT 1) AS payment_amount,
+        (SELECT payment_id FROM payments WHERE order_id = o.order_id ORDER BY payment_id DESC LIMIT 1) AS payment_id
       FROM orders o
-      LEFT JOIN users u ON o.order_user_id = u.user_id
-      WHERE o.order_user_id = ?
+      LEFT JOIN users u ON o.user_id = u.user_id
+      WHERE o.user_id = ?
     `;
 
     const { status } = req.query;
@@ -43,7 +43,7 @@ router.get("/", authenticateToken, async (req, res) => {
     const ordersWithItems = await Promise.all(
       orders.map(async (order) => {
         const items = await db.allAsync(
-          "SELECT * FROM order_items WHERE order_item_order_id = ?",
+          "SELECT * FROM order_items WHERE order_id = ?",
           [order.order_id]
         );
         return { ...order, items };
@@ -66,7 +66,7 @@ router.get("/:id", authenticateToken, async (req, res) => {
     }
 
     const order = await db.getAsync(
-      "SELECT o.*, u.user_username, u.user_email FROM orders o LEFT JOIN users u ON o.order_user_id = u.user_id WHERE o.order_id = ? AND o.order_user_id = ?",
+      "SELECT o.*, u.user_username, u.user_email FROM orders o LEFT JOIN users u ON o.user_id = u.user_id WHERE o.order_id = ? AND o.user_id = ?",
       [req.params.id, user_id]
     );
 
@@ -77,11 +77,11 @@ router.get("/:id", authenticateToken, async (req, res) => {
     }
 
     const items = await db.allAsync(
-      "SELECT * FROM order_items WHERE order_item_order_id = ?",
+      "SELECT * FROM order_items WHERE order_id = ?",
       [req.params.id]
     );
     const latestPayment = await db.getAsync(
-      "SELECT * FROM payments WHERE payment_order_id = ? ORDER BY payment_id DESC LIMIT 1",
+      "SELECT * FROM payments WHERE order_id = ? ORDER BY payment_id DESC LIMIT 1",
       [req.params.id]
     );
 
@@ -129,7 +129,7 @@ router.post("/", authenticateToken, async (req, res) => {
 
     // Create order linked to authenticated user
     const orderResult = await db.runAsync(
-      `INSERT INTO orders (order_user_id, order_total, order_status) 
+      `INSERT INTO orders (user_id, order_total, order_status) 
        VALUES (?, ?, ?)`,
       [user_id, total.toFixed(2), "pending"]
     );
@@ -139,7 +139,7 @@ router.post("/", authenticateToken, async (req, res) => {
     // Create order items
     for (const detail of productDetails) {
       await db.runAsync(
-        `INSERT INTO order_items (order_item_order_id, order_item_product_id, order_item_product_name, order_item_quantity, order_item_price) 
+        `INSERT INTO order_items (order_id, product_id, order_item_product_name, order_item_quantity, order_item_price) 
          VALUES (?, ?, ?, ?, ?)`,
         [
           orderId,
@@ -155,7 +155,7 @@ router.post("/", authenticateToken, async (req, res) => {
     let paymentId = null;
     if (payment_method) {
       const paymentResult = await db.runAsync(
-        `INSERT INTO payments (payment_order_id, payment_amount, payment_method, payment_provider_txn_id, payment_status, payment_metadata) 
+        `INSERT INTO payments (order_id, payment_amount, payment_method, payment_provider_txn_id, payment_status, payment_metadata) 
          VALUES (?, ?, ?, ?, ?, ?)`,
         [
           orderId,
@@ -180,15 +180,15 @@ router.post("/", authenticateToken, async (req, res) => {
 
     // Fetch canonical order including joined user info and items
     const createdOrder = await db.getAsync(
-      "SELECT o.*, u.user_username, u.user_email FROM orders o LEFT JOIN users u ON o.order_user_id = u.user_id WHERE o.order_id = ?",
+      "SELECT o.*, u.user_username, u.user_email FROM orders o LEFT JOIN users u ON o.user_id = u.user_id WHERE o.order_id = ?",
       [orderId]
     );
     const createdItems = await db.allAsync(
-      "SELECT * FROM order_items WHERE order_item_order_id = ?",
+      "SELECT * FROM order_items WHERE order_id = ?",
       [orderId]
     );
     const latestPayment = await db.getAsync(
-      "SELECT * FROM payments WHERE payment_order_id = ? ORDER BY payment_id DESC LIMIT 1",
+      "SELECT * FROM payments WHERE order_id = ? ORDER BY payment_id DESC LIMIT 1",
       [orderId]
     );
 
@@ -239,10 +239,10 @@ router.patch("/:id/status", authenticateToken, async (req, res) => {
 
     // Verify ownership
     const order = await db.getAsync(
-      "SELECT order_user_id FROM orders WHERE order_id = ?",
+      "SELECT user_id FROM orders WHERE order_id = ?",
       [req.params.id]
     );
-    if (!order || order.order_user_id !== user_id) {
+    if (!order || order.user_id !== user_id) {
       return res
         .status(403)
         .json({ error: "Not authorized to update this order" });

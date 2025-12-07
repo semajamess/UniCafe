@@ -45,7 +45,7 @@ router.get('/', async (req, res) => {
     
     // If mostOrdered is requested, join with order_items to get sales count
     if (mostOrdered === 'true') {
-      query += ` LEFT JOIN order_items oi ON p.product_id = oi.order_item_product_id
+      query += ` LEFT JOIN order_items oi ON p.product_id = oi.product_id
         WHERE p.product_is_available = 1
         GROUP BY p.product_id
         ORDER BY SUM(oi.order_item_quantity) DESC

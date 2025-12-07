@@ -27,8 +27,8 @@ router.get('/', async (req, res) => {
         u.user_username,
         u.user_email
       FROM payments p
-      LEFT JOIN orders o ON p.payment_order_id = o.order_id
-      LEFT JOIN users u ON o.order_user_id = u.user_id
+      LEFT JOIN orders o ON p.order_id = o.order_id
+      LEFT JOIN users u ON o.user_id = u.user_id
       WHERE 1=1
     `;
     const params = [];

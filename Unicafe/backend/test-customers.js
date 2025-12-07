@@ -9,7 +9,7 @@ const sql = `
     COALESCE(SUM(o.order_total), 0) as totalSpent,
     CASE WHEN u.user_id IS NULL THEN 'walk-in' ELSE 'registered' END as type
   FROM orders o
-  LEFT JOIN users u ON o.order_user_id = u.user_id
+  LEFT JOIN users u ON o.user_id = u.user_id
   WHERE o.order_status != 'cancelled'
   GROUP BY COALESCE(u.user_id, o.order_customer_name, 'Walk-in')
   ORDER BY totalSpent DESC

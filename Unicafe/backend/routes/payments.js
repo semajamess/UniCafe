@@ -63,8 +63,8 @@ router.post("/create-link", authenticateToken, async (req, res) => {
     const insertCols = [];
     const params = [];
 
-    if (cols.includes("order_user_id")) {
-      insertCols.push("order_user_id");
+    if (cols.includes("user_id")) {
+      insertCols.push("user_id");
       params.push(user_id || null);
     }
     if (cols.includes("order_customer_name")) {
@@ -102,7 +102,7 @@ router.post("/create-link", authenticateToken, async (req, res) => {
         [it.product_id]
       );
       await db.runAsync(
-        `INSERT INTO order_items (order_item_order_id, order_item_product_id, order_item_product_name, order_item_quantity, order_item_price) VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO order_items (order_id, product_id, order_item_product_name, order_item_quantity, order_item_price) VALUES (?, ?, ?, ?, ?)`,
         [orderId, p.product_id, p.product_name, it.quantity, p.product_price]
       );
     }
@@ -114,8 +114,8 @@ router.post("/create-link", authenticateToken, async (req, res) => {
     const payInsertCols = [];
     const payParams = [];
 
-    if (payCols.includes("payment_order_id")) {
-      payInsertCols.push("payment_order_id");
+    if (payCols.includes("order_id")) {
+      payInsertCols.push("order_id");
       payParams.push(orderId);
     }
     if (payCols.includes("payment_amount")) {
@@ -201,15 +201,15 @@ router.get("/redirect-simulate", async (req, res) => {
       let recipient = null;
       try {
         const orderRow = await db.getAsync(
-          "SELECT order_customer_email, order_user_id FROM orders WHERE order_id = ?",
+          "SELECT order_customer_email, user_id FROM orders WHERE order_id = ?",
           [order_id]
         );
         if (orderRow && orderRow.order_customer_email)
           recipient = orderRow.order_customer_email;
-        else if (orderRow && orderRow.order_user_id) {
+        else if (orderRow && orderRow.user_id) {
           const user = await db.getAsync(
             "SELECT user_email FROM users WHERE user_id = ?",
-            [orderRow.order_user_id]
+            [orderRow.user_id]
           );
           if (user && user.user_email) recipient = user.user_email;
         }
@@ -492,7 +492,7 @@ router.post("/confirm-otp", authenticateToken, async (req, res) => {
 
     // Create order with all fields
     const orderResult = await db.runAsync(
-      `INSERT INTO orders (order_user_id, order_customer_name, order_customer_email, order_total, order_status) VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO orders (user_id, order_customer_name, order_customer_email, order_total, order_status) VALUES (?, ?, ?, ?, ?)`,
       [user_id, customer_name, customer_email, total.toFixed(2), "processing"]
     );
     const orderId = orderResult.lastID;
@@ -500,7 +500,7 @@ router.post("/confirm-otp", authenticateToken, async (req, res) => {
     // Create order_items
     for (const detail of productDetails) {
       await db.runAsync(
-        `INSERT INTO order_items (order_item_order_id, order_item_product_id, order_item_product_name, order_item_quantity, order_item_price) VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO order_items (order_id, product_id, order_item_product_name, order_item_quantity, order_item_price) VALUES (?, ?, ?, ?, ?)`,
         [
           orderId,
           detail.product_id,
@@ -519,7 +519,7 @@ router.post("/confirm-otp", authenticateToken, async (req, res) => {
 
     // Create payment record
     const paymentResult = await db.runAsync(
-      `INSERT INTO payments (payment_order_id, payment_amount, payment_method, payment_status) VALUES (?, ?, ?, ?)`,
+      `INSERT INTO payments (order_id, payment_amount, payment_method, payment_status) VALUES (?, ?, ?, ?)`,
       [orderId, total.toFixed(2), method_hint || "gcash", "completed"]
     );
     const paymentId = paymentResult.lastID;
@@ -537,15 +537,15 @@ router.post("/confirm-otp", authenticateToken, async (req, res) => {
 
     // Fetch complete order for response
     const createdOrder = await db.getAsync(
-      "SELECT o.*, u.user_username, u.user_email FROM orders o LEFT JOIN users u ON o.order_user_id = u.user_id WHERE o.order_id = ?",
+      "SELECT o.*, u.user_username, u.user_email FROM orders o LEFT JOIN users u ON o.user_id = u.user_id WHERE o.order_id = ?",
       [orderId]
     );
     const createdItems = await db.allAsync(
-      "SELECT * FROM order_items WHERE order_item_order_id = ?",
+      "SELECT * FROM order_items WHERE order_id = ?",
       [orderId]
     );
     const latestPayment = await db.getAsync(
-      "SELECT * FROM payments WHERE payment_order_id = ? ORDER BY payment_id DESC LIMIT 1",
+      "SELECT * FROM payments WHERE order_id = ? ORDER BY payment_id DESC LIMIT 1",
       [orderId]
     );
 
