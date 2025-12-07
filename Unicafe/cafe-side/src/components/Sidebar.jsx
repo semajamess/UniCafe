@@ -19,14 +19,40 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
   const navigate = useNavigate();
   const [storeName, setStoreName] = useState("UniCafé");
 
-  // Fetch and auto-sync store settings
+  // Fetch and cache store settings with 5-minute TTL
   useEffect(() => {
+    const CACHE_KEY = "storeSettings";
+    const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+
     const fetchStoreSettings = async () => {
       try {
+        // Check if cache exists and is still valid
+        const cachedData = localStorage.getItem(CACHE_KEY);
+        if (cachedData) {
+          const { data, timestamp } = JSON.parse(cachedData);
+          const cacheAge = Date.now() - timestamp;
+
+          if (cacheAge < CACHE_TTL) {
+            // Cache is still valid, use it
+            setStoreName(data.store_name || "UniCafé");
+            return;
+          }
+        }
+
+        // Cache expired or doesn't exist, fetch fresh data
         const response = await fetch("http://localhost:3000/api/cafe/settings");
         if (response.ok) {
           const data = await response.json();
           setStoreName(data.store_name || "UniCafé");
+
+          // Save to cache with timestamp
+          localStorage.setItem(
+            CACHE_KEY,
+            JSON.stringify({
+              data: data,
+              timestamp: Date.now(),
+            })
+          );
         }
       } catch (error) {
         console.error("Error fetching store settings:", error);
@@ -35,17 +61,14 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
 
     fetchStoreSettings();
 
-    // Sync on window focus
+    // Only fetch on window focus (no polling)
     const handleFocus = () => {
       fetchStoreSettings();
     };
 
-    // Sync every 15 seconds
-    const interval = setInterval(fetchStoreSettings, 15000);
     window.addEventListener("focus", handleFocus);
 
     return () => {
-      clearInterval(interval);
       window.removeEventListener("focus", handleFocus);
     };
   }, []);

@@ -19,10 +19,33 @@ export default function Footer() {
     store_address: "123 Main Street, Downtown District",
   });
 
-  // Fetch and auto-sync store settings
+  // Fetch and cache store settings with 5-minute TTL
   useEffect(() => {
+    const CACHE_KEY = "storeSettings";
+    const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+
     const fetchStoreSettings = async () => {
       try {
+        // Check if cache exists and is still valid
+        const cachedData = localStorage.getItem(CACHE_KEY);
+        if (cachedData) {
+          const { data, timestamp } = JSON.parse(cachedData);
+          const cacheAge = Date.now() - timestamp;
+
+          if (cacheAge < CACHE_TTL) {
+            // Cache is still valid, use it
+            setStoreSettings({
+              store_name: data.store_name || "UniCafe",
+              store_email: data.store_email || "hello@unicafe.com",
+              store_phone: data.store_phone || "+63 123 456 7890",
+              store_address:
+                data.store_address || "123 Main Street, Downtown District",
+            });
+            return;
+          }
+        }
+
+        // Cache expired or doesn't exist, fetch fresh data
         const response = await fetch(
           "http://localhost:3000/api/customer/settings"
         );
@@ -35,6 +58,15 @@ export default function Footer() {
             store_address:
               data.store_address || "123 Main Street, Downtown District",
           });
+
+          // Save to cache with timestamp
+          localStorage.setItem(
+            CACHE_KEY,
+            JSON.stringify({
+              data: data,
+              timestamp: Date.now(),
+            })
+          );
         }
       } catch (error) {
         console.error("Error fetching store settings:", error);
@@ -43,17 +75,14 @@ export default function Footer() {
 
     fetchStoreSettings();
 
-    // Sync on window focus
+    // Only fetch on window focus (no polling)
     const handleFocus = () => {
       fetchStoreSettings();
     };
 
-    // Sync every 15 seconds
-    const interval = setInterval(fetchStoreSettings, 15000);
     window.addEventListener("focus", handleFocus);
 
     return () => {
-      clearInterval(interval);
       window.removeEventListener("focus", handleFocus);
     };
   }, []);
