@@ -1,7 +1,6 @@
 import sqlite3 from 'sqlite3';
 import { promisify } from 'util';
 import path from 'path';
-import { runMigration } from './migrations/20251201_refactor_database_with_prefixes.js';
 
 const dbPath = path.resolve('./unicafe.db');
 const db = new sqlite3.Database(dbPath, (err) => {
@@ -29,19 +28,12 @@ db.runAsync = (sql, params = []) => {
 db.getAsync = promisify(db.get.bind(db));
 db.allAsync = promisify(db.all.bind(db));
 
-// Initialize database tables with prefixed column names
+// Initialize database tables
 export const initDatabase = async () => {
   try {
-    // Run migration first to refactor existing database
-    // Pass the database handle to the migration so it uses the same connection
-    await runMigration(db);
-
-    // All tables are now created by the migration script
-    // No need to create them again here
-
-    console.log('✅ Database tables initialized');
-
-    // Note: Categories seeding removed - categories are now product_category attribute in products table
+    console.log('✅ Database initialized and ready');
+    // Database tables already exist from previous migrations
+    // No additional setup needed
 
   } catch (error) {
     console.error('❌ Error initializing database:', error);
