@@ -9,6 +9,7 @@ import Orders from "./front-end/Orders";
 import Payments from "./front-end/Payments";
 import Customers from "./front-end/Customers";
 import Settings from "./front-end/Settings";
+import { NotificationProvider } from "./context/NotificationContext";
 
 // Auth Context
 const AuthContext = createContext(null);
@@ -127,36 +128,38 @@ function App() {
     <AuthContext.Provider
       value={{ isAuthenticated, loading, user, login, logout }}
     >
-      <Routes>
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          }
-        />
+      <NotificationProvider>
+        <Routes>
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
 
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="pos" element={<POS />} />
-          <Route path="products" element={<Products />} />
-          <Route path="orders" element={<Orders />} />
-          <Route path="payments" element={<Payments />} />
-          <Route path="customers" element={<Customers />} />
-          <Route path="settings" element={<Settings />} />
-        </Route>
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="pos" element={<POS />} />
+            <Route path="products" element={<Products />} />
+            <Route path="orders" element={<Orders />} />
+            <Route path="payments" element={<Payments />} />
+            <Route path="customers" element={<Customers />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </NotificationProvider>
     </AuthContext.Provider>
   );
 }

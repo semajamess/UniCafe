@@ -4,6 +4,7 @@ import { authenticateToken } from "./auth.js";
 import { sendOtpEmail } from "../../services/emailService.js";
 import { sendOtpSms, maskPhoneNumber } from "../../services/smsService.js";
 import bodyParser from "body-parser";
+import { createNotification } from "../cafe-side/notifications.js";
 
 const router = express.Router();
 
@@ -347,12 +348,10 @@ router.post("/initiate-otp", authenticateToken, async (req, res) => {
 
     // Validate that we have the right contact info for the channel
     if (channel === "sms" && !userPhone) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "Phone number required for E-Wallet payment. Please update your profile.",
-        });
+      return res.status(400).json({
+        error:
+          "Phone number required for E-Wallet payment. Please update your profile.",
+      });
     }
     if (channel === "email" && !userEmail) {
       return res
@@ -589,6 +588,28 @@ router.post("/confirm-otp", authenticateToken, async (req, res) => {
       "items:",
       createdItems.length
     );
+
+    // Emit real-time notification to cafe admins
+    const io = req.app.get("io");
+    if (io) {
+      await createNotification(io, {
+        type: "new_order",
+        title: "New Order Received",
+        message: `Order #${orderId} - ₱${total.toFixed(2)} from ${
+          customer_name || customer_email || "Customer"
+        }`,
+        data: {
+          orderId,
+          total,
+          itemCount: createdItems.length,
+          customerName: customer_name || customer_email,
+          paymentMethod: method_hint || "bank_transfer",
+        },
+      });
+      console.log("✅ Notification sent for order #" + orderId);
+    } else {
+      console.warn("⚠️ Socket.IO not available, notification not sent");
+    }
 
     res.json({ order: orderResponse, orderId, paymentId, requestId });
   } catch (err) {
