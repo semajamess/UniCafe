@@ -64,12 +64,58 @@ const POS = () => {
     fetchTodaySummary();
   }, []);
 
+  // Auto-sync selected customer information
+  useEffect(() => {
+    if (!selectedCustomer) return;
+
+    const syncCustomerInfo = async () => {
+      try {
+        // Fetch updated customer info by searching for their ID
+        const response = await fetch(
+          `${API_URL}/pos/customers/search?q=${encodeURIComponent(
+            selectedCustomer.user_email
+          )}`
+        );
+        const data = await response.json();
+
+        // Find the matching customer by ID
+        const updatedCustomer = data.find(
+          (c) => c.user_id === selectedCustomer.user_id
+        );
+
+        if (updatedCustomer) {
+          // Update selected customer with fresh data
+          setSelectedCustomer(updatedCustomer);
+        }
+      } catch (error) {
+        console.error("Error syncing customer info:", error);
+      }
+    };
+
+    // Sync on window focus (when user switches back to tab)
+    const handleFocus = () => {
+      syncCustomerInfo();
+    };
+
+    // Sync every 15 seconds
+    const interval = setInterval(syncCustomerInfo, 15000);
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      if (interval) clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [selectedCustomer?.user_id]); // Re-run when customer changes
+
   // Filter products when search or category changes
   useEffect(() => {
     let filtered = products;
 
     if (selectedCategory !== "all") {
-      filtered = filtered.filter((p) => p.product_category === selectedCategory);
+      filtered = filtered.filter(
+        (p) => p.product_category === selectedCategory
+      );
     }
 
     if (searchTerm) {
@@ -132,7 +178,9 @@ const POS = () => {
   const searchCustomers = async (query) => {
     try {
       setSearchingCustomer(true);
-      const response = await fetch(`${API_URL}/pos/customers/search?q=${encodeURIComponent(query)}`);
+      const response = await fetch(
+        `${API_URL}/pos/customers/search?q=${encodeURIComponent(query)}`
+      );
       const data = await response.json();
       setCustomerResults(data);
     } catch (error) {
@@ -147,7 +195,9 @@ const POS = () => {
     if (product.product_stock <= 0) return;
 
     setCart((prev) => {
-      const existing = prev.find((item) => item.productId === product.product_id);
+      const existing = prev.find(
+        (item) => item.productId === product.product_id
+      );
       if (existing) {
         if (existing.quantity >= product.product_stock) return prev;
         return prev.map((item) =>
@@ -208,13 +258,13 @@ const POS = () => {
   // Payment functions
   const handleCheckout = () => {
     if (cart.length === 0) return;
-    
+
     // Validation: if customer type is "registered", must have selected a customer
     if (customerType === "registered" && !selectedCustomer) {
       alert("Please select a registered customer or switch to Guest mode.");
       return;
     }
-    
+
     setAmountReceived("");
     setShowPaymentModal(true);
   };
@@ -304,7 +354,9 @@ const POS = () => {
                     LIVE
                   </span>
                 </h1>
-                <p className="text-sm text-slate-600 font-semibold">UniCafé - Walk-in Orders System</p>
+                <p className="text-sm text-slate-600 font-semibold">
+                  UniCafé - Walk-in Orders System
+                </p>
               </div>
             </div>
 
@@ -318,22 +370,28 @@ const POS = () => {
                         <DollarSign className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <p className="text-xs text-green-700 font-bold">Today's Revenue</p>
+                        <p className="text-xs text-green-700 font-bold">
+                          Today's Revenue
+                        </p>
                         <p className="text-xl font-bold text-green-800">
                           ₱{todaySummary.total_revenue?.toFixed(2) || "0.00"}
                         </p>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="bg-gradient-to-br from-blue-50 to-sky-50 px-6 py-3 rounded-xl border-2 border-blue-200 shadow-md">
                     <div className="flex items-center gap-3">
                       <div className="bg-gradient-to-br from-blue-500 to-sky-500 p-2 rounded-lg shadow-md">
                         <Receipt className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <p className="text-xs text-blue-700 font-bold">Orders Today</p>
-                        <p className="text-xl font-bold text-blue-800">{todaySummary.total_orders || 0}</p>
+                        <p className="text-xs text-blue-700 font-bold">
+                          Orders Today
+                        </p>
+                        <p className="text-xl font-bold text-blue-800">
+                          {todaySummary.total_orders || 0}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -398,12 +456,16 @@ const POS = () => {
             {loading ? (
               <div className="flex flex-col items-center justify-center h-64">
                 <RefreshCw className="w-12 h-12 animate-spin text-amber-500 mb-4" />
-                <p className="text-slate-500 font-medium">Loading products...</p>
+                <p className="text-slate-500 font-medium">
+                  Loading products...
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                 {filteredProducts.map((product) => {
-                  const inCart = cart.find((item) => item.productId === product.product_id);
+                  const inCart = cart.find(
+                    (item) => item.productId === product.product_id
+                  );
                   const isOutOfStock = product.product_stock <= 0;
 
                   return (
@@ -464,9 +526,15 @@ const POS = () => {
                           {product.product_name}
                         </h3>
                         <div className="flex items-center justify-between">
-                          <p className="text-lg font-bold text-amber-600">₱{product.product_price.toFixed(2)}</p>
+                          <p className="text-lg font-bold text-amber-600">
+                            ₱{product.product_price.toFixed(2)}
+                          </p>
                           {!isOutOfStock && (
-                            <Plus className={`w-5 h-5 ${inCart ? 'text-amber-500' : 'text-slate-400'} group-hover:text-amber-500`} />
+                            <Plus
+                              className={`w-5 h-5 ${
+                                inCart ? "text-amber-500" : "text-slate-400"
+                              } group-hover:text-amber-500`}
+                            />
                           )}
                         </div>
                       </div>
@@ -490,7 +558,9 @@ const POS = () => {
         <div className="w-[420px] bg-white border-l-2 border-slate-200 flex flex-col shadow-2xl">
           {/* Customer Selection */}
           <div className="p-6 border-b-2 border-slate-100 bg-gradient-to-b from-slate-50 to-white">
-            <h3 className="text-xs font-bold text-slate-500 mb-3 tracking-wider uppercase">Customer Type</h3>
+            <h3 className="text-xs font-bold text-slate-500 mb-3 tracking-wider uppercase">
+              Customer Type
+            </h3>
 
             <div className="grid grid-cols-2 gap-3 mb-4">
               <button
@@ -548,8 +618,12 @@ const POS = () => {
                           }}
                           className="w-full px-4 py-3 text-left hover:bg-amber-50 border-b border-slate-100 last:border-0 transition-colors"
                         >
-                          <p className="font-bold text-slate-800">{customer.user_username}</p>
-                          <p className="text-xs text-slate-500">{customer.user_email}</p>
+                          <p className="font-bold text-slate-800">
+                            {customer.user_username}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {customer.user_email}
+                          </p>
                           <div className="flex items-center gap-3 mt-1">
                             <span className="text-xs text-amber-600 font-semibold">
                               {customer.order_count} orders
@@ -581,9 +655,13 @@ const POS = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <UserCheck className="w-4 h-4 text-amber-600" />
-                      <p className="font-bold text-slate-800">{selectedCustomer.user_username}</p>
+                      <p className="font-bold text-slate-800">
+                        {selectedCustomer.user_username}
+                      </p>
                     </div>
-                    <p className="text-xs text-slate-600 mb-2">{selectedCustomer.user_email}</p>
+                    <p className="text-xs text-slate-600 mb-2">
+                      {selectedCustomer.user_email}
+                    </p>
                     <div className="flex items-center gap-3">
                       <span className="text-xs bg-white px-2 py-1 rounded-md text-amber-600 font-semibold">
                         {selectedCustomer.order_count} orders
@@ -658,7 +736,9 @@ const POS = () => {
                       <p className="font-bold text-slate-800 text-sm truncate leading-tight">
                         {item.name}
                       </p>
-                      <p className="text-xs text-slate-500 mb-1">₱{item.price.toFixed(2)} each</p>
+                      <p className="text-xs text-slate-500 mb-1">
+                        ₱{item.price.toFixed(2)} each
+                      </p>
                       <p className="text-amber-600 text-base font-bold">
                         ₱{(item.price * item.quantity).toFixed(2)}
                       </p>
@@ -671,7 +751,9 @@ const POS = () => {
                       >
                         <Minus className="w-4 h-4" />
                       </button>
-                      <span className="w-10 text-center font-bold text-slate-800">{item.quantity}</span>
+                      <span className="w-10 text-center font-bold text-slate-800">
+                        {item.quantity}
+                      </span>
                       <button
                         onClick={() => updateQuantity(item.productId, 1)}
                         disabled={item.quantity >= item.maxStock}
@@ -697,12 +779,20 @@ const POS = () => {
             <div className="bg-gradient-to-r from-slate-50 to-amber-50 p-4 rounded-xl mb-4 border border-slate-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-slate-500 font-semibold mb-1">Order Total</p>
-                  <p className="text-3xl font-bold text-slate-800">₱{getCartTotal().toFixed(2)}</p>
+                  <p className="text-xs text-slate-500 font-semibold mb-1">
+                    Order Total
+                  </p>
+                  <p className="text-3xl font-bold text-slate-800">
+                    ₱{getCartTotal().toFixed(2)}
+                  </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-slate-500 font-semibold mb-1">Items</p>
-                  <p className="text-2xl font-bold text-amber-600">{getCartItemCount()}</p>
+                  <p className="text-xs text-slate-500 font-semibold mb-1">
+                    Items
+                  </p>
+                  <p className="text-2xl font-bold text-amber-600">
+                    {getCartItemCount()}
+                  </p>
                 </div>
               </div>
             </div>
@@ -719,7 +809,7 @@ const POS = () => {
               <Banknote className="w-6 h-6" />
               Process Cash Payment
             </button>
-            
+
             {isCheckoutDisabled() && cart.length > 0 && (
               <p className="text-xs text-center text-red-500 mt-2 font-medium">
                 {customerType === "registered" && !selectedCustomer
@@ -742,7 +832,9 @@ const POS = () => {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-white">Cash Payment</h2>
-                  <p className="text-sm text-green-100">Complete the transaction</p>
+                  <p className="text-sm text-green-100">
+                    Complete the transaction
+                  </p>
                 </div>
               </div>
               <button
@@ -757,20 +849,32 @@ const POS = () => {
               {/* Order Summary */}
               <div className="bg-gradient-to-br from-slate-50 to-amber-50 rounded-xl p-5 mb-6 border-2 border-slate-200">
                 <div className="flex justify-between items-center mb-3">
-                  <span className="text-slate-600 font-semibold">Total Items</span>
-                  <span className="font-bold text-lg">{getCartItemCount()}</span>
+                  <span className="text-slate-600 font-semibold">
+                    Total Items
+                  </span>
+                  <span className="font-bold text-lg">
+                    {getCartItemCount()}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center pt-3 border-t-2 border-white">
-                  <span className="text-slate-700 font-bold text-lg">Amount to Pay</span>
-                  <span className="text-3xl font-bold text-green-600">₱{getCartTotal().toFixed(2)}</span>
+                  <span className="text-slate-700 font-bold text-lg">
+                    Amount to Pay
+                  </span>
+                  <span className="text-3xl font-bold text-green-600">
+                    ₱{getCartTotal().toFixed(2)}
+                  </span>
                 </div>
               </div>
 
               {/* Cash Amount Input */}
               <div className="mb-6">
-                <h3 className="text-sm font-bold text-slate-500 mb-3 tracking-wider uppercase">Cash Received</h3>
+                <h3 className="text-sm font-bold text-slate-500 mb-3 tracking-wider uppercase">
+                  Cash Received
+                </h3>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-slate-400">₱</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-slate-400">
+                    ₱
+                  </span>
                   <input
                     type="number"
                     value={amountReceived}
@@ -802,27 +906,39 @@ const POS = () => {
                 </button>
 
                 {/* Change Display */}
-                {amountReceived && parseFloat(amountReceived) >= getCartTotal() && (
-                  <div className="mt-5 p-5 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-300 text-center shadow-sm">
-                    <p className="text-sm text-green-600 font-bold mb-1 tracking-wider uppercase">Change</p>
-                    <p className="text-4xl font-bold text-green-700">
-                      ₱{calculateChange().toFixed(2)}
-                    </p>
-                  </div>
-                )}
+                {amountReceived &&
+                  parseFloat(amountReceived) >= getCartTotal() && (
+                    <div className="mt-5 p-5 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-300 text-center shadow-sm">
+                      <p className="text-sm text-green-600 font-bold mb-1 tracking-wider uppercase">
+                        Change
+                      </p>
+                      <p className="text-4xl font-bold text-green-700">
+                        ₱{calculateChange().toFixed(2)}
+                      </p>
+                    </div>
+                  )}
 
-                {amountReceived && parseFloat(amountReceived) < getCartTotal() && (
-                  <div className="mt-5 p-4 bg-red-50 rounded-xl border-2 border-red-200 text-center flex items-center justify-center gap-2">
-                    <AlertCircle className="w-5 h-5 text-red-500" />
-                    <p className="text-sm text-red-600 font-bold">Insufficient amount - Need ₱{(getCartTotal() - parseFloat(amountReceived)).toFixed(2)} more</p>
-                  </div>
-                )}
+                {amountReceived &&
+                  parseFloat(amountReceived) < getCartTotal() && (
+                    <div className="mt-5 p-4 bg-red-50 rounded-xl border-2 border-red-200 text-center flex items-center justify-center gap-2">
+                      <AlertCircle className="w-5 h-5 text-red-500" />
+                      <p className="text-sm text-red-600 font-bold">
+                        Insufficient amount - Need ₱
+                        {(getCartTotal() - parseFloat(amountReceived)).toFixed(
+                          2
+                        )}{" "}
+                        more
+                      </p>
+                    </div>
+                  )}
               </div>
 
               {/* Process Button */}
               <button
                 onClick={processPayment}
-                disabled={processing || parseFloat(amountReceived) < getCartTotal()}
+                disabled={
+                  processing || parseFloat(amountReceived) < getCartTotal()
+                }
                 className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
               >
                 {processing ? (
@@ -852,8 +968,12 @@ const POS = () => {
                   <Check className="w-6 h-6 text-green-600" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white">Payment Complete!</h2>
-                  <p className="text-sm text-green-100">Transaction successful</p>
+                  <h2 className="text-xl font-bold text-white">
+                    Payment Complete!
+                  </h2>
+                  <p className="text-sm text-green-100">
+                    Transaction successful
+                  </p>
                 </div>
               </div>
               <button
@@ -872,16 +992,25 @@ const POS = () => {
                     <Coffee className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="font-bold text-xl mb-1">UniCafé</h3>
-                  <p className="text-sm text-slate-500 font-medium">Official Receipt</p>
-                  <p className="text-xs text-slate-400 mt-1">Order #{lastOrder.order.order_id}</p>
+                  <p className="text-sm text-slate-500 font-medium">
+                    Official Receipt
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Order #{lastOrder.order.order_id}
+                  </p>
                   <p className="text-xs text-slate-400">
-                    {new Date(lastOrder.order.order_created_at).toLocaleString()}
+                    {new Date(
+                      lastOrder.order.order_created_at
+                    ).toLocaleString()}
                   </p>
                 </div>
 
                 <div className="mb-4 pb-3 border-b border-dashed border-slate-200">
                   <p className="text-sm text-slate-600 font-semibold mb-1">
-                    Customer: <span className="text-slate-800">{lastOrder.order.order_customer_name}</span>
+                    Customer:{" "}
+                    <span className="text-slate-800">
+                      {lastOrder.order.order_customer_name}
+                    </span>
                   </p>
                   {lastOrder.order.user_username && (
                     <p className="text-xs text-amber-600 font-semibold">
@@ -894,9 +1023,17 @@ const POS = () => {
                   {lastOrder.order.items.map((item, idx) => (
                     <div key={idx} className="flex justify-between text-sm">
                       <span className="text-slate-700">
-                        <span className="font-bold text-slate-900">{item.order_item_quantity}x</span> {item.order_item_product_name}
+                        <span className="font-bold text-slate-900">
+                          {item.order_item_quantity}x
+                        </span>{" "}
+                        {item.order_item_product_name}
                       </span>
-                      <span className="font-semibold">₱{(item.order_item_price * item.order_item_quantity).toFixed(2)}</span>
+                      <span className="font-semibold">
+                        ₱
+                        {(
+                          item.order_item_price * item.order_item_quantity
+                        ).toFixed(2)}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -904,11 +1041,15 @@ const POS = () => {
                 <div className="border-t-2 border-dashed border-slate-300 pt-3 space-y-2">
                   <div className="flex justify-between font-bold text-lg">
                     <span className="text-slate-700">Total</span>
-                    <span className="text-green-600">₱{lastOrder.payment.total.toFixed(2)}</span>
+                    <span className="text-green-600">
+                      ₱{lastOrder.payment.total.toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm text-slate-600">
                     <span>Cash Received</span>
-                    <span className="font-semibold">₱{lastOrder.payment.amountReceived.toFixed(2)}</span>
+                    <span className="font-semibold">
+                      ₱{lastOrder.payment.amountReceived.toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm font-bold text-green-600">
                     <span>Change</span>
@@ -917,8 +1058,12 @@ const POS = () => {
                 </div>
 
                 <div className="text-center mt-5 pt-4 border-t-2 border-dashed border-slate-200">
-                  <p className="text-xs text-slate-500 font-medium">Thank you for your purchase!</p>
-                  <p className="text-xs text-slate-400 mt-1">Please come again</p>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Thank you for your purchase!
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Please come again
+                  </p>
                 </div>
               </div>
 
@@ -951,74 +1096,85 @@ const POS = () => {
             </div>
 
             <div className="p-5 overflow-y-auto max-h-[calc(85vh-80px)] bg-gradient-to-br from-slate-50 to-amber-50/30">
-              {recentOrders.filter(order => order.payment_method === 'cash').length === 0 ? (
+              {recentOrders.filter((order) => order.payment_method === "cash")
+                .length === 0 ? (
                 <div className="text-center py-16 text-slate-400">
                   <div className="bg-slate-100 p-6 rounded-full w-24 h-24 mx-auto mb-4 flex items-center justify-center">
                     <Receipt className="w-12 h-12 text-slate-300" />
                   </div>
-                  <p className="text-lg font-semibold text-slate-600">No walk-in orders today</p>
-                  <p className="text-sm text-slate-500 mt-1">Cash payments will appear here</p>
+                  <p className="text-lg font-semibold text-slate-600">
+                    No walk-in orders today
+                  </p>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Cash payments will appear here
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {recentOrders.filter(order => order.payment_method === 'cash').map((order) => {
-                    const metadata = order.payment_metadata
-                      ? JSON.parse(order.payment_metadata)
-                      : {};
-                    return (
-                      <div
-                        key={order.order_id}
-                        className={`p-4 rounded-xl border-2 transition-all ${
-                          order.order_status === "cancelled"
-                            ? "border-red-300 bg-red-50"
-                            : "border-amber-200 bg-white hover:shadow-lg hover:border-amber-300"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-3">
-                            <div className="bg-gradient-to-br from-amber-500 to-orange-500 text-white px-3 py-1 rounded-lg font-bold shadow-md">
-                              #{order.order_id}
-                            </div>
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${
-                                order.order_status === "completed"
-                                  ? "bg-green-100 text-green-700 border border-green-300"
-                                  : order.order_status === "cancelled"
-                                  ? "bg-red-100 text-red-700 border border-red-300"
-                                  : "bg-yellow-100 text-yellow-700 border border-yellow-300"
-                              }`}
-                            >
-                              {order.order_status.toUpperCase()}
-                            </span>
-                            <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold border border-amber-300 flex items-center gap-1">
-                              <Banknote className="w-3 h-3" />
-                              CASH
-                            </span>
-                          </div>
-                          <span className="text-xl font-bold text-green-600">
-                            ₱{order.order_total?.toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-2">
-                            <User className="w-4 h-4 text-slate-400" />
-                            <span className="font-semibold text-slate-700">
-                              {order.user_username || order.order_customer_name || "Guest"}
-                            </span>
-                            {metadata.type === "walk-in" && (
-                              <span className="ml-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-md text-xs font-bold border border-blue-300">
-                                WALK-IN
+                  {recentOrders
+                    .filter((order) => order.payment_method === "cash")
+                    .map((order) => {
+                      const metadata = order.payment_metadata
+                        ? JSON.parse(order.payment_metadata)
+                        : {};
+                      return (
+                        <div
+                          key={order.order_id}
+                          className={`p-4 rounded-xl border-2 transition-all ${
+                            order.order_status === "cancelled"
+                              ? "border-red-300 bg-red-50"
+                              : "border-amber-200 bg-white hover:shadow-lg hover:border-amber-300"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-gradient-to-br from-amber-500 to-orange-500 text-white px-3 py-1 rounded-lg font-bold shadow-md">
+                                #{order.order_id}
+                              </div>
+                              <span
+                                className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${
+                                  order.order_status === "completed"
+                                    ? "bg-green-100 text-green-700 border border-green-300"
+                                    : order.order_status === "cancelled"
+                                    ? "bg-red-100 text-red-700 border border-red-300"
+                                    : "bg-yellow-100 text-yellow-700 border border-yellow-300"
+                                }`}
+                              >
+                                {order.order_status.toUpperCase()}
                               </span>
-                            )}
+                              <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold border border-amber-300 flex items-center gap-1">
+                                <Banknote className="w-3 h-3" />
+                                CASH
+                              </span>
+                            </div>
+                            <span className="text-xl font-bold text-green-600">
+                              ₱{order.order_total?.toFixed(2)}
+                            </span>
                           </div>
-                          <span className="font-medium text-slate-500 flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {new Date(order.order_created_at).toLocaleTimeString()}
-                          </span>
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <User className="w-4 h-4 text-slate-400" />
+                              <span className="font-semibold text-slate-700">
+                                {order.user_username ||
+                                  order.order_customer_name ||
+                                  "Guest"}
+                              </span>
+                              {metadata.type === "walk-in" && (
+                                <span className="ml-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-md text-xs font-bold border border-blue-300">
+                                  WALK-IN
+                                </span>
+                              )}
+                            </div>
+                            <span className="font-medium text-slate-500 flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {new Date(
+                                order.order_created_at
+                              ).toLocaleTimeString()}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
               )}
             </div>

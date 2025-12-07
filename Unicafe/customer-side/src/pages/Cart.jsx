@@ -1,8 +1,16 @@
-import { motion } from "framer-motion";
-import { ShoppingCart, Trash2, Plus, Minus, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ShoppingCart,
+  Trash2,
+  Plus,
+  Minus,
+  ArrowRight,
+  X,
+  AlertTriangle,
+} from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { Link } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const Cart = () => {
   const {
@@ -14,6 +22,8 @@ const Cart = () => {
     syncCartWithProducts,
   } = useCart();
 
+  const [deleteModal, setDeleteModal] = useState({ show: false, item: null });
+
   // Sync cart with latest product data when page loads
   useEffect(() => {
     syncCartWithProducts();
@@ -23,6 +33,21 @@ const Cart = () => {
     if (newQuantity >= 1) {
       updateQuantity(productId, newQuantity);
     }
+  };
+
+  const handleDeleteClick = (item) => {
+    setDeleteModal({ show: true, item });
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteModal.item) {
+      removeFromCart(deleteModal.item.id);
+    }
+    setDeleteModal({ show: false, item: null });
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModal({ show: false, item: null });
   };
 
   if (cart.length === 0) {
@@ -59,6 +84,98 @@ const Cart = () => {
 
   return (
     <div className="pt-20 min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteModal.show && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={handleCancelDelete}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+            >
+              {/* Modal Header */}
+              <div className="bg-red-50 p-6 flex items-center space-x-4">
+                <div className="bg-red-100 p-3 rounded-full">
+                  <AlertTriangle className="w-8 h-8 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Remove Item
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    This action cannot be undone
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6">
+                <p className="text-gray-700 mb-4">
+                  Are you sure you want to remove{" "}
+                  <span className="font-semibold text-gray-900">
+                    "{deleteModal.item?.name}"
+                  </span>{" "}
+                  from your cart?
+                </p>
+
+                {/* Item Preview */}
+                <div className="flex items-center space-x-4 bg-gray-50 rounded-xl p-4 mb-6">
+                  <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-orange-100 rounded-lg flex items-center justify-center overflow-hidden">
+                    {deleteModal.item?.image_url ? (
+                      <img
+                        src={deleteModal.item.image_url}
+                        alt={deleteModal.item.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <ShoppingCart className="w-8 h-8 text-primary-600" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-800">
+                      {deleteModal.item?.name}
+                    </p>
+                    <p className="text-primary-600 font-bold">
+                      ₱{parseFloat(deleteModal.item?.price || 0).toFixed(2)} ×{" "}
+                      {deleteModal.item?.quantity}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex space-x-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleCancelDelete}
+                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleConfirmDelete}
+                    className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                    <span>Remove</span>
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
@@ -142,7 +259,7 @@ const Cart = () => {
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
-                    onClick={() => removeFromCart(item.id)}
+                    onClick={() => handleDeleteClick(item)}
                     className="text-red-500 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors"
                   >
                     <Trash2 className="w-5 h-5" />

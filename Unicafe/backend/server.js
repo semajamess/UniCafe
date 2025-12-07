@@ -14,6 +14,7 @@ import customerCategoriesRoutes from "./routes/customer-side/categories.js";
 import customerOrdersRoutes from "./routes/customer-side/orders.js";
 import customerPaymentsRoutes from "./routes/customer-side/payments.js";
 import customerContactRoutes from "./routes/customer-side/contact.js";
+import customerSettingsRoutes from "./routes/customer-side/settings.js";
 
 // Import cafe-side routes
 import cafeProductsRoutes from "./routes/cafe-side/products.js";
@@ -22,6 +23,8 @@ import cafeCustomersRoutes from "./routes/cafe-side/customers.js";
 import cafePaymentsRoutes from "./routes/cafe-side/payments.js";
 import cafeStatsRoutes from "./routes/cafe-side/stats.js";
 import cafePosRoutes from "./routes/cafe-side/pos.js";
+import cafeAuthRoutes from "./routes/cafe-side/auth.js";
+import cafeSettingsRoutes from "./routes/cafe-side/settings.js";
 
 dotenv.config();
 
@@ -56,14 +59,17 @@ app.use("/api/customer/products", customerProductsRoutes);
 app.use("/api/customer/orders", customerOrdersRoutes);
 app.use("/api/customer/payments", customerPaymentsRoutes);
 app.use("/api/customer/contact", customerContactRoutes);
+app.use("/api/customer/settings", customerSettingsRoutes);
 
 // API Routes - Cafe Side (Admin)
+app.use("/api/cafe/auth", cafeAuthRoutes);
 app.use("/api/cafe/products", cafeProductsRoutes);
 app.use("/api/cafe/orders", cafeOrdersRoutes);
 app.use("/api/cafe/customers", cafeCustomersRoutes);
 app.use("/api/cafe/payments", cafePaymentsRoutes);
 app.use("/api/cafe/stats", cafeStatsRoutes);
 app.use("/api/cafe/pos", cafePosRoutes);
+app.use("/api/cafe/settings", cafeSettingsRoutes);
 
 // Seed database endpoint (for initial setup)
 app.post("/api/seed", async (req, res) => {

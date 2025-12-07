@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Coffee, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Coffee, User, Lock, Eye, EyeOff } from "lucide-react";
+import { useAuth } from "../App";
 
 const API_URL = "http://localhost:3000/api";
 
-const Login = ({ setIsAuthenticated }) => {
+const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
-    email: "",
+    username: "",
     password: "",
     rememberMe: false,
   });
@@ -21,13 +23,13 @@ const Login = ({ setIsAuthenticated }) => {
     setError("");
 
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetch(`${API_URL}/cafe/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: formData.email,
+          username: formData.username,
           password: formData.password,
         }),
       });
@@ -38,11 +40,8 @@ const Login = ({ setIsAuthenticated }) => {
         throw new Error(data.error || "Login failed");
       }
 
-      // Store token and user data
-      localStorage.setItem("admin_token", data.token);
-      localStorage.setItem("admin_user", JSON.stringify(data.user));
-
-      setIsAuthenticated(true);
+      // Use the auth context login function
+      login(data.token, data.user);
       navigate("/dashboard");
     } catch (err) {
       setError(err.message || "Login failed. Please check your credentials.");
@@ -74,22 +73,22 @@ const Login = ({ setIsAuthenticated }) => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Input */}
+            {/* Username Input */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Email Address
+                Username
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
-                  type="email"
+                  type="text"
                   required
-                  value={formData.email}
+                  value={formData.username}
                   onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
+                    setFormData({ ...formData, username: e.target.value })
                   }
                   className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
-                  placeholder="admin@unicafe.com"
+                  placeholder="Enter your username"
                 />
               </div>
             </div>
@@ -125,8 +124,8 @@ const Login = ({ setIsAuthenticated }) => {
               </div>
             </div>
 
-            {/* Remember Me & Forgot Password */}
-            <div className="flex items-center justify-between">
+            {/* Remember Me */}
+            <div className="flex items-center">
               <label className="flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -138,12 +137,6 @@ const Login = ({ setIsAuthenticated }) => {
                 />
                 <span className="ml-2 text-sm text-slate-600">Remember me</span>
               </label>
-              <a
-                href="#"
-                className="text-sm text-amber-600 hover:text-amber-700 font-medium transition-colors"
-              >
-                Forgot password?
-              </a>
             </div>
 
             {/* Submit Button */}
@@ -156,21 +149,18 @@ const Login = ({ setIsAuthenticated }) => {
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="flex items-center my-6">
-            <div className="flex-1 border-t border-slate-200"></div>
-            <span className="px-4 text-sm text-slate-500">or</span>
-            <div className="flex-1 border-t border-slate-200"></div>
-          </div>
-
           {/* Demo Credentials */}
-          <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+          <div className="mt-6 bg-amber-50 rounded-lg p-4 border border-amber-200">
             <p className="text-sm font-medium text-amber-900 mb-2">
-              Demo Credentials:
+              Admin Credentials:
             </p>
             <div className="text-xs text-amber-700 space-y-1">
-              <p>Use any registered user account</p>
-              <p>Or create a new account on the customer app</p>
+              <p>
+                <strong>Username:</strong> admin123
+              </p>
+              <p>
+                <strong>Password:</strong> admin123
+              </p>
             </div>
           </div>
         </div>

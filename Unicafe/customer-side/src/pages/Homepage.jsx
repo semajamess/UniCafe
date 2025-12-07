@@ -1,68 +1,97 @@
-import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { Coffee, ShoppingCart, Star, ArrowRight, Sparkles } from 'lucide-react'
-import { useCart } from '../context/CartContext'
-import AnimatedBackground from '../components/AnimatedBackground'
-import { useAuth } from '../context/AuthContext'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Coffee, ShoppingCart, Star, ArrowRight, Sparkles } from "lucide-react";
+import { useCart } from "../context/CartContext";
+import AnimatedBackground from "../components/AnimatedBackground";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Homepage = () => {
-  const [featuredProducts, setFeaturedProducts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const { addToCart } = useCart()
-  const { user, isAuthenticated } = useAuth()
-  const navigate = useNavigate()
-  const [showModal, setShowModal] = useState(false)
-
-  const isGoogleOnly = user && user.google_id && (!user.password || user.password === '')
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { addToCart } = useCart();
+  const { user, isAuthenticated, needsPhoneNumber } = useAuth();
+  const navigate = useNavigate();
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    fetchFeaturedProducts()
-  }, [])
+    fetchFeaturedProducts();
+
+    // Auto-sync: refetch products when they are updated by admin
+    const syncProducts = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:3000/api/customer/products?mostOrdered=true"
+        );
+        if (response.ok) {
+          const products = await response.json();
+          setFeaturedProducts(products);
+        }
+      } catch (error) {
+        console.error("Error syncing products:", error);
+      }
+    };
+
+    // Sync on window focus (when user switches back to tab)
+    const handleFocus = () => {
+      syncProducts();
+    };
+
+    // Sync every 15 seconds
+    const interval = setInterval(syncProducts, 15000);
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      if (interval) clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, []);
 
   const fetchFeaturedProducts = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/customer/products?mostOrdered=true')
+      const response = await fetch(
+        "http://localhost:3000/api/customer/products?mostOrdered=true"
+      );
       if (response.ok) {
-        const products = await response.json()
-        setFeaturedProducts(products)
+        const products = await response.json();
+        setFeaturedProducts(products);
       }
     } catch (error) {
-      console.error('Error fetching products:', error)
+      console.error("Error fetching products:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const handleAddToCart = (product) => {
+  const handleAddToCart = (product, event) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
     if (!isAuthenticated) {
-      setShowModal(true)
+      setShowModal(true);
       setTimeout(() => {
-        setShowModal(false)
-        navigate('/login')
-      }, 1400)
-      return
+        setShowModal(false);
+        navigate("/login");
+      }, 1400);
+      return;
     }
-    if (isGoogleOnly) {
-      setShowModal(true)
-      setTimeout(() => {
-        setShowModal(false)
-        navigate('/complete-signup')
-      }, 1400)
-      return
-    }
-    addToCart(product)
-  }
+    addToCart(product);
+    // Navigate to menu page after adding to cart
+    navigate("/menu");
+  };
 
   return (
     <div className="pt-20">
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary-100 via-orange-50 to-amber-100 opacity-70"></div>
-        
+
         <AnimatedBackground />
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -75,15 +104,16 @@ const Homepage = () => {
                 Premium Coffee Experience
               </span>
             </div>
-            
+
             <h1 className="text-5xl md:text-7xl font-bold mb-6 gradient-text">
               Welcome to UniCafé
             </h1>
-            
+
             <p className="text-xl md:text-2xl text-gray-700 mb-8 max-w-2xl mx-auto">
-              Your campus destination for artisanal coffee, delicious treats, and unforgettable moments
+              Your campus destination for artisanal coffee, delicious treats,
+              and unforgettable moments
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/menu">
                 <motion.button
@@ -116,7 +146,12 @@ const Homepage = () => {
           </motion.div>
           <motion.div
             animate={{ y: [0, -15, 0] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            transition={{
+              duration: 5,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 1,
+            }}
             className="absolute bottom-20 left-10 opacity-20"
           >
             <Coffee className="w-24 h-24 text-primary-600" />
@@ -141,16 +176,22 @@ const Homepage = () => {
             </p>
           </motion.div>
 
+          {/* Modal for unauthenticated users */}
+          {showModal && (
+            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+              <div className="bg-white rounded-2xl shadow-xl p-6 text-center">
+                <h2 className="text-lg font-bold mb-1">
+                  Please sign up first!
+                </h2>
+                <p className="text-sm text-gray-600">
+                  You must log in to add items.
+                </p>
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <>
-              {showModal && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-                  <div className="bg-white rounded-2xl shadow-xl p-6 text-center">
-                    <h2 className="text-lg font-bold mb-1">{!isAuthenticated ? 'Please sign up first!' : 'Please complete your signup first!'}</h2>
-                    <p className="text-sm text-gray-600">{!isAuthenticated ? 'You must log in to add items.' : 'Finish signup to start ordering.'}</p>
-                  </div>
-                </div>
-              )}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {[...Array(6)].map((_, i) => (
                   <div key={i} className="animate-pulse">
@@ -176,8 +217,8 @@ const Homepage = () => {
                   <div className="glass-effect rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300">
                     <div className="relative h-64 bg-gradient-to-br from-primary-100 to-orange-100 overflow-hidden">
                       {product.product_image_url ? (
-                        <img 
-                          src={product.product_image_url} 
+                        <img
+                          src={product.product_image_url}
                           alt={product.product_name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
@@ -196,7 +237,8 @@ const Homepage = () => {
                         {product.product_name}
                       </h3>
                       <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                        {product.product_description || 'Delicious and freshly made'}
+                        {product.product_description ||
+                          "Delicious and freshly made"}
                       </p>
                       <div className="flex items-center justify-between">
                         <span className="text-2xl font-bold text-primary-600">
@@ -205,7 +247,8 @@ const Homepage = () => {
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          onClick={() => handleAddToCart(product)}
+                          onClick={(e) => handleAddToCart(product, e)}
+                          type="button"
                           className="bg-primary-600 text-white p-3 rounded-full hover:bg-primary-700 transition-colors shadow-lg"
                         >
                           <ShoppingCart className="w-5 h-5" />
@@ -251,19 +294,22 @@ const Homepage = () => {
             {[
               {
                 icon: <Coffee className="w-12 h-12" />,
-                title: 'Premium Quality',
-                description: 'Sourced from the finest coffee beans, freshly roasted daily'
+                title: "Premium Quality",
+                description:
+                  "Sourced from the finest coffee beans, freshly roasted daily",
               },
               {
                 icon: <Star className="w-12 h-12" />,
-                title: 'Customer Friendly',
-                description: 'Affordable prices and a cozy atmosphere perfect for everyone'
+                title: "Customer Friendly",
+                description:
+                  "Affordable prices and a cozy atmosphere perfect for everyone",
               },
               {
                 icon: <Sparkles className="w-12 h-12" />,
-                title: 'Fast Service',
-                description: 'Quick ordering and preparation for your busy lifestyle'
-              }
+                title: "Fast Service",
+                description:
+                  "Quick ordering and preparation for your busy lifestyle",
+              },
             ].map((feature, index) => (
               <motion.div
                 key={index}
@@ -279,16 +325,14 @@ const Homepage = () => {
                 <h3 className="text-xl font-bold text-gray-800 mb-3">
                   {feature.title}
                 </h3>
-                <p className="text-gray-600">
-                  {feature.description}
-                </p>
+                <p className="text-gray-600">{feature.description}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
     </div>
-  )
-}
+  );
+};
 
-export default Homepage
+export default Homepage;
