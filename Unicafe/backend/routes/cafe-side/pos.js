@@ -168,7 +168,7 @@ router.post("/order", async (req, res) => {
       `
       SELECT o.*, u.user_username, u.user_email as registered_email
       FROM orders o
-      LEFT JOIN users u ON o.order_user_id = u.user_id
+      LEFT JOIN users u ON o.user_id = u.user_id
       WHERE o.order_id = ?
     `,
       [orderId]

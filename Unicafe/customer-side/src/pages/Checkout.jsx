@@ -172,7 +172,7 @@ const Checkout = () => {
         orderData = {
           ...orderData,
           items: orderData.items.map((item) => ({
-            product_id: item.order_item_product_id || item.product_id,
+            product_id: item.product_id,
             product_name:
               item.order_item_product_name || item.product_name || item.name,
             quantity: item.order_item_quantity || item.quantity,
@@ -209,7 +209,7 @@ const Checkout = () => {
             );
             // Build a lightweight shape matching OrderConfirmation expectations
             const items = (fetched.items || []).map((item) => ({
-              product_id: item.product_id || item.product_id,
+              product_id: item.product_id,
               product_name:
                 item.order_item_product_name || item.product_name || item.name,
               quantity: item.order_item_quantity || item.quantity,
