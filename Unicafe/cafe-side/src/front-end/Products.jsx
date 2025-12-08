@@ -144,10 +144,16 @@ const Products = () => {
         const apiSuggestions = await apiResponse.json();
         console.log("API suggestions response:", apiSuggestions);
 
-        // Combine results
+        // Combine results - normalize deactivated products to match API format
         const deactivatedList = Array.isArray(deactivatedProducts)
           ? deactivatedProducts.map((p) => ({
-              ...p,
+              name: p.product_name,
+              category: p.product_category,
+              description: p.product_description,
+              price: p.product_price,
+              stock: p.product_stock,
+              image_url: p.product_image_url,
+              product_id: p.product_id,
               isDeactivated: true,
             }))
           : [];
@@ -252,11 +258,22 @@ const Products = () => {
     }
 
     try {
+      // Convert form data to database column names (professional API contract)
+      const productData = {
+        product_category: formData.category,
+        product_name: formData.name,
+        product_description: formData.description,
+        product_price: parseFloat(formData.price),
+        product_stock: parseInt(formData.stock) || 0,
+        product_image_url: formData.image_url,
+        product_is_available: formData.is_available ? 1 : 0,
+      };
+
       const productId = selectedProduct.product_id || selectedProduct.id;
       const response = await fetch(`${API_URL}/products/${productId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(productData),
       });
 
       if (response.ok) {
@@ -288,15 +305,24 @@ const Products = () => {
     }
 
     try {
-      // Soft delete - set is_available to 0
+      // Soft delete - set product_is_available to 0
       const productId = productToDelete.product_id || productToDelete.id;
+      
+      // Build proper update payload with database column names
+      const updatePayload = {
+        product_category: productToDelete.product_category,
+        product_name: productToDelete.product_name,
+        product_description: productToDelete.product_description,
+        product_price: productToDelete.product_price,
+        product_stock: productToDelete.product_stock,
+        product_image_url: productToDelete.product_image_url,
+        product_is_available: 0  // Soft delete - deactivate the product
+      };
+
       const response = await fetch(`${API_URL}/products/${productId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...productToDelete,
-          is_available: 0,
-        }),
+        body: JSON.stringify(updatePayload),
       });
 
       if (response.ok) {
@@ -319,15 +345,22 @@ const Products = () => {
 
   const handleReactivate = async () => {
     try {
-      // Update existing product with new data and reactivate
+      // Convert form data to database column names and reactivate
+      const productData = {
+        product_category: formData.category,
+        product_name: formData.name,
+        product_description: formData.description,
+        product_price: parseFloat(formData.price),
+        product_stock: parseInt(formData.stock) || 0,
+        product_image_url: formData.image_url,
+        product_is_available: 1,
+      };
+
       const productId = existingProduct.product_id || existingProduct.id;
       const response = await fetch(`${API_URL}/products/${productId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          is_available: 1,
-        }),
+        body: JSON.stringify(productData),
       });
 
       if (response.ok) {
@@ -356,10 +389,15 @@ const Products = () => {
     }
 
     try {
+      // Convert form data to database column names (professional API contract)
       const productData = {
-        ...formData,
-        price: parseFloat(formData.price),
-        is_available: formData.is_available ? 1 : 0,
+        product_category: formData.category,
+        product_name: formData.name,
+        product_description: formData.description,
+        product_price: parseFloat(formData.price),
+        product_stock: parseInt(formData.stock) || 0,
+        product_image_url: formData.image_url,
+        product_is_available: formData.is_available ? 1 : 0,
       };
 
       if (modalMode === "add") {

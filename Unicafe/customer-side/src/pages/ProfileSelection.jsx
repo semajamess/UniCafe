@@ -17,20 +17,24 @@ const AVATAR_STYLES = [
 ];
 
 const ProfileSelection = () => {
+  console.log('🎯🎯🎯 PROFILESELECTION COMPONENT IS RENDERING!!! 🎯🎯🎯');
+  
   const navigate = useNavigate();
-  const { user, token, isAuthenticated } = useAuth();
+  const { user, token } = useAuth();
   const [selectedStyle, setSelectedStyle] = useState('avataaars');
   const [seed, setSeed] = useState(Date.now().toString());
   const [selectedAvatar, setSelectedAvatar] = useState(null);
   const [loading, setLoading] = useState(false);
   const [avatarOptions, setAvatarOptions] = useState([]);
+  const [hasCheckedProfile, setHasCheckedProfile] = useState(false);
 
-  // Redirect if not authenticated
+  // Removed auto-redirect - users can freely access profile selection
+  // They can skip or update their avatar anytime
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-    }
-  }, [isAuthenticated, navigate]);
+    console.log('[ProfileSelection] Component mounted!');
+    console.log('[ProfileSelection] user:', user);
+    console.log('[ProfileSelection] user?.profile_image:', user?.profile_image);
+  }, [user]);
 
   // Generate avatar options when style or seed changes
   useEffect(() => {
@@ -73,6 +77,8 @@ const ProfileSelection = () => {
       const data = await response.json();
 
       if (response.ok) {
+        console.log('[ProfileSelection] Profile saved successfully:', data);
+        
         // Update local storage with new user data
         if (data.user) {
           localStorage.setItem('user', JSON.stringify(data.user));
@@ -80,7 +86,8 @@ const ProfileSelection = () => {
         if (data.token) {
           localStorage.setItem('token', data.token);
         }
-        // Force page reload to reflect changes, then navigate
+        
+        // Navigate to menu (window.location is used to ensure context refresh)
         window.location.href = '/menu';
       } else {
         alert(data.error || 'Failed to save profile');

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Coffee, ShoppingCart, Star, ArrowRight, Sparkles } from "lucide-react";
 import { useCart } from "../context/CartContext";
-import AnimatedBackground from "../components/AnimatedBackground";
+import CafeBackground from "../components/CafeBackground";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -85,12 +85,12 @@ const Homepage = () => {
   };
 
   return (
-    <div className="pt-20">
+    <div className="pt-16 sm:pt-20">
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-[80vh] sm:min-h-[90vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary-100 via-orange-50 to-amber-100 opacity-70"></div>
 
-        <AnimatedBackground />
+        <CafeBackground />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
           <motion.div
@@ -98,38 +98,38 @@ const Homepage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="flex items-center justify-center mb-6">
-              <Sparkles className="w-8 h-8 text-primary-600 animate-pulse" />
-              <span className="ml-2 text-primary-700 font-semibold uppercase tracking-wider text-sm">
+            <div className="flex items-center justify-center mb-4 sm:mb-6">
+              <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-primary-600 animate-pulse" />
+              <span className="ml-2 text-primary-700 font-semibold uppercase tracking-wider text-xs sm:text-sm">
                 Premium Coffee Experience
               </span>
             </div>
 
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 gradient-text">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 sm:mb-6 gradient-text px-4">
               Welcome to UniCafé
             </h1>
 
-            <p className="text-xl md:text-2xl text-gray-700 mb-8 max-w-2xl mx-auto">
+            <p className="text-base sm:text-xl md:text-2xl text-gray-700 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
               Your campus destination for artisanal coffee, delicious treats,
               and unforgettable moments
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/menu">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
+              <Link to="/menu" className="w-full sm:w-auto">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-gradient-to-r from-primary-500 to-primary-600 text-white px-8 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center space-x-2"
+                  className="w-full sm:w-auto bg-gradient-to-r from-primary-500 to-primary-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center space-x-2"
                 >
                   <span>Order Now</span>
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
                 </motion.button>
               </Link>
-              <Link to="/about">
+              <Link to="/about" className="w-full sm:w-auto">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="glass-effect text-gray-700 px-8 py-4 rounded-full font-semibold hover:bg-white/80 transition-all"
+                  className="w-full sm:w-auto glass-effect text-gray-700 px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold hover:bg-white/80 transition-all"
                 >
                   Learn More
                 </motion.button>
@@ -140,7 +140,7 @@ const Homepage = () => {
           <motion.div
             animate={{ y: [0, -20, 0] }}
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-20 right-10 opacity-20"
+            className="hidden lg:block absolute top-20 right-10 opacity-20"
           >
             <Coffee className="w-32 h-32 text-primary-600" />
           </motion.div>
@@ -152,7 +152,7 @@ const Homepage = () => {
               ease: "easeInOut",
               delay: 1,
             }}
-            className="absolute bottom-20 left-10 opacity-20"
+            className="hidden lg:block absolute bottom-20 left-10 opacity-20"
           >
             <Coffee className="w-24 h-24 text-primary-600" />
           </motion.div>
@@ -160,26 +160,26 @@ const Homepage = () => {
       </section>
 
       {/* Featured Products */}
-      <section className="py-20 bg-white">
+      <section className="py-12 sm:py-16 lg:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-12"
+            className="text-center mb-8 sm:mb-12"
           >
-            <h2 className="text-4xl font-bold gradient-text mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold gradient-text mb-3 sm:mb-4">
               Featured Products
             </h2>
-            <p className="text-gray-600 text-lg">
+            <p className="text-gray-600 text-base sm:text-lg px-4">
               Discover our handpicked selection of premium beverages and treats
             </p>
           </motion.div>
 
           {/* Modal for unauthenticated users */}
           {showModal && (
-            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-              <div className="bg-white rounded-2xl shadow-xl p-6 text-center">
+            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50 p-4">
+              <div className="bg-white rounded-2xl shadow-xl p-6 text-center max-w-sm w-full">
                 <h2 className="text-lg font-bold mb-1">
                   Please sign up first!
                 </h2>
@@ -192,7 +192,7 @@ const Homepage = () => {
 
           {loading ? (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                 {[...Array(6)].map((_, i) => (
                   <div key={i} className="animate-pulse">
                     <div className="bg-gray-200 h-64 rounded-2xl mb-4"></div>
@@ -203,7 +203,7 @@ const Homepage = () => {
               </div>
             </>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
               {featuredProducts.map((product, index) => (
                 <motion.div
                   key={product.product_id}
@@ -215,7 +215,7 @@ const Homepage = () => {
                   className="group"
                 >
                   <div className="glass-effect rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300">
-                    <div className="relative h-64 bg-gradient-to-br from-primary-100 to-orange-100 overflow-hidden">
+                    <div className="relative h-48 sm:h-56 lg:h-64 bg-gradient-to-br from-primary-100 to-orange-100 overflow-hidden">
                       {product.product_image_url ? (
                         <img
                           src={product.product_image_url}
@@ -224,16 +224,16 @@ const Homepage = () => {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Coffee className="w-24 h-24 text-primary-600 group-hover:rotate-12 transition-transform duration-300" />
+                          <Coffee className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 text-primary-600 group-hover:rotate-12 transition-transform duration-300" />
                         </div>
                       )}
-                      <div className="absolute top-4 right-4 bg-primary-600 text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center space-x-1">
-                        <Star className="w-4 h-4 fill-current" />
+                      <div className="absolute top-3 sm:top-4 right-3 sm:right-4 bg-primary-600 text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold flex items-center space-x-1">
+                        <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-current" />
                         <span>Popular</span>
                       </div>
                     </div>
-                    <div className="p-6">
-                      <h3 className="text-xl font-bold text-gray-800 mb-2">
+                    <div className="p-4 sm:p-5 lg:p-6">
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
                         {product.product_name}
                       </h3>
                       <p className="text-gray-600 text-sm mb-4 line-clamp-2">
@@ -241,7 +241,7 @@ const Homepage = () => {
                           "Delicious and freshly made"}
                       </p>
                       <div className="flex items-center justify-between">
-                        <span className="text-2xl font-bold text-primary-600">
+                        <span className="text-xl sm:text-2xl font-bold text-primary-600">
                           ₱{product.product_price.toFixed(2)}
                         </span>
                         <motion.button
@@ -277,20 +277,20 @@ const Homepage = () => {
       </section>
 
       {/* Why Choose Us */}
-      <section className="py-20 bg-gradient-to-br from-amber-50 to-orange-50">
+      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-amber-50 to-orange-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-12"
+            className="text-center mb-8 sm:mb-12"
           >
-            <h2 className="text-4xl font-bold gradient-text mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold gradient-text mb-4">
               Why Choose UniCafé?
             </h2>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {[
               {
                 icon: <Coffee className="w-12 h-12" />,
@@ -317,15 +317,17 @@ const Homepage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.2 }}
-                className="glass-effect rounded-2xl p-8 text-center hover:shadow-xl transition-all"
+                className="glass-effect rounded-2xl p-6 sm:p-8 text-center hover:shadow-xl transition-all"
               >
                 <div className="text-primary-600 flex justify-center mb-4">
-                  {feature.icon}
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center">
+                    {feature.icon}
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-gray-800 mb-3">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 sm:mb-3">
                   {feature.title}
                 </h3>
-                <p className="text-gray-600">{feature.description}</p>
+                <p className="text-sm sm:text-base text-gray-600">{feature.description}</p>
               </motion.div>
             ))}
           </div>

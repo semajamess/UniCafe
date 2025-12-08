@@ -124,26 +124,39 @@ router.get('/:id', async (req, res) => {
 // Create product (ADMIN ONLY)
 router.post('/', async (req, res) => {
   try {
-    const { name, description, price, stock, image_url, is_available } = req.body;
-    
-    let category = req.body.category;
-    if (!category) category = 'Food';
+    const { 
+      product_category, 
+      product_name, 
+      product_description, 
+      product_price, 
+      product_stock, 
+      product_image_url, 
+      product_is_available 
+    } = req.body;
 
     const result = await db.runAsync(
       `INSERT INTO products (product_category, product_name, product_description, product_price, product_stock, product_image_url, product_is_available) 
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [category, name, description, price, stock || 0, image_url, is_available !== undefined ? is_available : 1]
+      [
+        product_category || 'Food', 
+        product_name, 
+        product_description, 
+        product_price, 
+        product_stock || 0, 
+        product_image_url, 
+        product_is_available !== undefined ? product_is_available : 1
+      ]
     );
 
     res.status(201).json({ 
       product_id: result.lastID, 
-      product_category: category, 
-      product_name: name, 
-      product_description: description, 
-      product_price: price,
-      product_stock: stock, 
-      product_image_url: image_url, 
-      product_is_available: is_available
+      product_category: product_category || 'Food', 
+      product_name, 
+      product_description, 
+      product_price,
+      product_stock: product_stock || 0, 
+      product_image_url, 
+      product_is_available: product_is_available !== undefined ? product_is_available : 1
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -153,16 +166,33 @@ router.post('/', async (req, res) => {
 // Update product (ADMIN ONLY)
 router.put('/:id', async (req, res) => {
   try {
-    const { category, name, description, price, stock, image_url, is_available } = req.body;
+    const { 
+      product_category,
+      product_name,
+      product_description,
+      product_price,
+      product_stock,
+      product_image_url,
+      product_is_available
+    } = req.body;
 
     await db.runAsync(
       `UPDATE products 
        SET product_category = ?, product_name = ?, product_description = ?, product_price = ?, product_stock = ?, product_image_url = ?, product_is_available = ? 
        WHERE product_id = ?`,
-      [category, name, description, price, stock, image_url, is_available, req.params.id]
+      [product_category, product_name, product_description, product_price, product_stock, product_image_url, product_is_available, req.params.id]
     );
 
-    res.json({ product_id: req.params.id, product_category: category, product_name: name, product_description: description, product_price: price, product_stock: stock, product_image_url: image_url, product_is_available: is_available });
+    res.json({ 
+      product_id: req.params.id, 
+      product_category, 
+      product_name, 
+      product_description, 
+      product_price, 
+      product_stock, 
+      product_image_url, 
+      product_is_available
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

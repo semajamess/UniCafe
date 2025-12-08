@@ -1,12 +1,12 @@
 import { motion } from 'framer-motion'
 import { Coffee, Heart, Users, Award } from 'lucide-react'
-import AnimatedBackground from '../components/AnimatedBackground'
+import CafeBackground from '../components/CafeBackground'
 
 const About = () => {
   return (
     <div className="pt-20 min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
       <section className="relative bg-gradient-to-br from-primary-100 via-orange-50 to-amber-100 py-20 overflow-hidden">
-        <AnimatedBackground />
+        <CafeBackground />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
           <motion.h1
             initial={{ opacity: 0, y: 30 }}

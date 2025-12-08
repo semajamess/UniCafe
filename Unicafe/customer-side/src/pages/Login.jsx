@@ -38,13 +38,15 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const googleButtonRef = useRef(null);
+  const [justRegistered, setJustRegistered] = useState(false);
 
-  // Redirect authenticated users away from login page
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/menu");
-    }
-  }, [isAuthenticated, navigate]);
+  // DISABLED: Auto-redirect removed to force profile selection flow
+  // Users must complete profile selection after registration before accessing menu
+  // useEffect(() => {
+  //   if (isAuthenticated && !showSuccessModal && !showGoogleWelcomeModal && !justRegistered) {
+  //     navigate("/menu");
+  //   }
+  // }, [isAuthenticated, navigate, showSuccessModal, showGoogleWelcomeModal, justRegistered]);
 
   useEffect(() => {
     // Only initialize Google Sign-In in Sign In mode.
@@ -109,6 +111,7 @@ const Login = () => {
   const toggleMode = () => {
     setIsLogin(!isLogin);
     setError("");
+    setJustRegistered(false); // Clear flag when switching modes
     setFormData({
       username: "",
       email: "",
@@ -167,6 +170,8 @@ const Login = () => {
 
       const result = await register(registerData);
       if (result.success) {
+        // Set flag to prevent automatic redirect to menu
+        setJustRegistered(true);
         // Show success modal then navigate to profile selection
         setShowSuccessModal(true);
       } else {
@@ -179,6 +184,7 @@ const Login = () => {
 
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
+    setJustRegistered(false); // Clear the flag
     // Navigate to profile selection page to choose avatar
     navigate("/profile-selection");
   };

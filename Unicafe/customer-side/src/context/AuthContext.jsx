@@ -20,9 +20,16 @@ export const AuthProvider = ({ children }) => {
     const storedToken = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
 
+    console.log('[AuthContext] Loading from localStorage');
+    console.log('[AuthContext] storedUser:', storedUser);
+
     if (storedToken && storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      console.log('[AuthContext] Parsed user:', parsedUser);
+      console.log('[AuthContext] profile_image:', parsedUser.profile_image);
+      
       setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      setUser(parsedUser);
     }
     setLoading(false);
   }, []);
@@ -72,12 +79,20 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.error || "Registration failed");
       }
 
+      console.log('[AuthContext] Registration successful, received:', data);
+
       // Store token and user data
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      
+      console.log('[AuthContext] Saved to localStorage');
+      console.log('[AuthContext] Token:', data.token);
+      console.log('[AuthContext] User:', JSON.stringify(data.user));
 
       setToken(data.token);
       setUser(data.user);
+      
+      console.log('[AuthContext] State updated');
 
       return { success: true };
     } catch (error) {

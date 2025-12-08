@@ -8,11 +8,12 @@ import {
   Phone,
   CheckCircle,
   X,
+  SortDesc,
 } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import AnimatedBackground from "../components/AnimatedBackground";
+import CafeBackground from "../components/CafeBackground";
 import FloatingCart from "../components/FloatingCart";
 
 // Separate ProductCard component to ensure isolated scope
@@ -48,7 +49,7 @@ const ProductCard = ({ product, onAddToCart }) => {
           isOutOfStock ? "border-2 border-red-300" : ""
         }`}
       >
-        <div className="relative h-48 bg-gradient-to-br from-primary-100 to-orange-100 overflow-hidden">
+        <div className="relative h-40 sm:h-48 bg-gradient-to-br from-primary-100 to-orange-100 overflow-hidden">
           {product.product_image_url ? (
             <img
               src={product.product_image_url}
@@ -80,17 +81,17 @@ const ProductCard = ({ product, onAddToCart }) => {
           )}
         </div>
 
-        <div className="p-5 flex-grow flex flex-col">
-          <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-1">
+        <div className="p-4 sm:p-5 flex-grow flex flex-col">
+          <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-2 line-clamp-1">
             {product.product_name}
           </h3>
-          <p className="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow">
+          <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 line-clamp-2 flex-grow">
             {product.product_description || "Freshly made and delicious"}
           </p>
 
           <div className="mb-3 flex items-center gap-2">
             <div
-              className={`text-xs font-semibold px-3 py-1 rounded-full ${
+              className={`text-xs font-semibold px-2 sm:px-3 py-1 rounded-full ${
                 product.product_stock > 5
                   ? "bg-green-100 text-green-700"
                   : product.product_stock > 0
@@ -103,7 +104,7 @@ const ProductCard = ({ product, onAddToCart }) => {
           </div>
 
           <div className="flex items-center justify-between mt-auto">
-            <span className="text-2xl font-bold text-primary-600">
+            <span className="text-xl sm:text-2xl font-bold text-primary-600">
               ₱{parseFloat(product.product_price).toFixed(2)}
             </span>
             <button
@@ -131,6 +132,7 @@ const Menu = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [sortBy, setSortBy] = useState("default");
   const { addToCart } = useCart();
   const { user, isAuthenticated, needsPhoneNumber, updatePhone, token } =
     useAuth();
@@ -231,7 +233,7 @@ const Menu = () => {
 
   useEffect(() => {
     filterProducts();
-  }, [searchQuery, selectedCategory, products]);
+  }, [searchQuery, selectedCategory, products, sortBy]);
 
   // Auto-sync products on interval and window focus
   useEffect(() => {
@@ -307,6 +309,28 @@ const Menu = () => {
               .toLowerCase()
               .includes(searchQuery.toLowerCase()))
       );
+    }
+
+    // Filter out products with 0 stock
+    filtered = filtered.filter((p) => p.product_stock > 0);
+
+    // Apply sorting
+    switch (sortBy) {
+      case "price-low":
+        filtered.sort((a, b) => parseFloat(a.product_price) - parseFloat(b.product_price));
+        break;
+      case "price-high":
+        filtered.sort((a, b) => parseFloat(b.product_price) - parseFloat(a.product_price));
+        break;
+      case "name-az":
+        filtered.sort((a, b) => a.product_name.localeCompare(b.product_name));
+        break;
+      case "name-za":
+        filtered.sort((a, b) => b.product_name.localeCompare(a.product_name));
+        break;
+      default:
+        // Default: keep original order (most ordered if available)
+        break;
     }
 
     setFilteredProducts(filtered);
@@ -470,8 +494,9 @@ const Menu = () => {
 
       <section className="bg-white shadow-sm sticky top-16 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="relative w-full md:w-96">
+          <div className="flex flex-col gap-4">
+            {/* Search Bar */}
+            <div className="relative w-full">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
@@ -482,33 +507,53 @@ const Menu = () => {
               />
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Filter className="w-5 h-5 text-gray-600" />
-              <div className="flex space-x-2">
-                {categories.map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => setSelectedCategory(category)}
-                    className={`px-6 py-2 rounded-full font-semibold transition-all ${
-                      selectedCategory === category
-                        ? "bg-primary-600 text-white shadow-lg"
-                        : "glass-effect text-gray-700 hover:bg-white/80"
-                    }`}
-                  >
-                    {category.charAt(0).toUpperCase() + category.slice(1)}
-                  </button>
-                ))}
+            {/* Filters and Sort Row */}
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3">
+              {/* Sort Dropdown - Right Side */}
+              <div className="flex items-center gap-2 sm:order-2">
+                <SortDesc className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-4 py-2 rounded-full border border-gray-300 bg-white text-gray-700 font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-pointer hover:bg-gray-50 transition-all"
+                >
+                  <option value="default">Default</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="name-az">Name: A to Z</option>
+                  <option value="name-za">Name: Z to A</option>
+                </select>
+              </div>
+              
+              {/* Category Filters */}
+              <div className="flex items-center gap-2 overflow-x-auto sm:order-1">
+                <Filter className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                <div className="flex gap-2">
+                  {categories.map((category) => (
+                    <button
+                      key={category}
+                      onClick={() => setSelectedCategory(category)}
+                      className={`px-4 sm:px-6 py-2 rounded-full font-semibold transition-all whitespace-nowrap ${
+                        selectedCategory === category
+                          ? "bg-primary-600 text-white shadow-lg"
+                          : "glass-effect text-gray-700 hover:bg-white/80"
+                      }`}
+                    >
+                      {category.charAt(0).toUpperCase() + category.slice(1)}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="relative py-8 bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden pb-32">
-        <AnimatedBackground />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pr-80 z-10">
+      <section className="relative py-8 bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden pb-8">
+        <CafeBackground />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {[...Array(8)].map((_, i) => (
                 <div key={i} className="animate-pulse">
                   <div className="bg-gray-200 h-72 rounded-2xl"></div>
@@ -531,7 +576,7 @@ const Menu = () => {
                 <span className="font-semibold">{filteredProducts.length}</span>{" "}
                 products found
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                 {filteredProducts.map((product) => (
                   <ProductCard
                     key={product.product_id}

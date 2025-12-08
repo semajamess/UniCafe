@@ -6,7 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'unicafe-secret-key-2025';
 // Update user profile (username, password, profile_image, phone)
 export const updateUserProfile = async (userId, updates) => {
   try {
-    const { username, password, profile_image, phone } = updates;
+    const { username, password, currentPassword, profile_image, phone } = updates;
 
     if (!username && !password && !profile_image && !phone) {
       return { success: false, error: 'No profile data provided' };
@@ -51,10 +51,31 @@ export const updateUserProfile = async (userId, updates) => {
 
     let hashedPassword = null;
     if (password) {
-      if (password.length < 6) {
-        return { success: false, error: 'Password must be at least 6 characters' };
+      // Verify current password before allowing password change
+      if (!currentPassword) {
+        return { success: false, error: 'Current password is required to change password' };
       }
+
+      // Get user's current password from database
+      const user = await db.getAsync(
+        'SELECT user_password FROM users WHERE user_id = ?',
+        [userId]
+      );
+
+      if (!user || !user.user_password) {
+        return { success: false, error: 'Cannot change password for this account' };
+      }
+
+      // Verify current password
       const bcrypt = await import('bcryptjs');
+      const isValidPassword = await bcrypt.default.compare(currentPassword, user.user_password);
+      if (!isValidPassword) {
+        return { success: false, error: 'Current password is incorrect' };
+      }
+
+      if (password.length < 6) {
+        return { success: false, error: 'New password must be at least 6 characters' };
+      }
       hashedPassword = await bcrypt.default.hash(password, 10);
     }
 

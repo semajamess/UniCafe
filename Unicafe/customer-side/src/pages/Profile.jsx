@@ -1,9 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
-import { User, Mail, Phone, Lock, LogOut, Edit2, Check, X, AlertCircle, Package, ChevronDown, ChevronUp, Receipt, Coffee, Calendar } from 'lucide-react'
-import AnimatedBackground from '../components/AnimatedBackground'
+import { User, Mail, Phone, Lock, LogOut, Edit2, Check, X, AlertCircle, Package, ChevronDown, ChevronUp, Receipt, Coffee, RefreshCw, Camera } from 'lucide-react'
+import CafeBackground from '../components/CafeBackground'
 import { motion } from 'framer-motion'
+
+const AVATAR_STYLES = [
+  { id: 'avataaars', name: 'Cartoon' },
+  { id: 'bottts', name: 'Robots' },
+  { id: 'pixel-art', name: 'Pixel Art' },
+  { id: 'lorelei', name: 'Lorelei' },
+  { id: 'notionists', name: 'Notionists' },
+  { id: 'open-peeps', name: 'Open Peeps' },
+];
 
 const OrderStatusBadge = ({ status }) => {
   const statusStyles = {
@@ -140,9 +149,15 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState('profile')
   const [orders, setOrders] = useState([])
   const [ordersLoading, setOrdersLoading] = useState(false)
+  const [showAvatarModal, setShowAvatarModal] = useState(false)
+  const [selectedAvatarStyle, setSelectedAvatarStyle] = useState('avataaars')
+  const [avatarSeed, setAvatarSeed] = useState(Date.now().toString())
+  const [avatarOptions, setAvatarOptions] = useState([])
+  const [selectedAvatar, setSelectedAvatar] = useState(null)
   const [formData, setFormData] = useState({
     username: '',
     phone: '',
+    currentPassword: '',
     password: '',
     confirmPassword: ''
   })
@@ -155,6 +170,7 @@ const Profile = () => {
     setFormData({
       username: user.username || '',
       phone: user.phone || '',
+      currentPassword: '',
       password: '',
       confirmPassword: ''
     })
@@ -163,6 +179,19 @@ const Profile = () => {
       fetchOrders()
     }
   }, [user, navigate, activeTab])
+
+  useEffect(() => {
+    const options = [];
+    for (let i = 0; i < 6; i++) {
+      const seed = `${avatarSeed}-${i}`;
+      options.push({
+        id: i,
+        seed: seed,
+        url: `https://api.dicebear.com/7.x/${selectedAvatarStyle}/svg?seed=${seed}`
+      });
+    }
+    setAvatarOptions(options);
+  }, [selectedAvatarStyle, avatarSeed]);
 
   const fetchOrders = async () => {
     try {
@@ -206,8 +235,13 @@ const Profile = () => {
       }
 
       if (formData.password) {
+        if (!formData.currentPassword) {
+          setError('Please enter your current password to change it')
+          setLoading(false)
+          return
+        }
         if (formData.password.length < 6) {
-          setError('Password must be at least 6 characters')
+          setError('New password must be at least 6 characters')
           setLoading(false)
           return
         }
@@ -230,7 +264,10 @@ const Profile = () => {
 
       const updateData = {}
       if (formData.username !== user.username) updateData.username = formData.username
-      if (formData.password) updateData.password = formData.password
+      if (formData.password) {
+        updateData.password = formData.password
+        updateData.currentPassword = formData.currentPassword
+      }
       if (formData.phone && formData.phone !== (user.phone || '')) updateData.phone = formData.phone
 
       if (Object.keys(updateData).length === 0) {
@@ -259,6 +296,7 @@ const Profile = () => {
         setIsEditing(false)
         setFormData({
           ...formData,
+          currentPassword: '',
           password: '',
           confirmPassword: ''
         })
@@ -284,9 +322,56 @@ const Profile = () => {
     setFormData({
       username: user?.username || '',
       phone: user?.phone || '',
+      currentPassword: '',
       password: '',
       confirmPassword: ''
     })
+  }
+
+  const handleChangeAvatar = () => {
+    setShowAvatarModal(true)
+    setAvatarSeed(Date.now().toString())
+  }
+
+  const handleSaveAvatar = async () => {
+    if (!selectedAvatar) {
+      setError('Please select an avatar')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const response = await fetch('http://localhost:3000/api/customer/auth/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          profile_image: selectedAvatar.url
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        if (data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user))
+        }
+        setShowAvatarModal(false)
+        setSuccess('Profile picture updated successfully!')
+        setTimeout(() => {
+          window.location.reload()
+        }, 1000)
+      } else {
+        setError(data.error || 'Failed to update profile picture')
+      }
+    } catch (error) {
+      setError('An error occurred. Please try again.')
+      console.error('Error updating avatar:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleLogout = () => {
@@ -300,7 +385,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 pt-20 pb-12">
-      <AnimatedBackground />
+      <CafeBackground />
       
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
@@ -309,33 +394,42 @@ const Profile = () => {
           className="bg-white rounded-2xl shadow-xl overflow-hidden"
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-8 sm:px-8">
-            <div className="flex items-center gap-4">
-              {user.profile_image ? (
-                <img 
-                  src={user.profile_image} 
-                  alt={user.username}
-                  className="w-16 h-16 rounded-full object-cover border-4 border-white"
-                />
-              ) : (
-                <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-white">
-                  <User className="w-8 h-8" />
-                </div>
-              )}
-              <div>
-                <h1 className="text-3xl font-bold text-white">{user.username}</h1>
-                <p className="text-amber-50">{isGoogleUser ? 'Google Account' : 'UniCafé Member'}</p>
+          <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="relative group">
+                {user.profile_image ? (
+                  <img 
+                    src={user.profile_image} 
+                    alt={user.username}
+                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-white shadow-lg"
+                  />
+                ) : (
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white/20 flex items-center justify-center text-white border-4 border-white shadow-lg">
+                    <User className="w-10 h-10 sm:w-12 sm:h-12" />
+                  </div>
+                )}
+                <button
+                  onClick={handleChangeAvatar}
+                  className="absolute bottom-0 right-0 w-8 h-8 sm:w-10 sm:h-10 bg-white text-amber-600 rounded-full shadow-lg hover:bg-amber-50 transition-all flex items-center justify-center group-hover:scale-110"
+                  title="Change avatar"
+                >
+                  <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </div>
+              <div className="text-center sm:text-left">
+                <h1 className="text-2xl sm:text-3xl font-bold text-white">{user.username}</h1>
+                <p className="text-amber-50 text-sm sm:text-base">{isGoogleUser ? 'Google Account' : 'UniCafé Member'}</p>
               </div>
             </div>
           </div>
 
           {/* Content */}
-          <div className="px-6 py-8 sm:px-8">
+          <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
             {/* Tabs */}
-            <div className="flex gap-4 mb-8 border-b border-gray-200">
+            <div className="flex gap-2 sm:gap-4 mb-6 sm:mb-8 border-b border-gray-200 overflow-x-auto">
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`px-6 py-3 font-semibold transition-all ${
+                className={`px-4 sm:px-6 py-3 font-semibold transition-all whitespace-nowrap text-sm sm:text-base ${
                   activeTab === 'profile'
                     ? 'text-amber-600 border-b-2 border-amber-600'
                     : 'text-gray-600 hover:text-gray-800'
@@ -346,7 +440,7 @@ const Profile = () => {
               </button>
               <button
                 onClick={() => setActiveTab('orders')}
-                className={`px-6 py-3 font-semibold transition-all ${
+                className={`px-4 sm:px-6 py-3 font-semibold transition-all whitespace-nowrap text-sm sm:text-base ${
                   activeTab === 'orders'
                     ? 'text-amber-600 border-b-2 border-amber-600'
                     : 'text-gray-600 hover:text-gray-800'
@@ -435,6 +529,24 @@ const Profile = () => {
                 {/* Password */}
                 {!isGoogleUser && (
                   <>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <div className="flex items-center gap-2">
+                          <Lock className="w-4 h-4" />
+                          Current Password
+                        </div>
+                      </label>
+                      <input
+                        type="password"
+                        name="currentPassword"
+                        value={formData.currentPassword}
+                        onChange={handleInputChange}
+                        placeholder="Required to change password"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Enter your current password to change it</p>
+                    </div>
+
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
                         <div className="flex items-center gap-2">
@@ -535,25 +647,8 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {/* Member Since */}
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Calendar className="w-5 h-5 text-amber-600" />
-                    <div>
-                      <p className="text-sm text-gray-600">Member Since</p>
-                      <p className="text-lg font-semibold text-gray-900">
-                        {user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        }) : 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Action Buttons */}
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <button
                     onClick={() => setIsEditing(true)}
                     className="flex-1 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all flex items-center justify-center gap-2"
@@ -601,6 +696,128 @@ const Profile = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Avatar Change Modal */}
+      {showAvatarModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="p-6 sm:p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">Change Profile Picture</h2>
+                <button
+                  onClick={() => setShowAvatarModal(false)}
+                  className="text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Avatar Style Selector */}
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">Avatar Style</label>
+                <div className="flex flex-wrap gap-2">
+                  {AVATAR_STYLES.map((style) => (
+                    <button
+                      key={style.id}
+                      onClick={() => setSelectedAvatarStyle(style.id)}
+                      className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
+                        selectedAvatarStyle === style.id
+                          ? 'bg-amber-500 text-white shadow-lg'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {style.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Avatar Options Grid */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-semibold text-gray-700">Select Avatar</label>
+                  <button
+                    onClick={() => setAvatarSeed(Date.now().toString())}
+                    className="flex items-center gap-2 text-sm text-amber-600 hover:text-amber-700"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Generate New
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-3 gap-3 sm:gap-4">
+                  {avatarOptions.map((avatar) => (
+                    <button
+                      key={avatar.id}
+                      onClick={() => setSelectedAvatar(avatar)}
+                      className={`relative aspect-square rounded-xl overflow-hidden border-4 transition-all ${
+                        selectedAvatar?.id === avatar.id
+                          ? 'border-amber-500 shadow-lg scale-105'
+                          : 'border-gray-200 hover:border-amber-300'
+                      }`}
+                    >
+                      <img
+                        src={avatar.url}
+                        alt={`Avatar option ${avatar.id + 1}`}
+                        className="w-full h-full object-cover bg-gray-50"
+                      />
+                      {selectedAvatar?.id === avatar.id && (
+                        <div className="absolute top-2 right-2 bg-amber-500 text-white rounded-full p-1">
+                          <Check className="w-3 h-3 sm:w-4 sm:h-4" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Preview */}
+              {selectedAvatar && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-6 p-4 bg-amber-50 rounded-xl flex items-center gap-4"
+                >
+                  <img
+                    src={selectedAvatar.url}
+                    alt="Selected avatar"
+                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-white shadow-lg"
+                  />
+                  <div>
+                    <p className="font-semibold text-gray-800 text-sm sm:text-base">{user?.username}</p>
+                    <p className="text-xs sm:text-sm text-gray-600">This will be your new profile picture</p>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => setShowAvatarModal(false)}
+                  className="flex-1 px-6 py-3 rounded-xl font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveAvatar}
+                  disabled={loading || !selectedAvatar}
+                  className="flex-1 px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {loading ? 'Saving...' : (
+                    <>
+                      <Check className="w-5 h-5" />
+                      Save Avatar
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }

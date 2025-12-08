@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import AnimatedBackground from "../components/AnimatedBackground";
+import CafeBackground from "../components/CafeBackground";
 
 const OrderStatusBadge = ({ status }) => {
   const statusStyles = {
@@ -245,7 +245,7 @@ export default function Orders() {
 
   return (
     <div className="min-h-screen pt-20 pb-12">
-      <AnimatedBackground />
+      <CafeBackground />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
