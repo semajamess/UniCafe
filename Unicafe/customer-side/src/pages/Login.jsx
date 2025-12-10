@@ -40,13 +40,23 @@ const Login = () => {
   const googleButtonRef = useRef(null);
   const [justRegistered, setJustRegistered] = useState(false);
 
-  // DISABLED: Auto-redirect removed to force profile selection flow
-  // Users must complete profile selection after registration before accessing menu
-  // useEffect(() => {
-  //   if (isAuthenticated && !showSuccessModal && !showGoogleWelcomeModal && !justRegistered) {
-  //     navigate("/menu");
-  //   }
-  // }, [isAuthenticated, navigate, showSuccessModal, showGoogleWelcomeModal, justRegistered]);
+  // Redirect logged-in users away from login page
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      !showSuccessModal &&
+      !showGoogleWelcomeModal &&
+      !justRegistered
+    ) {
+      navigate("/menu");
+    }
+  }, [
+    isAuthenticated,
+    navigate,
+    showSuccessModal,
+    showGoogleWelcomeModal,
+    justRegistered,
+  ]);
 
   useEffect(() => {
     // Only initialize Google Sign-In in Sign In mode.

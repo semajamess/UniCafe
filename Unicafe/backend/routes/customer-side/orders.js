@@ -2,6 +2,7 @@ import express from "express";
 import db from "../../database.js";
 import { authenticateToken } from "./auth.js";
 import { createNotification } from "../cafe-side/notifications.js";
+import { createCustomerNotification } from "./notifications.js";
 
 const router = express.Router();
 
@@ -209,6 +210,32 @@ router.post("/", authenticateToken, async (req, res) => {
         },
       });
       console.log("✅ Notification sent for order #" + orderId);
+
+      // Send confirmation notification to the customer
+      console.log(
+        `🔔 Attempting to send customer notification to user ${user_id} for order #${orderId}`
+      );
+      const customerNotif = await createCustomerNotification(io, user_id, {
+        type: "order_placed",
+        title: "Order Placed Successfully! 📝",
+        message: `Your order #${orderId} has been placed. Total: ₱${total.toFixed(
+          2
+        )}. We'll notify you when it's being prepared!`,
+        data: {
+          orderId,
+          total,
+          itemCount: createdItems.length,
+        },
+      });
+      if (customerNotif) {
+        console.log(
+          "✅ Customer notification created and sent for order #" + orderId
+        );
+      } else {
+        console.error(
+          "❌ Failed to create customer notification for order #" + orderId
+        );
+      }
     } else {
       console.warn("⚠️ Socket.IO not available, notification not sent");
     }

@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 import db from "../../database.js";
 import { updateUserProfile } from "../../services/profileService.js";
+import { createCustomerNotification } from "./notifications.js";
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "unicafe-secret-key-2025";
@@ -47,11 +48,9 @@ router.post("/register", async (req, res) => {
     const phoneRegex = /^(\+63|0)?9\d{9}$/;
     const normalizedPhone = phone.replace(/[\s-]/g, "");
     if (!phoneRegex.test(normalizedPhone)) {
-      return res
-        .status(400)
-        .json({
-          error: "Invalid phone number format. Use format: 09XXXXXXXXX",
-        });
+      return res.status(400).json({
+        error: "Invalid phone number format. Use format: 09XXXXXXXXX",
+      });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -103,6 +102,18 @@ router.post("/register", async (req, res) => {
       JWT_SECRET,
       { expiresIn: "7d" }
     );
+
+    // Send welcome notification to new user
+    const io = req.app.get("io");
+    if (io) {
+      await createCustomerNotification(io, result.lastID, {
+        type: "welcome",
+        title: "Welcome to UniCafe! 👋",
+        message: `Hi ${username}! Welcome to UniCafe. Start exploring our menu and place your first order!`,
+        data: { userId: result.lastID },
+      });
+      console.log("✅ Welcome notification sent to user #" + result.lastID);
+    }
 
     res.status(201).json({
       message: "User registered successfully",
@@ -291,8 +302,9 @@ router.post("/google", async (req, res) => {
 // Update user profile (username, password, profile_image, phone)
 router.put("/profile", authenticateToken, async (req, res) => {
   try {
-    const { username, password, currentPassword, profile_image, phone } = req.body;
-    
+    const { username, password, currentPassword, profile_image, phone } =
+      req.body;
+
     // Use profileService to handle the update
     const result = await updateUserProfile(req.user.id, {
       username,

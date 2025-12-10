@@ -17,6 +17,7 @@ import customerOrdersRoutes from "./routes/customer-side/orders.js";
 import customerPaymentsRoutes from "./routes/customer-side/payments.js";
 import customerContactRoutes from "./routes/customer-side/contact.js";
 import customerSettingsRoutes from "./routes/customer-side/settings.js";
+import customerNotificationsRoutes from "./routes/customer-side/notifications.js";
 
 // Import cafe-side routes
 import cafeProductsRoutes from "./routes/cafe-side/products.js";
@@ -61,6 +62,17 @@ io.on("connection", (socket) => {
     console.log("☕ Admin joined cafe-admins room:", socket.id);
   });
 
+  // Join customer's personal room for targeted notifications
+  socket.on("join-customer", ({ userId }) => {
+    if (userId) {
+      socket.join(`customer-${userId}`);
+      console.log(
+        `👤 Customer ${userId} joined their notification room:`,
+        socket.id
+      );
+    }
+  });
+
   socket.on("disconnect", () => {
     console.log("❌ Client disconnected:", socket.id);
   });
@@ -95,6 +107,7 @@ app.use("/api/customer/orders", customerOrdersRoutes);
 app.use("/api/customer/payments", customerPaymentsRoutes);
 app.use("/api/customer/contact", customerContactRoutes);
 app.use("/api/customer/settings", customerSettingsRoutes);
+app.use("/api/customer/notifications", customerNotificationsRoutes);
 
 // API Routes - Cafe Side (Admin)
 app.use("/api/cafe/auth", cafeAuthRoutes);

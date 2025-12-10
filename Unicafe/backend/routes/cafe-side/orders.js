@@ -1,6 +1,7 @@
 import express from "express";
 import db from "../../database.js";
 import { createNotification } from "./notifications.js";
+import { createCustomerNotification } from "../customer-side/notifications.js";
 
 const router = express.Router();
 
@@ -90,9 +91,9 @@ router.patch("/:id/status", async (req, res) => {
     );
     console.log(`Update result:`, result);
 
-    // Verify the update
+    // Verify the update and get user_id for customer notification
     const updated = await db.getAsync(
-      "SELECT order_id, order_status, order_total FROM orders WHERE order_id = ?",
+      "SELECT order_id, order_status, order_total, user_id FROM orders WHERE order_id = ?",
       [req.params.id]
     );
     console.log(`Updated order:`, updated);
@@ -107,12 +108,53 @@ router.patch("/:id/status", async (req, res) => {
     };
 
     if (statusMessages[status]) {
+      // Notification for cafe admins
       await createNotification(io, {
         type: "order_status",
         title: `Order #${req.params.id} Updated`,
         message: `Order #${req.params.id} ${statusMessages[status]}`,
         data: { orderId: req.params.id, status, total: updated?.order_total },
       });
+
+      // Notification for the customer who placed the order
+      if (updated?.user_id) {
+        const customerMessages = {
+          processing: {
+            title: "Your Order is Being Prepared! 👨‍🍳",
+            message: `Order #${req.params.id} is now being prepared. We'll notify you when it's ready!`,
+            type: "order_preparing",
+          },
+          ready: {
+            title: "Your Order is Ready! ✅",
+            message: `Order #${req.params.id} is ready for pickup! Please proceed to the counter.`,
+            type: "order_ready",
+          },
+          completed: {
+            title: "Order Completed! 🎉",
+            message: `Order #${req.params.id} has been completed. Thank you for your order!`,
+            type: "order_completed",
+          },
+          cancelled: {
+            title: "Order Cancelled ❌",
+            message: `Order #${req.params.id} has been cancelled. Please contact us if you have any questions.`,
+            type: "order_cancelled",
+          },
+        };
+
+        const customerNotif = customerMessages[status];
+        if (customerNotif) {
+          await createCustomerNotification(io, updated.user_id, {
+            type: customerNotif.type,
+            title: customerNotif.title,
+            message: customerNotif.message,
+            data: {
+              orderId: req.params.id,
+              status,
+              total: updated?.order_total,
+            },
+          });
+        }
+      }
     }
 
     res.json({

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Coffee,
@@ -8,20 +8,68 @@ import {
   User,
   LogOut,
   AlertTriangle,
+  Bell,
+  Check,
+  Trash2,
+  Package,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationContext";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [storeName, setStoreName] = useState("UniCafe");
+  const notificationRef = useRef(null);
   const { getTotalItems } = useCart();
   const { user, logout, isAuthenticated } = useAuth();
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    clearAllNotifications,
+    formatTime,
+    getNotificationIcon,
+    requestNotificationPermission,
+    refreshNotifications,
+  } = useNotifications();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Request notification permission on mount
+  useEffect(() => {
+    if (isAuthenticated) {
+      requestNotificationPermission();
+    }
+  }, [isAuthenticated]);
+
+  // Refresh notifications when route changes (e.g., after placing an order)
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshNotifications();
+    }
+  }, [location.pathname, isAuthenticated]);
+
+  // Close notification dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target)
+      ) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -164,6 +212,147 @@ export default function Navbar() {
               </Link>
             )}
 
+            {/* Notification Bell */}
+            {isAuthenticated && (
+              <div className="relative" ref={notificationRef}>
+                <button
+                  onClick={() => {
+                    if (!showNotifications) {
+                      // Refresh notifications when opening the dropdown
+                      refreshNotifications();
+                    }
+                    setShowNotifications(!showNotifications);
+                  }}
+                  className="relative p-2 text-gray-700 hover:text-amber-600 transition-colors"
+                >
+                  <Bell className="h-6 w-6" />
+                  {unreadCount > 0 && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"
+                    >
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </motion.span>
+                  )}
+                </button>
+
+                {/* Notification Dropdown */}
+                <AnimatePresence>
+                  {showNotifications && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50"
+                    >
+                      {/* Header */}
+                      <div className="px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-bold">Notifications</h3>
+                          {unreadCount > 0 && (
+                            <button
+                              onClick={markAllAsRead}
+                              className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg transition-colors"
+                            >
+                              Mark all read
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Notification List */}
+                      <div className="max-h-80 overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <div className="py-8 text-center text-gray-500">
+                            <Bell className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                            <p>No notifications yet</p>
+                          </div>
+                        ) : (
+                          notifications.slice(0, 10).map((notification) => (
+                            <div
+                              key={notification.notification_id}
+                              className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                                !notification.notification_is_read
+                                  ? "bg-amber-50"
+                                  : ""
+                              }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <span className="text-2xl">
+                                  {getNotificationIcon(
+                                    notification.notification_type
+                                  )}
+                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-gray-800 text-sm">
+                                    {notification.notification_title}
+                                  </p>
+                                  <p className="text-gray-600 text-xs mt-0.5 line-clamp-2">
+                                    {notification.notification_message}
+                                  </p>
+                                  <p className="text-gray-400 text-xs mt-1">
+                                    {formatTime(
+                                      notification.notification_created_at
+                                    )}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  {!notification.notification_is_read && (
+                                    <button
+                                      onClick={() =>
+                                        markAsRead(notification.notification_id)
+                                      }
+                                      className="p-1 text-gray-400 hover:text-green-500 transition-colors"
+                                      title="Mark as read"
+                                    >
+                                      <Check className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() =>
+                                      deleteNotification(
+                                        notification.notification_id
+                                      )
+                                    }
+                                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Footer */}
+                      {notifications.length > 0 && (
+                        <div className="px-4 py-2 bg-gray-50 border-t border-gray-100">
+                          <div className="flex justify-between items-center">
+                            <Link
+                              to="/orders"
+                              onClick={() => setShowNotifications(false)}
+                              className="text-sm text-amber-600 hover:text-amber-700 font-medium"
+                            >
+                              View Orders
+                            </Link>
+                            <button
+                              onClick={clearAllNotifications}
+                              className="text-sm text-gray-500 hover:text-red-500 transition-colors"
+                            >
+                              Clear all
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
                 <Link
@@ -253,6 +442,27 @@ export default function Navbar() {
                     </span>
                   )}
                 </Link>
+              )}
+
+              {/* Mobile Notifications */}
+              {isAuthenticated && (
+                <button
+                  onClick={() => {
+                    setShowNotifications(!showNotifications);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center justify-between w-full py-2 px-4 rounded-lg text-gray-700 hover:bg-amber-50"
+                >
+                  <span className="flex items-center gap-2">
+                    <Bell className="w-5 h-5" />
+                    Notifications
+                  </span>
+                  {unreadCount > 0 && (
+                    <span className="bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </button>
               )}
 
               {isAuthenticated ? (
