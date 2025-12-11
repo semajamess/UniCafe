@@ -23,7 +23,6 @@ UniCafe is a modern café management system that provides:
 - **Real-time notifications** using Socket.IO
 - **Multiple payment methods** with OTP verification
 - **Google OAuth integration** for easy customer sign-up
-- **Email & SMS notifications** for order updates
 
 **Live Demo Credentials:**
 - **Admin:** username: `admin123` | password: `admin123`
@@ -210,7 +209,7 @@ cp .env.example .env
 # - JWT secret
 
 # Start backend server
-npm start
+node server.js
 # or for development with auto-reload:
 npm run dev
 ```
@@ -289,7 +288,6 @@ The database automatically initializes on first run with:
 ### For Customers
 
 1. **Sign Up/Login**
-   - Visit `http://localhost:5173`
    - Click "Get Started" or "Sign In"
    - Choose Google OAuth or Email registration
    - Complete profile if needed
@@ -303,7 +301,6 @@ The database automatically initializes on first run with:
    - Add items to cart using floating cart
    - Review cart and proceed to checkout
    - Select payment method
-   - Enter OTP code (SMS: `123456` for demo)
    - Receive digital receipt
 
 4. **Track Orders**
