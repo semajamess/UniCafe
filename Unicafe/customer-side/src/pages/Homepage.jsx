@@ -85,10 +85,10 @@ const Homepage = () => {
   };
 
   return (
-    <div className="pt-16 sm:pt-20">
+    <div>
       {/* Hero Section */}
-      <section className="relative min-h-[80vh] sm:min-h-[90vh] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-100 via-orange-50 to-amber-100 opacity-70"></div>
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16 sm:pt-20">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-100 via-orange-50 to-amber-100"></div>
 
         <CafeBackground />
 
@@ -136,27 +136,52 @@ const Homepage = () => {
               </Link>
             </div>
           </motion.div>
-
-          <motion.div
-            animate={{ y: [0, -20, 0] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="hidden lg:block absolute top-20 right-10 opacity-20"
-          >
-            <Coffee className="w-32 h-32 text-primary-600" />
-          </motion.div>
-          <motion.div
-            animate={{ y: [0, -15, 0] }}
-            transition={{
-              duration: 5,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 1,
-            }}
-            className="hidden lg:block absolute bottom-20 left-10 opacity-20"
-          >
-            <Coffee className="w-24 h-24 text-primary-600" />
-          </motion.div>
         </div>
+
+        {/* Floating Coffee Decorations*/}
+        <motion.div
+          animate={{ y: [0, -20, 0], rotate: [0, 5, 0] }}
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          className="hidden xl:block absolute top-32 right-20 opacity-15 pointer-events-none"
+        >
+          <Coffee className="w-40 h-40 text-primary-600" />
+        </motion.div>
+        <motion.div
+          animate={{ y: [0, -15, 0], rotate: [0, -5, 0] }}
+          transition={{
+            duration: 5,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 1,
+          }}
+          className="hidden xl:block absolute bottom-32 left-20 opacity-15 pointer-events-none"
+        >
+          <Coffee className="w-32 h-32 text-primary-600" />
+        </motion.div>
+        <motion.div
+          animate={{ y: [0, -10, 0], rotate: [0, 3, 0] }}
+          transition={{
+            duration: 4,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 0.5,
+          }}
+          className="hidden lg:block xl:hidden absolute top-24 right-8 opacity-10 pointer-events-none"
+        >
+          <Coffee className="w-28 h-28 text-primary-600" />
+        </motion.div>
+        <motion.div
+          animate={{ y: [0, -12, 0], rotate: [0, -3, 0] }}
+          transition={{
+            duration: 4.5,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 0.8,
+          }}
+          className="hidden lg:block xl:hidden absolute bottom-24 left-8 opacity-10 pointer-events-none"
+        >
+          <Coffee className="w-24 h-24 text-primary-600" />
+        </motion.div>
       </section>
 
       {/* Featured Products */}
