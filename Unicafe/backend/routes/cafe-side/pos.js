@@ -23,7 +23,7 @@ router.get("/customers/search", async (req, res) => {
         (SELECT COUNT(*) FROM orders WHERE user_id = users.user_id) as order_count,
         (SELECT COALESCE(SUM(order_total), 0) FROM orders WHERE user_id = users.user_id AND order_status != 'cancelled') as total_spent
       FROM users
-      WHERE user_username LIKE ? OR user_email LIKE ? OR user_phone LIKE ?
+      WHERE (user_username LIKE ? OR user_email LIKE ? OR user_phone LIKE ?) AND user_deleted_at IS NULL
       LIMIT 10
     `,
       [`%${q}%`, `%${q}%`, `%${q}%`]

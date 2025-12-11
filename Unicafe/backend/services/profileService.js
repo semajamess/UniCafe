@@ -17,7 +17,7 @@ export const updateUserProfile = async (userId, updates) => {
         return { success: false, error: 'Username must be at least 3 characters' };
       }
       const existingUser = await db.getAsync(
-        'SELECT user_id FROM users WHERE user_username = ? AND user_id != ?',
+        'SELECT user_id FROM users WHERE user_username = ? AND user_id != ? AND user_deleted_at IS NULL',
         [username, userId]
       );
       if (existingUser) {
@@ -41,7 +41,7 @@ export const updateUserProfile = async (userId, updates) => {
 
       // Check if phone number is already used by another user
       const existingPhone = await db.getAsync(
-        'SELECT user_id FROM users WHERE user_phone = ? AND user_id != ?',
+        'SELECT user_id FROM users WHERE user_phone = ? AND user_id != ? AND user_deleted_at IS NULL',
         [normalizedPhone, userId]
       );
       if (existingPhone) {

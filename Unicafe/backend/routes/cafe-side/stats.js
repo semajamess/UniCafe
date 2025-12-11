@@ -57,13 +57,13 @@ router.get("/dashboard", async (req, res) => {
     const customersData = await db.getAsync(`
       SELECT COUNT(*) as total 
       FROM users 
-      WHERE 1=1${currentDateFilter.replace('order_created_at', 'user_created_at')}
+      WHERE user_deleted_at IS NULL${currentDateFilter.replace('order_created_at', 'user_created_at')}
     `);
 
     const prevCustomersData = await db.getAsync(`
       SELECT COUNT(*) as total 
       FROM users 
-      WHERE 1=1${previousDateFilter.replace('order_created_at', 'user_created_at')}
+      WHERE user_deleted_at IS NULL${previousDateFilter.replace('order_created_at', 'user_created_at')}
     `);
 
     const customersChange =

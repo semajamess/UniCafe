@@ -20,7 +20,7 @@ router.get("/", async (req, res) => {
         MAX(o.order_created_at) as lastOrder
       FROM users u
       LEFT JOIN orders o ON u.user_id = o.user_id
-      WHERE 1=1
+      WHERE u.user_deleted_at IS NULL
     `;
     const params = [];
 
@@ -42,7 +42,7 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const customer = await db.getAsync(
-      "SELECT user_id, user_username, user_email, user_created_at FROM users WHERE user_id = ?",
+      "SELECT user_id, user_username, user_email, user_created_at FROM users WHERE user_id = ? AND user_deleted_at IS NULL",
       [req.params.id]
     );
 

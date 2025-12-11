@@ -71,7 +71,7 @@ router.post("/register", async (req, res) => {
     }
 
     const existingUser = await db.getAsync(
-      "SELECT * FROM users WHERE user_email = ? OR user_username = ?",
+      "SELECT * FROM users WHERE (user_email = ? OR user_username = ?) AND user_deleted_at IS NULL",
       [email, username]
     );
     console.log("[auth:register] existingUser:", existingUser);
@@ -228,13 +228,13 @@ router.post("/google", async (req, res) => {
     const picture = payload["picture"] || null;
 
     let user = await db.getAsync(
-      "SELECT * FROM users WHERE user_google_id = ?",
+      "SELECT * FROM users WHERE user_google_id = ? AND user_deleted_at IS NULL",
       [googleId]
     );
     let isNewUser = false;
 
     if (!user) {
-      user = await db.getAsync("SELECT * FROM users WHERE user_email = ?", [
+      user = await db.getAsync("SELECT * FROM users WHERE user_email = ? AND user_deleted_at IS NULL", [
         email,
       ]);
       if (user) {
