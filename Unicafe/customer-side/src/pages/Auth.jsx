@@ -200,7 +200,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 flex items-center justify-center p-4 pt-16 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
@@ -244,7 +244,7 @@ const Login = () => {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-5xl h-[600px] overflow-hidden relative z-10"
+        className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-5xl h-[750px] overflow-hidden relative z-10"
       >
         <div className="flex h-full">
           {/* Branding Side - Always on Left */}
@@ -323,21 +323,20 @@ const Login = () => {
 
           {/* Form Side - Always on Right */}
           <div className="w-full lg:w-1/2 p-8 md:p-12 flex flex-col overflow-y-auto max-h-screen">
-            <div className={isLogin ? "-mt-4" : "-mt-4"}>
-              {/* Mobile Logo */}
-              <div
-                className={`lg:hidden text-center ${
-                  isLogin ? "mb-12" : "mb-6"
-                }`}
-              >
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl mb-3">
-                  <Coffee className="w-8 h-8 text-white" />
-                </div>
-                <h1 className="text-2xl font-bold gradient-text">UniCafe</h1>
+            {/* Mobile Logo */}
+            <div
+              className={`lg:hidden text-center ${
+                isLogin ? "mb-12" : "mb-6"
+              }`}
+            >
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl mb-3">
+                <Coffee className="w-8 h-8 text-white" />
               </div>
+              <h1 className="text-2xl font-bold gradient-text">UniCafe</h1>
+            </div>
 
-              {/* Toggle Tabs - Fixed Position */}
-              <div className="flex bg-slate-100 rounded-xl p-1 mb-8">
+            {/* Toggle Tabs - Fixed Position */}
+            <div className="flex bg-slate-100 rounded-xl p-1 mb-8">
                 <button
                   type="button"
                   onClick={() => !loading && toggleMode()}
@@ -362,6 +361,8 @@ const Login = () => {
                 </button>
               </div>
 
+            {/* Centered Form Container */}
+            <div className="flex-1 flex flex-col justify-center">
               {/* Error Message */}
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-xl mb-4 text-sm">
@@ -372,7 +373,7 @@ const Login = () => {
               {/* Form */}
               <form
                 onSubmit={handleSubmit}
-                className={`space-y-4 ${isLogin ? "mt-24" : ""}`}
+                className="space-y-4"
               >
                 {isLogin ? (
                   <div className="space-y-4">
@@ -401,27 +402,15 @@ const Login = () => {
                         Password
                       </label>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-amber-500" />
                         <input
                           type={showPassword ? "text" : "password"}
                           name="password"
                           value={formData.password}
                           onChange={handleChange}
                           required
-                          className="w-full pl-11 pr-12 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                          className="w-full pl-4 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                           placeholder="••••••••"
                         />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                        >
-                          {showPassword ? (
-                            <EyeOff className="w-5 h-5" />
-                          ) : (
-                            <Eye className="w-5 h-5" />
-                          )}
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -494,27 +483,15 @@ const Login = () => {
                         Password
                       </label>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-amber-500" />
                         <input
                           type={showPassword ? "text" : "password"}
                           name="password"
                           value={formData.password}
                           onChange={handleChange}
                           required
-                          className="w-full pl-11 pr-12 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                          className="w-full pl-4 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                           placeholder="••••••••"
                         />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                        >
-                          {showPassword ? (
-                            <EyeOff className="w-5 h-5" />
-                          ) : (
-                            <Eye className="w-5 h-5" />
-                          )}
-                        </button>
                       </div>
                     </div>
 
@@ -524,29 +501,15 @@ const Login = () => {
                         Confirm Password
                       </label>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-amber-500" />
                         <input
                           type={showConfirmPassword ? "text" : "password"}
                           name="confirmPassword"
                           value={formData.confirmPassword}
                           onChange={handleChange}
                           required
-                          className="w-full pl-11 pr-12 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                          className="w-full pl-4 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                           placeholder="••••••••"
                         />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setShowConfirmPassword(!showConfirmPassword)
-                          }
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff className="w-5 h-5" />
-                          ) : (
-                            <Eye className="w-5 h-5" />
-                          )}
-                        </button>
                       </div>
                     </div>
                   </div>

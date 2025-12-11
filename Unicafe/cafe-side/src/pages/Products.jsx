@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Search, Edit2, Trash2, X, Coffee, Loader } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, X, Coffee, Loader, Link as LinkIcon, Upload } from "lucide-react";
 
 const API_URL = "http://localhost:3000/api/cafe";
 
@@ -24,6 +24,8 @@ const Products = () => {
     title: "",
     message: "",
   });
+  const [imageInputMode, setImageInputMode] = useState("url"); // "url" or "upload"
+  const [imageFile, setImageFile] = useState(null);
 
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -217,6 +219,8 @@ const Products = () => {
   const handleAddProduct = () => {
     setModalMode("add");
     setSelectedProduct(null);
+    setImageInputMode("url");
+    setImageFile(null);
     setFormData({
       name: "",
       category: "",
@@ -232,6 +236,8 @@ const Products = () => {
   const handleEditProduct = (product) => {
     setModalMode("edit");
     setSelectedProduct(product);
+    setImageInputMode("url");
+    setImageFile(null);
     setFormData({
       name: product.product_name || product.name,
       category:
@@ -257,6 +263,21 @@ const Products = () => {
       return;
     }
 
+    // Determine final image URL - only upload if in upload mode with a new file
+    let finalImageUrl = formData.image_url;
+    if (imageInputMode === "upload" && imageFile) {
+      try {
+        setLoading(true);
+        finalImageUrl = await uploadImageFile(imageFile);
+      } catch (error) {
+        setLoading(false);
+        alert(`Failed to upload image: ${error.message}. Please try again or use a URL instead.`);
+        return;
+      } finally {
+        setLoading(false);
+      }
+    }
+
     try {
       // Convert form data to database column names (professional API contract)
       const productData = {
@@ -265,7 +286,7 @@ const Products = () => {
         product_description: formData.description,
         product_price: parseFloat(formData.price),
         product_stock: parseInt(formData.stock) || 0,
-        product_image_url: formData.image_url,
+        product_image_url: finalImageUrl,
         product_is_available: formData.is_available ? 1 : 0,
       };
 
@@ -344,6 +365,21 @@ const Products = () => {
   };
 
   const handleReactivate = async () => {
+    // Determine final image URL - only upload if in upload mode with a new file
+    let finalImageUrl = formData.image_url;
+    if (imageInputMode === "upload" && imageFile) {
+      try {
+        setLoading(true);
+        finalImageUrl = await uploadImageFile(imageFile);
+      } catch (error) {
+        setLoading(false);
+        alert(`Failed to upload image: ${error.message}. Please try again or use a URL instead.`);
+        return;
+      } finally {
+        setLoading(false);
+      }
+    }
+
     try {
       // Convert form data to database column names and reactivate
       const productData = {
@@ -352,7 +388,7 @@ const Products = () => {
         product_description: formData.description,
         product_price: parseFloat(formData.price),
         product_stock: parseInt(formData.stock) || 0,
-        product_image_url: formData.image_url,
+        product_image_url: finalImageUrl,
         product_is_available: 1,
       };
 
@@ -379,8 +415,52 @@ const Products = () => {
     }
   };
 
+  const uploadImageFile = async (file) => {
+    const formDataObj = new FormData();
+    formDataObj.append('image', file);
+
+    try {
+      const response = await fetch(`${API_URL}/upload-image`, {
+        method: 'POST',
+        body: formDataObj,
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Return full URL (backend is on localhost:3000)
+        return `http://localhost:3000${data.imageUrl}`;
+      } else {
+        throw new Error(data.error || 'Failed to upload image');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Determine final image URL based on input mode
+    let finalImageUrl = formData.image_url;
+    
+    // Only upload file if user is in upload mode AND has selected a file AND hasn't autofilled from API
+    if (imageInputMode === "upload" && imageFile) {
+      try {
+        setLoading(true);
+        finalImageUrl = await uploadImageFile(imageFile);
+      } catch (error) {
+        setLoading(false);
+        alert(`Failed to upload image: ${error.message}. Please try again or use a URL instead.`);
+        return;
+      } finally {
+        setLoading(false);
+      }
+    }
+    // If user selected API autofill, formData.image_url already has the external URL - no upload needed
+    // If user is in URL mode, formData.image_url already has the pasted URL - no upload needed
+
 
     // Show save confirmation modal for edits
     if (modalMode === "edit") {
@@ -769,17 +849,93 @@ const Products = () => {
 
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Image URL
+                  Product Image
                 </label>
-                <input
-                  type="url"
-                  value={formData.image_url}
-                  onChange={(e) =>
-                    setFormData({ ...formData, image_url: e.target.value })
-                  }
-                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  placeholder="https://..."
-                />
+                
+                {/* Toggle between URL and File Upload */}
+                <div className="flex gap-2 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImageInputMode("url");
+                      setImageFile(null);
+                    }}
+                    className={`flex-1 py-2 px-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
+                      imageInputMode === "url"
+                        ? "bg-amber-500 text-white shadow-md"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    <LinkIcon className="w-4 h-4" />
+                    URL
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImageInputMode("upload");
+                      setFormData({ ...formData, image_url: "" });
+                    }}
+                    className={`flex-1 py-2 px-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
+                      imageInputMode === "upload"
+                        ? "bg-amber-500 text-white shadow-md"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    <Upload className="w-4 h-4" />
+                    Upload File
+                  </button>
+                </div>
+
+                {imageInputMode === "url" ? (
+                  <input
+                    type="url"
+                    value={formData.image_url}
+                    onChange={(e) =>
+                      setFormData({ ...formData, image_url: e.target.value })
+                    }
+                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                ) : (
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setImageFile(file);
+                          // Create a temporary URL for preview
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setFormData({ ...formData, image_url: reader.result });
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
+                    />
+                    {imageFile && (
+                      <p className="text-xs text-slate-500 mt-2">
+                        Selected: {imageFile.name}
+                      </p>
+                    )}
+                  </div>
+                )}
+                
+                {/* Image Preview */}
+                {formData.image_url && (
+                  <div className="mt-3">
+                    <img
+                      src={formData.image_url}
+                      alt="Preview"
+                      className="w-32 h-32 object-cover rounded-lg border-2 border-slate-200"
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                      }}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center space-x-3">

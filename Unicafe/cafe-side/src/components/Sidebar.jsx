@@ -163,7 +163,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
                   {user?.name || user?.username || "Admin"}
                 </p>
                 <p className="text-xs font-medium text-amber-700">
-                  {user?.email || "admin@unicafe.com"}
+                  {user?.email || "lukegabriel.arrieta@wvsu.edu.ph"}
                 </p>
               </div>
             </div>

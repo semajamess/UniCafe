@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { CreditCard, User, Mail, Building2, Smartphone } from "lucide-react";
 import Receipt from "../components/Receipt";
@@ -314,6 +314,28 @@ const Checkout = () => {
 
   return (
     <div className="pt-20 min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
+      {/* Loading Overlay */}
+      <AnimatePresence>
+        {loading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center"
+          >
+            <div className="bg-white rounded-2xl p-8 shadow-2xl text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary-600 mx-auto mb-4"></div>
+              <p className="text-gray-700 font-semibold text-lg">
+                Processing your order...
+              </p>
+              <p className="text-gray-500 text-sm mt-2">
+                Please wait, this may take a few moments
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <motion.h1
           initial={{ opacity: 0, y: 30 }}

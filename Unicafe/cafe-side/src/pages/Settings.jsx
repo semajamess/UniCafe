@@ -6,7 +6,7 @@ const API_URL = "http://localhost:3000/api";
 const Settings = () => {
   const [settings, setSettings] = useState({
     storeName: "UniCafé",
-    email: "admin@unicafe.com",
+    email: "lukegabriel.arrieta@wvsu.edu.ph",
     phone: "+1 234 567 8900",
     address: "123 Coffee Street, University District",
   });
@@ -30,7 +30,7 @@ const Settings = () => {
         const data = await response.json();
         setSettings({
           storeName: data.store_name || "UniCafé",
-          email: data.store_email || "admin@unicafe.com",
+          email: data.store_email || "lukegabriel.arrieta@wvsu.edu.ph",
           phone: data.store_phone || "+1 234 567 8900",
           address:
             data.store_address || "123 Coffee Street, University District",

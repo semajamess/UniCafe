@@ -1,14 +1,14 @@
 import { Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { useState, useEffect, createContext, useContext } from "react";
 import AdminLayout from "./layouts/AdminLayout";
-import Login from "./front-end/Login";
-import Dashboard from "./front-end/Dashboard";
-import POS from "./front-end/POS";
-import Products from "./front-end/Products";
-import Orders from "./front-end/Orders";
-import Payments from "./front-end/Payments";
-import Customers from "./front-end/Customers";
-import Settings from "./front-end/Settings";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import POS from "./pages/POS";
+import Products from "./pages/Products";
+import Orders from "./pages/Orders";
+import Payments from "./pages/Payments";
+import Customers from "./pages/Customers";
+import Settings from "./pages/Settings";
 import { NotificationProvider } from "./context/NotificationContext";
 
 // Auth Context
