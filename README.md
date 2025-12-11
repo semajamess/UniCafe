@@ -67,10 +67,13 @@ The system follows a client-server architecture with three main components:
 - **Avatar System**: 6 different avatar styles (Cartoon, Robots, Pixel Art, Lorelei, Notionists, Open Peeps)
 - **Phone Number Verification**: One-time phone number addition with validation
 - **Session Persistence**: Auto-login on browser return
-- **Account Deactivation**: Soft delete with automatic reactivation on re-login
-  - Deactivated accounts can be reactivated by logging in (password or Google OAuth)
-  - Deactivated accounts can re-register with the same credentials
-  - Order history and data fully preserved during deactivation
+- **Account Deactivation & Reactivation**: 
+  - Deactivate account with "DEACTIVATE" confirmation modal
+  - Success modal after deactivation
+  - Reactivation modal on login requiring "REACTIVATE" confirmation
+  - Full support for both regular and Google OAuth accounts
+  - Automatic login after successful reactivation
+  - Complete data preservation (orders, profile, history)
 
 #### Menu & Ordering
 - **Category Filtering**: Browse products by category (Coffee, Snacks, Desserts, Beverages, Meals)
@@ -143,9 +146,9 @@ The system follows a client-server architecture with three main components:
 - **Revenue Reports**: Financial overview
 
 #### Settings
-- **Store Information**: Update café name, address, phone, email
+- **Store Information Display**: View café name, address, phone, email (read-only)
 - **Profile Management**: Admin account updates
-- **System Configuration**: Customize store settings
+- **System Configuration**: View store settings
 
 #### Real-time Features
 - **Live Notifications**: Socket.IO powered instant updates
@@ -791,22 +794,62 @@ UniCafe/
 
 ## 📝 Recent Updates
 
-### December 12, 2025 - Account Deactivation Feature
-**New Features:**
-- ✅ Customer account deactivation with soft delete
-- ✅ Auto-reactivation on login (password or Google OAuth)
-- ✅ Auto-reactivation on re-registration with same credentials
-- ✅ Visual indicators for deactivated accounts in admin dashboard
-- ✅ Red styling and badges on customer list and orders
-- ✅ Full preservation of order history and revenue data
-- ✅ Customer count statistics exclude deactivated users
+### December 12, 2025 - Major UX & Feature Updates
 
-**Technical Implementation:**
-- Added `user_deleted_at` column to users table
-- Modified 5 backend files (auth, orders, payments, POS, profile service)
-- Updated 4 frontend files (Customers, Orders, POS, Profile pages)
-- Comprehensive query pattern updates for data consistency
-- Security measures: Admin accounts cannot be reactivated
+#### 🔐 Account Deactivation & Reactivation System
+**Customer Features:**
+- ✅ **Deactivation Confirmation Modal**: Users must type "DEACTIVATE" to confirm account deactivation
+- ✅ **Success Modal**: Beautiful confirmation screen after successful deactivation
+- ✅ **Reactivation Flow**: Deactivated accounts show reactivation modal on login
+- ✅ **Reactivation Confirmation**: Users must type "REACTIVATE" to restore their account
+- ✅ **Google Account Support**: Full support for Google OAuth deactivation/reactivation
+- ✅ **Auto-Login After Reactivation**: Seamless experience with automatic authentication
+- ✅ **Data Preservation**: Complete order history and profile data maintained
+
+**Admin Features:**
+- ✅ **Visual Indicators**: Red badges and styling for deactivated accounts
+- ✅ **Customer Management**: View deactivation status in customer list
+- ✅ **Order Tracking**: Deactivated user orders clearly marked
+- ✅ **Revenue Preservation**: All financial data from deactivated users retained
+- ✅ **Read-Only Settings**: Cafe settings now display-only to prevent accidental changes
+
+#### 🎨 UI/UX Improvements
+- ✅ **Splash Screen Animation**: Beautiful loading animation on every page refresh
+- ✅ **Consistent Iconography**: Replaced Coffee icons with UtensilsCrossed throughout app
+- ✅ **Contact Form Enhancement**: User data persists after sending messages
+- ✅ **Search Optimization**: 
+  - Orders search by ID, username, and email (removed customer name)
+  - Payments search with bold customer names for better readability
+- ✅ **Modal Improvements**: Enhanced success modals with better animations
+
+#### 🔧 Technical Improvements
+**Backend:**
+- Enhanced authentication middleware with detailed logging
+- New `/reactivate` endpoint for account restoration
+- Updated Google OAuth flow to handle deactivated accounts
+- Improved search queries across Orders, Payments, and POS
+- Password verification for reactivation (regular accounts)
+
+**Frontend:**
+- Added `setToken` and `setUser` exports in AuthContext
+- Enhanced Auth.jsx with reactivation modal component
+- Updated Profile.jsx with deactivation confirmation input
+- Modified App.jsx for persistent splash screen display
+- SplashScreen component now accepts default props
+
+**Files Modified (31 files):**
+- Backend: auth.js, settings.js, orders.js, customers.js, stats.js, pos.js, profileService.js
+- Customer-side: Auth.jsx, Profile.jsx, Contact.jsx, App.jsx, AuthContext.jsx, SplashScreen.jsx
+- Cafe-side: Settings.jsx, Orders.jsx, Payments.jsx, Products.jsx, Login.jsx, POS.jsx, Sidebar.jsx, Header.jsx
+- Components: Navbar.jsx, Footer.jsx, FloatingCart.jsx
+
+#### 🎯 Key Features Summary
+- **Account Deactivation**: Soft delete with manual confirmation ("DEACTIVATE")
+- **Account Reactivation**: Modal-based restoration with confirmation ("REACTIVATE")
+- **Splash Screen**: Animated loading on every refresh (not session-based)
+- **Enhanced Search**: More precise filtering across admin dashboard
+- **UI Polish**: Consistent icons, better modals, preserved form data
+- **Google OAuth**: Full integration with deactivation/reactivation flow
 
 ---
 
