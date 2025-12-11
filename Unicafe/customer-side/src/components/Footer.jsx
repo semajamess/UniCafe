@@ -19,33 +19,13 @@ export default function Footer() {
     store_address: "123 Main Street, Downtown District",
   });
 
-  // Fetch and cache store settings with 5-minute TTL
+  // Fetch store settings on mount and window focus
   useEffect(() => {
     const CACHE_KEY = "storeSettings";
-    const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
     const fetchStoreSettings = async () => {
       try {
-        // Check if cache exists and is still valid
-        const cachedData = localStorage.getItem(CACHE_KEY);
-        if (cachedData) {
-          const { data, timestamp } = JSON.parse(cachedData);
-          const cacheAge = Date.now() - timestamp;
-
-          if (cacheAge < CACHE_TTL) {
-            // Cache is still valid, use it
-            setStoreSettings({
-              store_name: data.store_name || "UniCafe",
-              store_email: data.store_email || "hello@unicafe.com",
-              store_phone: data.store_phone || "+63 123 456 7890",
-              store_address:
-                data.store_address || "123 Main Street, Downtown District",
-            });
-            return;
-          }
-        }
-
-        // Cache expired or doesn't exist, fetch fresh data
+        // Always fetch fresh data on page load/refresh
         const response = await fetch(
           "http://localhost:3000/api/customer/settings"
         );
@@ -59,7 +39,7 @@ export default function Footer() {
               data.store_address || "123 Main Street, Downtown District",
           });
 
-          // Save to cache with timestamp
+          // Save to cache for other components
           localStorage.setItem(
             CACHE_KEY,
             JSON.stringify({
@@ -75,7 +55,7 @@ export default function Footer() {
 
     fetchStoreSettings();
 
-    // Only fetch on window focus (no polling)
+    // Also fetch on window focus
     const handleFocus = () => {
       fetchStoreSettings();
     };

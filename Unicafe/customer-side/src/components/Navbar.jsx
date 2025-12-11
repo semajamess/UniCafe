@@ -79,27 +79,13 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Fetch and cache store settings with 5-minute TTL
+  // Fetch store settings on mount and window focus
   useEffect(() => {
     const CACHE_KEY = "storeSettings";
-    const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
     const fetchStoreSettings = async () => {
       try {
-        // Check if cache exists and is still valid
-        const cachedData = localStorage.getItem(CACHE_KEY);
-        if (cachedData) {
-          const { data, timestamp } = JSON.parse(cachedData);
-          const cacheAge = Date.now() - timestamp;
-
-          if (cacheAge < CACHE_TTL) {
-            // Cache is still valid, use it
-            setStoreName(data.store_name || "UniCafe");
-            return;
-          }
-        }
-
-        // Cache expired or doesn't exist, fetch fresh data
+        // Always fetch fresh data on page load/refresh
         const response = await fetch(
           "http://localhost:3000/api/customer/settings"
         );
@@ -107,7 +93,7 @@ export default function Navbar() {
           const data = await response.json();
           setStoreName(data.store_name || "UniCafe");
 
-          // Save to cache with timestamp
+          // Save to cache for other components
           localStorage.setItem(
             CACHE_KEY,
             JSON.stringify({
@@ -123,7 +109,7 @@ export default function Navbar() {
 
     fetchStoreSettings();
 
-    // Only fetch on window focus (no polling)
+    // Also fetch on window focus
     const handleFocus = () => {
       fetchStoreSettings();
     };

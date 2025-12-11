@@ -67,6 +67,8 @@ const Settings = () => {
       const data = await response.json();
 
       if (response.ok) {
+        // Clear the storeSettings cache so footer/header will fetch fresh data
+        localStorage.removeItem("storeSettings");
         showNotification("success", "Settings saved successfully!");
       } else {
         throw new Error(data.error || "Failed to save settings");
@@ -92,7 +94,7 @@ const Settings = () => {
       {/* Notification */}
       {notification.show && (
         <div
-          className={`fixed top-4 right-4 z-50 flex items-center space-x-2 px-4 py-3 rounded-lg shadow-lg ${
+          className={`fixed top-20 right-4 z-[100] flex items-center space-x-2 px-4 py-3 rounded-lg shadow-lg ${
             notification.type === "success"
               ? "bg-green-50 border border-green-200 text-green-700"
               : "bg-red-50 border border-red-200 text-red-700"

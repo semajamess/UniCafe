@@ -345,9 +345,8 @@ const Checkout = () => {
                     type="text"
                     name="name"
                     value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    readOnly
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-100 text-gray-600 cursor-not-allowed"
                     placeholder="John Doe"
                   />
                 </div>
@@ -361,9 +360,8 @@ const Checkout = () => {
                     type="email"
                     name="email"
                     value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    readOnly
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-100 text-gray-600 cursor-not-allowed"
                     placeholder="john@example.com"
                   />
                 </div>

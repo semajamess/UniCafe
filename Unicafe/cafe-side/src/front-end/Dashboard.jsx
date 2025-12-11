@@ -9,6 +9,8 @@ import {
   ArrowDownRight,
   ChevronDown,
   Loader,
+  Download,
+  FileText,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
@@ -149,17 +151,18 @@ const Dashboard = () => {
     sales: parseInt(p.sales) || 0,
     revenue: parseFloat(p.revenue) || 0,
   }));
-  
+
   console.log("Top Products data:", topProducts);
 
   // Top 5 customers
-  const topCustomers = dashboardData.topCustomers?.map((c) => ({
-    name: c.name,
-    value: parseFloat(c.totalSpent),
-    orders: c.orders,
-    type: c.type,
-  })) || [];
-  
+  const topCustomers =
+    dashboardData.topCustomers?.map((c) => ({
+      name: c.name,
+      value: parseFloat(c.totalSpent),
+      orders: c.orders,
+      type: c.type,
+    })) || [];
+
   console.log("Top Customers for chart:", topCustomers);
 
   const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
@@ -183,6 +186,88 @@ const Dashboard = () => {
     return colors[status] || "bg-gray-100 text-gray-700";
   };
 
+  // Download Report Function
+  const downloadReport = () => {
+    const today = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    // Build CSV content
+    let csvContent = "";
+
+    // Report Header
+    csvContent += "UNICAFE SALES REPORT\n";
+    csvContent += `Generated on: ${today}\n\n`;
+
+    // Summary Statistics
+    csvContent += "=== SUMMARY STATISTICS ===\n";
+    csvContent += `Total Revenue,${dashboardData.stats.revenue.value.toFixed(
+      2
+    )}\n`;
+    csvContent += `Total Orders,${dashboardData.stats.orders.value}\n`;
+    csvContent += `Total Customers,${dashboardData.stats.customers.value}\n`;
+    csvContent += `Total Products,${dashboardData.stats.products.value}\n\n`;
+
+    // Revenue Over Time
+    csvContent += "=== REVENUE OVER TIME ===\n";
+    csvContent += "Date,Revenue,Orders\n";
+    dashboardData.revenueOverTime.forEach((item) => {
+      csvContent += `${item.date},${parseFloat(item.revenue).toFixed(2)},${
+        item.orders
+      }\n`;
+    });
+    csvContent += "\n";
+
+    // Top Products
+    csvContent += "=== TOP PRODUCTS ===\n";
+    csvContent += "Product Name,Units Sold,Revenue\n";
+    dashboardData.topProducts.slice(0, 10).forEach((product) => {
+      csvContent += `"${product.name}",${product.sales},${parseFloat(
+        product.revenue
+      ).toFixed(2)}\n`;
+    });
+    csvContent += "\n";
+
+    // Top Customers
+    if (dashboardData.topCustomers && dashboardData.topCustomers.length > 0) {
+      csvContent += "=== TOP CUSTOMERS ===\n";
+      csvContent += "Customer Name,Total Spent,Orders\n";
+      dashboardData.topCustomers.forEach((customer) => {
+        csvContent += `"${customer.name}",${parseFloat(
+          customer.totalSpent
+        ).toFixed(2)},${customer.orders}\n`;
+      });
+      csvContent += "\n";
+    }
+
+    // Recent Orders
+    csvContent += "=== RECENT ORDERS ===\n";
+    csvContent += "Order ID,Customer,Items,Amount,Status,Date\n";
+    dashboardData.recentOrders.forEach((order) => {
+      csvContent += `#${order.id},"${order.user_username || "Guest"}",${
+        order.item_count
+      },${parseFloat(order.total).toFixed(2)},${order.status},"${new Date(
+        order.created_at
+      ).toLocaleString()}"\n`;
+    });
+
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `UniCafe_Report_${new Date().toISOString().split("T")[0]}.csv`
+    );
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Page Header */}
@@ -194,8 +279,12 @@ const Dashboard = () => {
               Welcome back! Here's what's happening today.
             </p>
           </div>
-          <button className="bg-white text-amber-600 px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-xl transform hover:scale-105 transition-all duration-200 hover:bg-amber-50">
-            Download Report
+          <button
+            onClick={downloadReport}
+            className="bg-white text-amber-600 px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-xl transform hover:scale-105 transition-all duration-200 hover:bg-amber-50 flex items-center space-x-2"
+          >
+            <Download className="w-5 h-5" />
+            <span>Download Report</span>
           </button>
         </div>
       </div>
@@ -327,39 +416,42 @@ const Dashboard = () => {
             <div className="h-[350px]">
               <ResponsiveContainer width="100%" height={350}>
                 <PieChart>
-                <Pie
-                  data={topCustomers}
-                  cx="50%"
-                  cy="45%"
-                  labelLine={false}
-                  outerRadius={90}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {topCustomers.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value) => [`₱${value.toFixed(2)}`, "Total Spent"]}
-                  contentStyle={{
-                    backgroundColor: "#fff",
-                    border: "2px solid #3b82f6",
-                    borderRadius: "12px",
-                    boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-                  }}
-                />
-                <Legend 
-                  layout="horizontal" 
-                  verticalAlign="bottom" 
-                  align="center"
-                  wrapperStyle={{ paddingTop: "20px" }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+                  <Pie
+                    data={topCustomers}
+                    cx="50%"
+                    cy="45%"
+                    labelLine={false}
+                    outerRadius={90}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {topCustomers.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value) => [
+                      `₱${value.toFixed(2)}`,
+                      "Total Spent",
+                    ]}
+                    contentStyle={{
+                      backgroundColor: "#fff",
+                      border: "2px solid #3b82f6",
+                      borderRadius: "12px",
+                      boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+                    }}
+                  />
+                  <Legend
+                    layout="horizontal"
+                    verticalAlign="bottom"
+                    align="center"
+                    wrapperStyle={{ paddingTop: "20px" }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
           ) : (
             <div className="h-[350px] flex items-center justify-center">
@@ -377,27 +469,29 @@ const Dashboard = () => {
             <h2 className="text-lg font-semibold text-slate-900">
               Top 5 Selling Products
             </h2>
-            <span className="text-xs font-semibold text-slate-600 uppercase">Units Sold</span>
+            <span className="text-xs font-semibold text-slate-600 uppercase">
+              Units Sold
+            </span>
           </div>
           <div className="flex gap-4">
             {/* Chart */}
             <div className="flex-1">
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart 
-                  data={topProducts} 
+                <BarChart
+                  data={topProducts}
                   layout="vertical"
                   margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis type="number" stroke="#64748b" />
-                  <YAxis 
-                    type="category" 
-                    dataKey="name" 
+                  <YAxis
+                    type="category"
+                    dataKey="name"
                     stroke="#64748b"
                     width={100}
                     style={{ fontSize: "11px" }}
                   />
-                  <Tooltip 
+                  <Tooltip
                     formatter={(value) => `₱${value.toFixed(2)}`}
                     contentStyle={{
                       backgroundColor: "#fff",
@@ -406,18 +500,36 @@ const Dashboard = () => {
                       boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
                     }}
                   />
-                  <Bar dataKey="revenue" fill="#10b981" name="Revenue (₱)" radius={[0, 8, 8, 0]} />
+                  <Bar
+                    dataKey="revenue"
+                    fill="#10b981"
+                    name="Revenue (₱)"
+                    radius={[0, 8, 8, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            
+
             {/* Units Sold Column */}
-            <div className="w-20 flex flex-col" style={{ height: '300px', paddingTop: '5px', paddingBottom: '5px' }}>
+            <div
+              className="w-20 flex flex-col"
+              style={{
+                height: "300px",
+                paddingTop: "5px",
+                paddingBottom: "5px",
+              }}
+            >
               <div className="flex-1 flex flex-col justify-around">
                 {topProducts.map((product, index) => (
-                  <div key={index} className="flex items-center justify-center" style={{ height: `${100 / topProducts.length}%` }}>
+                  <div
+                    key={index}
+                    className="flex items-center justify-center"
+                    style={{ height: `${100 / topProducts.length}%` }}
+                  >
                     <div className="bg-blue-100 px-3 py-1.5 rounded-lg">
-                      <span className="text-base font-bold text-blue-600">{product.sales}</span>
+                      <span className="text-base font-bold text-blue-600">
+                        {product.sales}
+                      </span>
                     </div>
                   </div>
                 ))}

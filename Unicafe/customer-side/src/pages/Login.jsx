@@ -561,11 +561,7 @@ const Login = () => {
                     <span>Processing...</span>
                   ) : (
                     <>
-                      {isLogin ? (
-                        <LogIn className="w-5 h-5" />
-                      ) : (
-                        <UserPlus className="w-5 h-5" />
-                      )}
+                      {!isLogin && <UserPlus className="w-5 h-5" />}
                       <span>{isLogin ? "Sign In" : "Create Account"}</span>
                       <ArrowRight className="w-5 h-5" />
                     </>

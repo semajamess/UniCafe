@@ -5,6 +5,7 @@ import { sendOtpEmail } from "../../services/emailService.js";
 import { sendOtpSms, maskPhoneNumber } from "../../services/smsService.js";
 import bodyParser from "body-parser";
 import { createNotification } from "../cafe-side/notifications.js";
+import { createCustomerNotification } from "./notifications.js";
 
 const router = express.Router();
 
@@ -607,6 +608,25 @@ router.post("/confirm-otp", authenticateToken, async (req, res) => {
         },
       });
       console.log("✅ Notification sent for order #" + orderId);
+
+      // Send notification to the customer who placed the order
+      if (user_id) {
+        await createCustomerNotification(io, user_id, {
+          type: "order_placed",
+          title: "Order Confirmed! 🎉",
+          message: `Your order #${orderId} has been placed successfully. Total: ₱${total.toFixed(
+            2
+          )}`,
+          data: {
+            orderId,
+            total,
+            itemCount: createdItems.length,
+            paymentMethod: method_hint || "bank_transfer",
+            status: "processing",
+          },
+        });
+        console.log("✅ Customer notification sent for order #" + orderId);
+      }
     } else {
       console.warn("⚠️ Socket.IO not available, notification not sent");
     }
