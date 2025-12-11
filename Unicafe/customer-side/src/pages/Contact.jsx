@@ -57,7 +57,13 @@ const Contact = () => {
         setLoading(false);
         setSubmitted(true);
         setMessageId(data.messageId);
-        setFormData({ name: "", email: "", subject: "", message: "" });
+        // Reset form but keep user's name and email if logged in
+        setFormData({
+          name: isAuthenticated && user ? user.username || "" : "",
+          email: isAuthenticated && user ? user.email || "" : "",
+          subject: "",
+          message: "",
+        });
       } else {
         setLoading(false);
         alert(data.error || "Failed to send message. Please try again.");
