@@ -1,5 +1,6 @@
 import express from "express";
 import db from "../../database.js";
+import { authenticateToken } from "./auth.js";
 
 const router = express.Router();
 
@@ -30,20 +31,28 @@ router.get("/", async (req, res) => {
 });
 
 // Soft delete user account (customer can deactivate their account)
-router.delete("/account", async (req, res) => {
+router.delete("/account", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user?.userId;
+    console.log('Delete account request received');
+    console.log('User from token:', req.user);
+    
+    const userId = req.user?.id; // Changed from userId to id
     
     if (!userId) {
+      console.log('No userId found in token');
       return res.status(401).json({ error: "Unauthorized" });
     }
 
+    console.log(`Deactivating account for user ID: ${userId}`);
+    
     // Soft delete by setting deleted_at timestamp
     await db.runAsync(
       "UPDATE users SET user_deleted_at = CURRENT_TIMESTAMP WHERE user_id = ?",
       [userId]
     );
 
+    console.log('Account deactivated successfully');
+    
     res.json({ 
       success: true, 
       message: "Account deactivated successfully" 

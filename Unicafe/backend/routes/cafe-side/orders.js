@@ -8,7 +8,7 @@ const router = express.Router();
 // Get all orders (ADMIN ONLY)
 router.get("/", async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, search } = req.query;
 
     let query = `
       SELECT o.*, 
@@ -27,6 +27,12 @@ router.get("/", async (req, res) => {
     if (status) {
       query += " AND o.order_status = ?";
       params.push(status);
+    }
+
+    if (search) {
+      query += " AND (u.user_username LIKE ? OR u.user_email LIKE ? OR o.order_id LIKE ?)";
+      const searchPattern = `%${search}%`;
+      params.push(searchPattern, searchPattern, searchPattern);
     }
 
     query += " ORDER BY o.order_created_at DESC";

@@ -13,11 +13,21 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // Middleware to authenticate JWT token
 export function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
+  console.log('Auth header:', authHeader);
   const token = authHeader && authHeader.split(" ")[1];
-  if (!token) return res.status(401).json({ error: "Access token required" });
+  console.log('Extracted token:', token ? 'exists' : 'missing');
+  
+  if (!token) {
+    console.log('No token provided');
+    return res.status(401).json({ error: "Access token required" });
+  }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: "Invalid or expired token" });
+    if (err) {
+      console.log('Token verification failed:', err.message);
+      return res.status(403).json({ error: "Invalid or expired token" });
+    }
+    console.log('Token verified, user:', user);
     req.user = user;
     next();
   });
@@ -186,13 +196,14 @@ router.post("/login", async (req, res) => {
     if (!isValidPassword)
       return res.status(401).json({ error: "Invalid email or password" });
 
-    // If user is deleted, reactivate their account
+    // If user is deleted, return special response for reactivation
     if (user.user_deleted_at) {
-      await db.runAsync(
-        "UPDATE users SET user_deleted_at = NULL WHERE user_id = ?",
-        [user.user_id]
-      );
-      console.log(`✅ Reactivated user account: ${user.user_email}`);
+      return res.status(200).json({
+        accountDeactivated: true,
+        message: "Account was deactivated. Do you want to reactivate it?",
+        userId: user.user_id,
+        email: user.user_email
+      });
     }
 
     const token = jwt.sign(
@@ -220,6 +231,71 @@ router.post("/login", async (req, res) => {
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: "Login failed. Please try again." });
+  }
+});
+
+// Reactivate deactivated account
+router.post("/reactivate", async (req, res) => {
+  try {
+    const { email, password, confirmText, isGoogleAccount, googleToken } = req.body;
+
+    if (confirmText !== 'REACTIVATE') {
+      return res.status(400).json({ error: "Please type REACTIVATE to confirm" });
+    }
+
+    // Find user
+    const user = await db.getAsync("SELECT * FROM users WHERE user_email = ?", [email]);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // For Google accounts, skip password verification
+    if (!isGoogleAccount) {
+      // Verify password for regular accounts
+      const isValidPassword = await bcrypt.compare(password, user.user_password);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: "Invalid password" });
+      }
+    }
+
+    // Check if account is actually deactivated
+    if (!user.user_deleted_at) {
+      return res.status(400).json({ error: "Account is not deactivated" });
+    }
+
+    // Reactivate account
+    await db.runAsync(
+      "UPDATE users SET user_deleted_at = NULL WHERE user_id = ?",
+      [user.user_id]
+    );
+    console.log(`✅ Reactivated user account: ${user.user_email}`);
+
+    // Generate token
+    const token = jwt.sign(
+      {
+        id: user.user_id,
+        email: user.user_email,
+        username: user.user_username,
+        phone: user.user_phone,
+      },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      message: "Account reactivated successfully",
+      token,
+      user: {
+        id: user.user_id,
+        username: user.user_username,
+        email: user.user_email,
+        phone: user.user_phone || null,
+        profile_image: user.user_profile_image || null,
+      },
+    });
+  } catch (error) {
+    console.error("Reactivation error:", error);
+    res.status(500).json({ error: "Reactivation failed. Please try again." });
   }
 });
 
@@ -297,13 +373,14 @@ router.post("/google", async (req, res) => {
         ]);
       }
     } else if (user.user_deleted_at) {
-      // Reactivate deleted user who's logging in with Google
-      await db.runAsync(
-        "UPDATE users SET user_deleted_at = NULL WHERE user_id = ?",
-        [user.user_id]
-      );
-      console.log(`✅ Reactivated user account via Google: ${user.user_email}`);
-      user.user_deleted_at = null;
+      // Return deactivated status for Google accounts
+      return res.status(200).json({
+        accountDeactivated: true,
+        message: "Account was deactivated. Do you want to reactivate it?",
+        userId: user.user_id,
+        email: user.user_email,
+        isGoogleAccount: true
+      });
     }
 
     if (!user) {
