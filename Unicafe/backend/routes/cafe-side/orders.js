@@ -108,14 +108,6 @@ router.patch("/:id/status", async (req, res) => {
     };
 
     if (statusMessages[status]) {
-      // Notification for cafe admins
-      await createNotification(io, {
-        type: "order_status",
-        title: `Order #${req.params.id} Updated`,
-        message: `Order #${req.params.id} ${statusMessages[status]}`,
-        data: { orderId: req.params.id, status, total: updated?.order_total },
-      });
-
       // Notification for the customer who placed the order
       if (updated?.user_id) {
         const customerMessages = {

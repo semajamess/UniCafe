@@ -1,6 +1,11 @@
-import { motion } from 'framer-motion'
-import { Coffee, Heart, Users, Award } from 'lucide-react'
-import CafeBackground from '../components/CafeBackground'
+import { motion } from "framer-motion";
+import { Coffee, Heart, Users, Award } from "lucide-react";
+import CafeBackground from "../components/CafeBackground";
+import aprilImage from "../assets/april.jpg";
+import jamesImage from "../assets/James.jpg";
+import juleImage from "../assets/jule.jpg";
+import lukeImage from "../assets/Luke.jpg";
+import peterImage from "../assets/peter.jpg";
 
 const About = () => {
   return (
@@ -34,20 +39,26 @@ const About = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-4xl font-bold gradient-text mb-6">Our Story</h2>
+              <h2 className="text-4xl font-bold gradient-text mb-6">
+                Our Story
+              </h2>
               <div className="space-y-4 text-gray-700 text-lg">
                 <p>
-                  UniCafé was born from a simple idea: everyone deserves great coffee at affordable prices. 
-                  Founded in 2020, we started as a small coffee shop and quickly became the heartbeat 
-                  of our community.
+                  UniCafé was born from a simple idea: everyone deserves great
+                  coffee at affordable prices. Founded in 2020, we started as a
+                  small coffee shop and quickly became the heartbeat of our
+                  community.
                 </p>
                 <p>
-                  Today, we're proud to serve thousands of customers every week, providing 
-                  not just exceptional coffee, but a welcoming space where ideas flow and friendships flourish.
+                  Today, we're proud to serve thousands of customers every week,
+                  providing not just exceptional coffee, but a welcoming space
+                  where ideas flow and friendships flourish.
                 </p>
                 <p>
-                  Every cup we serve is crafted with care, using ethically sourced beans and sustainable practices. 
-                  Because we believe great coffee should also do great things for our community and planet.
+                  Every cup we serve is crafted with care, using ethically
+                  sourced beans and sustainable practices. Because we believe
+                  great coffee should also do great things for our community and
+                  planet.
                 </p>
               </div>
             </motion.div>
@@ -64,8 +75,9 @@ const About = () => {
                   Our Mission
                 </h3>
                 <p className="text-gray-700 text-lg">
-                  To fuel your day, one cup at a time. We're committed to providing 
-                  quality coffee, affordable prices, and a community space where everyone belongs.
+                  To fuel your day, one cup at a time. We're committed to
+                  providing quality coffee, affordable prices, and a community
+                  space where everyone belongs.
                 </p>
               </div>
             </motion.div>
@@ -81,34 +93,38 @@ const About = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold gradient-text mb-4">Our Values</h2>
-            <p className="text-gray-600 text-lg">
-              What makes UniCafé special
-            </p>
+            <h2 className="text-4xl font-bold gradient-text mb-4">
+              Our Values
+            </h2>
+            <p className="text-gray-600 text-lg">What makes UniCafé special</p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
                 icon: <Coffee className="w-12 h-12" />,
-                title: 'Quality First',
-                description: 'Premium ingredients, expert preparation, consistent excellence in every cup.'
+                title: "Quality First",
+                description:
+                  "Premium ingredients, expert preparation, consistent excellence in every cup.",
               },
               {
                 icon: <Heart className="w-12 h-12" />,
-                title: 'Community Love',
-                description: 'Building connections and supporting our local community every day.'
+                title: "Community Love",
+                description:
+                  "Building connections and supporting our local community every day.",
               },
               {
                 icon: <Users className="w-12 h-12" />,
-                title: 'Customer Friendly',
-                description: 'Affordable pricing and flexible hours designed for your convenience.'
+                title: "Customer Friendly",
+                description:
+                  "Affordable pricing and flexible hours designed for your convenience.",
               },
               {
                 icon: <Award className="w-12 h-12" />,
-                title: 'Sustainability',
-                description: 'Committed to ethical sourcing and environmentally responsible practices.'
-              }
+                title: "Sustainability",
+                description:
+                  "Committed to ethical sourcing and environmentally responsible practices.",
+              },
             ].map((value, index) => (
               <motion.div
                 key={index}
@@ -124,9 +140,7 @@ const About = () => {
                 <h3 className="text-xl font-bold text-gray-800 mb-3">
                   {value.title}
                 </h3>
-                <p className="text-gray-600">
-                  {value.description}
-                </p>
+                <p className="text-gray-600">{value.description}</p>
               </motion.div>
             ))}
           </div>
@@ -138,10 +152,10 @@ const About = () => {
           <div className="glass-effect rounded-2xl p-12 shadow-2xl">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
               {[
-                { number: '10K+', label: 'Happy Customers' },
-                { number: '50K+', label: 'Cups Served' },
-                { number: '4.9/5', label: 'Average Rating' },
-                { number: '24/7', label: 'Customer Support' }
+                { number: "10K+", label: "Happy Customers" },
+                { number: "50K+", label: "Cups Served" },
+                { number: "4.9/5", label: "Average Rating" },
+                { number: "24/7", label: "Customer Support" },
               ].map((stat, index) => (
                 <motion.div
                   key={index}
@@ -163,7 +177,7 @@ const About = () => {
         </div>
       </section>
 
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-gradient-to-br from-amber-50 via-orange-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -171,47 +185,125 @@ const About = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold gradient-text mb-4">Meet Our Team</h2>
+            <h2 className="text-4xl font-bold gradient-text mb-4">
+              Meet Our Team
+            </h2>
             <p className="text-gray-600 text-lg">
               The passionate people behind your favorite coffee
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { name: 'Sarah Johnson', role: 'Head Barista', specialty: 'Latte Art Master' },
-              { name: 'Mike Chen', role: 'Coffee Roaster', specialty: 'Bean Selection Expert' },
-              { name: 'Emma Davis', role: 'Customer Relations', specialty: 'Community Builder' }
-            ].map((member, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="glass-effect rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all"
-              >
-                <div className="h-64 bg-gradient-to-br from-primary-100 to-orange-100 flex items-center justify-center">
-                  <Users className="w-24 h-24 text-primary-600" />
-                </div>
-                <div className="p-6 text-center">
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">
-                    {member.name}
-                  </h3>
-                  <p className="text-primary-600 font-semibold mb-2">
-                    {member.role}
-                  </p>
-                  <p className="text-gray-600 text-sm">
-                    {member.specialty}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
+          {/* First row - 3 members centered */}
+          <div className="flex justify-center mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl">
+              {[
+                {
+                  name: "April Lhen Paniza",
+                  role: "Head Barista",
+                  specialty: "Latte Art Master",
+                  image: aprilImage,
+                },
+                {
+                  name: "James Andrew Ocuaman",
+                  role: "Coffee Roaster",
+                  specialty: "Bean Selection Expert",
+                  image: jamesImage,
+                },
+                {
+                  name: "Jule Leanne Tabares",
+                  role: "Customer Relations",
+                  specialty: "Community Builder",
+                  image: juleImage,
+                },
+              ].map((member, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className="group"
+                >
+                  <div className="glass-effect rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                    <div className="relative h-80 overflow-hidden">
+                      <img
+                        src={member.image}
+                        alt={member.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    </div>
+                    <div className="p-6 text-center bg-white">
+                      <h3 className="text-xl font-bold text-gray-800 mb-2">
+                        {member.name}
+                      </h3>
+                      <p className="text-amber-600 font-semibold mb-2">
+                        {member.role}
+                      </p>
+                      <p className="text-gray-600 text-sm">
+                        {member.specialty}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          {/* Second row - 2 members centered */}
+          <div className="flex justify-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl">
+              {[
+                {
+                  name: "Luke Gabriel Arrieta",
+                  role: "Shop Manager",
+                  specialty: "Operations Expert",
+                  image: lukeImage,
+                },
+                {
+                  name: "Peter Christian Briones",
+                  role: "Pastry Chef",
+                  specialty: "Artisan Baker",
+                  image: peterImage,
+                },
+              ].map((member, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: (index + 3) * 0.1 }}
+                  className="group"
+                >
+                  <div className="glass-effect rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                    <div className="relative h-80 overflow-hidden">
+                      <img
+                        src={member.image}
+                        alt={member.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    </div>
+                    <div className="p-6 text-center bg-white">
+                      <h3 className="text-xl font-bold text-gray-800 mb-2">
+                        {member.name}
+                      </h3>
+                      <p className="text-amber-600 font-semibold mb-2">
+                        {member.role}
+                      </p>
+                      <p className="text-gray-600 text-sm">
+                        {member.specialty}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
     </div>
-  )
-}
+  );
+};
 
-export default About
+export default About;

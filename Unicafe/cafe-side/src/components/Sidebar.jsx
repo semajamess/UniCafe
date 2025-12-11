@@ -18,6 +18,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const [storeName, setStoreName] = useState("UniCafé");
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
 
   // Fetch and cache store settings with 5-minute TTL
   useEffect(() => {
@@ -76,6 +77,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
   const handleLogout = () => {
     logout();
     navigate("/login");
+    setShowSignOutModal(false);
   };
 
   const navigation = [
@@ -166,7 +168,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
               </div>
             </div>
             <button
-              onClick={handleLogout}
+              onClick={() => setShowSignOutModal(true)}
               className="w-full flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-colors"
             >
               <LogOut className="w-4 h-4 mr-2" />
@@ -175,6 +177,38 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
           </div>
         </div>
       </aside>
+
+      {/* Sign Out Confirmation Modal */}
+      {showSignOutModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-xl p-6 shadow-xl max-w-md w-full mx-4 animate-fade-in">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="bg-red-100 p-2 rounded-lg">
+                <LogOut className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-slate-900">Sign Out</h3>
+            </div>
+            <p className="text-slate-600 mb-6">
+              Are you sure you want to sign out? You'll need to log in again to
+              access the cafe dashboard.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowSignOutModal(false)}
+                className="flex-1 px-4 py-2 border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
