@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { CreditCard, User, Mail, Building2, Smartphone } from "lucide-react";
+import { CreditCard, User, Mail, Building2, Smartphone, Lock, AlertCircle, RefreshCw } from "lucide-react";
 import Receipt from "../components/Receipt";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
@@ -510,52 +510,114 @@ const Checkout = () => {
       </div>
       {/* OTP Modal */}
       {otpModal.open && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4">Enter OTP</h3>
-            <p className="mb-4 text-sm text-gray-600">
-              {otpModal.channel === "sms"
-                ? "We sent a one-time code to your phone number via SMS. Enter it below to complete payment."
-                : "We sent a one-time code to your email. Enter it below to complete payment."}
-            </p>
-            {otpModal.channel === "sms" && (
-              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-xs text-yellow-700">
-                  <strong>Demo Mode:</strong> For testing, use OTP code{" "}
-                  <code className="bg-yellow-100 px-1 rounded">123456</code>
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        >
+          <motion.div 
+            initial={{ scale: 0.9, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+          >
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-amber-500 to-orange-600 p-6 text-white">
+              <div className="flex items-center justify-center mb-2">
+                <div className="w-16 h-16 bg-white/20 backdrop-blur-lg rounded-full flex items-center justify-center">
+                  <Lock className="w-8 h-8" />
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold text-center">Verify Payment</h3>
+              <p className="text-amber-50 text-center text-sm mt-2">
+                Enter the verification code to complete your order
+              </p>
+            </div>
+
+            {/* Body */}
+            <div className="p-6">
+              <div className="mb-6 p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-200">
+                <p className="text-sm text-gray-700 text-center">
+                  {otpModal.channel === "sms"
+                    ? "📱 We sent a verification code to your phone via SMS"
+                    : "📧 We sent a verification code to your email"}
                 </p>
               </div>
-            )}
-            <form onSubmit={handleOtpSubmit}>
-              <input
-                type="text"
-                value={otpValue}
-                onChange={(e) => setOtpValue(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 mb-4"
-                placeholder="Enter OTP"
-                required
-              />
-              <div className="flex gap-3 justify-end">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setOtpModal({ open: false, requestId: null, channel: null })
-                  }
-                  className="px-4 py-2 rounded-lg bg-gray-200"
+
+              {otpModal.channel === "sms" && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-6 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-xl"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 rounded-lg bg-primary-600 text-white"
-                >
-                  {loading ? "Verifying..." : "Verify OTP"}
-                </button>
+                  <p className="text-sm font-semibold text-yellow-800 mb-1">
+                    Demo Mode Active
+                  </p>
+                  <p className="text-xs text-yellow-700">
+                    For testing purposes, use code:{" "}
+                    <code className="bg-yellow-100 px-2 py-1 rounded font-mono font-bold text-yellow-900">
+                      123456
+                    </code>
+                  </p>
+                </motion.div>
+              )}
+
+              <form onSubmit={handleOtpSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Verification Code
+                  </label>
+                  <input
+                    type="text"
+                    value={otpValue}
+                    onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="w-full px-4 py-4 text-center text-2xl font-mono font-bold tracking-widest rounded-xl border-2 border-gray-300 focus:border-amber-500 focus:ring-4 focus:ring-amber-200 transition-all outline-none"
+                    placeholder="000000"
+                    maxLength="6"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    Enter the 6-digit code
+                  </p>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOtpModal({ open: false, requestId: null, channel: null })
+                    }
+                    className="flex-1 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 font-semibold text-gray-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading || otpValue.length !== 6}
+                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Verifying...
+                      </span>
+                    ) : (
+                      "Verify Code"
+                    )}
+                  </button>
+                </div>
+              </form>
+
+              <div className="mt-6 text-center">
+                <p className="text-xs text-gray-500">
+                  Didn't receive the code?{" "}
+                  <button className="text-amber-600 hover:text-amber-700 font-semibold hover:underline">
+                    Resend Code
+                  </button>
+                </p>
               </div>
-            </form>
-          </div>
-        </div>
+            </div>
+          </motion.div>
+        </motion.div>
       )}
       {/* Success Modal (shown after OTP confirmation) */}
       {successModal.open && (

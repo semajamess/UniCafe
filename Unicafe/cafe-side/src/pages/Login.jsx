@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Coffee, User, Lock, Eye, EyeOff, LogIn } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "../App";
+import CafeBackground from "../components/CafeBackground";
 
 const API_URL = "http://localhost:3000/api";
 
@@ -15,22 +16,7 @@ const Login = () => {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    rememberMe: false,
   });
-
-  // Memoized falling cafe items background
-  const coffeeElements = useMemo(() => {
-    const items = ['☕', '🥐', '🍰', '🧁', '🥤', '🍪'];
-    return Array.from({ length: 30 }, (_, i) => ({
-      id: i,
-      icon: items[Math.floor(Math.random() * items.length)],
-      left: `${Math.random() * 100}%`,
-      animationDuration: `${15 + Math.random() * 15}s`,
-      animationDelay: `${Math.random() * 5}s`,
-      fontSize: `${1 + Math.random() * 1.5}rem`,
-      opacity: 0.15 + Math.random() * 0.15,
-    }));
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -66,34 +52,8 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated Falling Cafe Items Background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {coffeeElements.map((item) => (
-          <motion.div
-            key={item.id}
-            className="absolute"
-            initial={{ y: -100, x: 0 }}
-            animate={{
-              y: '100vh',
-              x: [0, Math.random() * 100 - 50, 0],
-              rotate: [0, 360],
-            }}
-            transition={{
-              duration: parseFloat(item.animationDuration),
-              delay: parseFloat(item.animationDelay),
-              repeat: Infinity,
-              ease: 'linear',
-            }}
-            style={{
-              left: item.left,
-              fontSize: item.fontSize,
-              opacity: item.opacity,
-            }}
-          >
-            {item.icon}
-          </motion.div>
-        ))}
-      </div>
+      {/* Optimized Cafe Background Animation */}
+      <CafeBackground />
 
       {/* Login Container */}
       <motion.div
@@ -188,23 +148,6 @@ const Login = () => {
                   )}
                 </button>
               </div>
-            </div>
-
-            {/* Remember Me */}
-            <div className="flex items-center">
-              <label className="flex items-center cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={formData.rememberMe}
-                  onChange={(e) =>
-                    setFormData({ ...formData, rememberMe: e.target.checked })
-                  }
-                  className="w-5 h-5 text-amber-600 bg-slate-100 border-2 border-slate-300 rounded focus:ring-amber-500 focus:ring-2 cursor-pointer"
-                />
-                <span className="ml-3 text-sm font-medium text-slate-600 group-hover:text-slate-900 transition-colors">
-                  Remember me for 30 days
-                </span>
-              </label>
             </div>
 
             {/* Submit Button */}
