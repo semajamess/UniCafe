@@ -63,7 +63,7 @@ const Header = ({ setSidebarOpen, sidebarOpen }) => {
         <div className="flex items-center space-x-4">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-slate-600 hover:text-amber-600 hover:bg-amber-50 p-2 rounded-lg transition-all transform hover:scale-110"
+            className="lg:hidden text-slate-600 hover:text-amber-600 hover:bg-amber-50 p-2 rounded-lg transition-all transform hover:scale-110"
           >
             <Menu className="w-6 h-6" />
           </button>
