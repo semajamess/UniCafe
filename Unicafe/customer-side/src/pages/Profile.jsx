@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
-import { User, Mail, Phone, Lock, LogOut, Edit2, Check, X, AlertCircle, Package, ChevronDown, ChevronUp, Receipt, Coffee, RefreshCw, Camera } from 'lucide-react'
+import { User, Mail, Phone, Lock, LogOut, Edit2, Check, X, AlertCircle, Package, ChevronDown, ChevronUp, Receipt, Coffee, RefreshCw, Camera, Trash2 } from 'lucide-react'
 import CafeBackground from '../components/CafeBackground'
 import { motion } from 'framer-motion'
 
@@ -154,6 +154,7 @@ const Profile = () => {
   const [avatarSeed, setAvatarSeed] = useState(Date.now().toString())
   const [avatarOptions, setAvatarOptions] = useState([])
   const [selectedAvatar, setSelectedAvatar] = useState(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [formData, setFormData] = useState({
     username: '',
     phone: '',
@@ -377,6 +378,36 @@ const Profile = () => {
   const handleLogout = () => {
     logout()
     navigate('/login')
+  }
+
+  const handleDeleteAccount = async () => {
+    try {
+      setLoading(true)
+      setError('')
+      
+      const response = await fetch('http://localhost:3000/api/customer/settings/account', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to delete account')
+      }
+
+      // Account deleted successfully, logout and redirect
+      logout()
+      navigate('/login', { 
+        state: { message: 'Your account has been deactivated successfully' }
+      })
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+      setShowDeleteModal(false)
+    }
   }
 
   if (!user) return null
@@ -658,11 +689,25 @@ const Profile = () => {
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="flex-1 px-6 py-3 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-all flex items-center justify-center gap-2"
+                    className="flex-1 px-6 py-3 bg-gray-500 text-white font-semibold rounded-lg hover:bg-gray-600 transition-all flex items-center justify-center gap-2"
                   >
                     <LogOut className="w-4 h-4" />
                     Logout
                   </button>
+                </div>
+
+                {/* Delete Account Button */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="w-full px-6 py-3 bg-red-50 text-red-600 font-medium rounded-lg hover:bg-red-100 transition-all flex items-center justify-center gap-2 border border-red-200"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Deactivate Account
+                  </button>
+                  <p className="text-xs text-gray-500 text-center mt-2">
+                    This will permanently deactivate your account
+                  </p>
                 </div>
               </div>
             )}
@@ -814,6 +859,57 @@ const Profile = () => {
                   )}
                 </button>
               </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+          >
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">Deactivate Account?</h3>
+              <p className="text-gray-600">
+                Are you sure you want to deactivate your account? This action will prevent you from logging in and accessing your data.
+              </p>
+            </div>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-600 text-sm">{error}</p>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={loading}
+                className="flex-1 px-6 py-3 rounded-xl font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={loading}
+                className="flex-1 px-6 py-3 rounded-xl font-semibold bg-red-600 text-white hover:bg-red-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  'Deactivating...'
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Deactivate
+                  </>
+                )}
+              </button>
             </div>
           </motion.div>
         </div>

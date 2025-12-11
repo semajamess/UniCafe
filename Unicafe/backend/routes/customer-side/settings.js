@@ -29,4 +29,29 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Soft delete user account (customer can deactivate their account)
+router.delete("/account", async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // Soft delete by setting deleted_at timestamp
+    await db.runAsync(
+      "UPDATE users SET user_deleted_at = CURRENT_TIMESTAMP WHERE user_id = ?",
+      [userId]
+    );
+
+    res.json({ 
+      success: true, 
+      message: "Account deactivated successfully" 
+    });
+  } catch (error) {
+    console.error("Error deleting account:", error);
+    res.status(500).json({ error: "Failed to deactivate account" });
+  }
+});
+
 export default router;

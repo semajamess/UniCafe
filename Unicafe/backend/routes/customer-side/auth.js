@@ -147,7 +147,7 @@ router.post("/login", async (req, res) => {
     if (!emailRegex.test(email))
       return res.status(400).json({ error: "Invalid email format" });
 
-    const user = await db.getAsync("SELECT * FROM users WHERE user_email = ?", [
+    const user = await db.getAsync("SELECT * FROM users WHERE user_email = ? AND user_deleted_at IS NULL", [
       email,
     ]);
     if (!user)
@@ -189,7 +189,7 @@ router.post("/login", async (req, res) => {
 router.get("/profile", authenticateToken, async (req, res) => {
   try {
     const user = await db.getAsync(
-      "SELECT user_id, user_username, user_email, user_phone, user_profile_image, user_google_id, user_created_at FROM users WHERE user_id = ?",
+      "SELECT user_id, user_username, user_email, user_phone, user_profile_image, user_google_id, user_created_at FROM users WHERE user_id = ? AND user_deleted_at IS NULL",
       [req.user.id]
     );
     if (!user) return res.status(404).json({ error: "User not found" });
