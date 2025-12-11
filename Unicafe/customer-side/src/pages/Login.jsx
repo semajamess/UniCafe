@@ -279,7 +279,7 @@ const Login = () => {
             <div className="relative z-10">
               <div className="flex items-center space-x-3 mb-8">
                 <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-sm">
-                  <Coffee className="w-12 h-12" />
+                  <UtensilsCrossed className="w-12 h-12" />
                 </div>
                 <div>
                   <h1 className="text-4xl font-bold">UniCafe</h1>
@@ -330,7 +330,7 @@ const Login = () => {
               }`}
             >
               <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl mb-3">
-                <Coffee className="w-8 h-8 text-white" />
+                <UtensilsCrossed className="w-8 h-8 text-white" />
               </div>
               <h1 className="text-2xl font-bold gradient-text">UniCafe</h1>
             </div>
@@ -635,7 +635,7 @@ const Login = () => {
                 onClick={handleGoogleWelcomeClose}
                 className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-3 rounded-xl font-bold hover:from-amber-600 hover:to-orange-700 transition-all transform hover:scale-[1.02] flex items-center justify-center space-x-2"
               >
-                <Coffee className="w-5 h-5" />
+                <UtensilsCrossed className="w-5 h-5" />
                 <span>Browse Menu</span>
               </button>
             </motion.div>

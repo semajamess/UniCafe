@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -10,20 +10,19 @@ import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import Navbar from "./components/NavBar";
 import Footer from "./components/Footer";
+import SplashScreen from "./components/SplashScreen";
 
 import Homepage from "./pages/Homepage";
 import Menu from "./pages/Menu";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderConfirmation from "./pages/ReceiptPage";
-import Orders from "./pages/Orders";
 import Profile from "./pages/Profile";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
 import ProfileSelection from "./pages/ProfileSelection";
 import { useAuth } from "./context/AuthContext";
-import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 function ProtectedRoute({ children }) {
@@ -59,6 +58,19 @@ function ProtectedRoute({ children }) {
 }
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (showSplash) {
+    return <SplashScreen />;
+  }
+
   return (
     <AuthProvider>
       <NotificationProvider>
@@ -89,7 +101,6 @@ function App() {
                     path="/order-confirmation"
                     element={<OrderConfirmation />}
                   />
-                  <Route path="/orders" element={<Orders />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/contact" element={<Contact />} />

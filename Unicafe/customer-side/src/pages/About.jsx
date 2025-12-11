@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Coffee, Heart, Users, Award } from "lucide-react";
+import { UtensilsCrossed, Heart, Users, Award } from "lucide-react";
 import CafeBackground from "../components/CafeBackground";
 import aprilImage from "../assets/april.jpg";
 import jamesImage from "../assets/James.jpg";
@@ -26,7 +26,7 @@ const About = () => {
             transition={{ delay: 0.1 }}
             className="text-xl text-gray-700 max-w-3xl mx-auto"
           >
-            Where passion for coffee meets community
+            Where passion for food meets community
           </motion.p>
         </div>
       </section>
@@ -45,19 +45,19 @@ const About = () => {
               <div className="space-y-4 text-gray-700 text-lg">
                 <p>
                   UniCafé was born from a simple idea: everyone deserves great
-                  food and coffee at affordable prices. Founded in 2025, we started as a
+                  food and delicious meals at affordable prices. Founded in 2025, we started as a
                   cafe with a diverse range of food offerings and quickly became the heartbeat of our
                   community.
                 </p>
                 <p>
                   Today, we're proud to serve thousands of customers every week,
-                  providing not just exceptional coffee and delicious meals, but a welcoming space
+                  providing not just exceptional meals and delicious food, but a welcoming space
                   where ideas flow and friendships flourish.
                 </p>
                 <p>
                   Every dish and cup we serve is crafted with care, using quality
                   ingredients and sustainable practices. Because we believe
-                  great food and coffee should also do great things for our community and
+                  great food should also do great things for our community and
                   planet.
                 </p>
               </div>
@@ -69,14 +69,14 @@ const About = () => {
               viewport={{ once: true }}
               className="glass-effect rounded-2xl p-12 shadow-2xl"
             >
-              <Coffee className="w-32 h-32 text-primary-600 mx-auto mb-6" />
+              <UtensilsCrossed className="w-32 h-32 text-primary-600 mx-auto mb-6" />
               <div className="text-center">
                 <h3 className="text-3xl font-bold text-gray-800 mb-4">
                   Our Mission
                 </h3>
                 <p className="text-gray-700 text-lg">
-                  To fuel your day, one cup at a time. We're committed to
-                  providing quality coffee, affordable prices, and a community
+                  To fuel your day, one meal at a time. We're committed to
+                  providing quality food, affordable prices, and a community
                   space where everyone belongs.
                 </p>
               </div>
@@ -102,7 +102,7 @@ const About = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
-                icon: <Coffee className="w-12 h-12" />,
+                icon: <UtensilsCrossed className="w-12 h-12" />,
                 title: "Quality First",
                 description:
                   "Premium ingredients, expert preparation, consistent excellence in every cup.",
@@ -159,7 +159,7 @@ const About = () => {
               Meet Our Team
             </h2>
             <p className="text-gray-600 text-lg">
-              The passionate people behind your favorite coffee
+              The passionate people behind your favorite meals
             </p>
           </motion.div>
 
@@ -175,7 +175,7 @@ const About = () => {
                 },
                 {
                   name: "James Andrew Ocuaman",
-                  role: "Coffee Roaster",
+                  role: "Head Chef",
                   specialty: "Bean Selection Expert",
                   image: jamesImage,
                 },

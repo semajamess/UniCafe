@@ -1,4 +1,4 @@
-﻿import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ShoppingCart,
   Trash2,
@@ -129,7 +129,7 @@ export default function FloatingCart() {
                             {item.name}
                           </h3>
                           <p className="text-primary-600 font-bold text-lg">
-                            ₱{item.price.toFixed(2)}
+                            ?{item.price.toFixed(2)}
                           </p>
 
                           {/* Quantity Controls */}
@@ -165,7 +165,7 @@ export default function FloatingCart() {
                             <Trash2 className="w-5 h-5" />
                           </button>
                           <p className="text-sm font-bold text-gray-700">
-                            ₱{(item.price * item.quantity).toFixed(2)}
+                            ?{(item.price * item.quantity).toFixed(2)}
                           </p>
                         </div>
                       </div>
@@ -180,7 +180,7 @@ export default function FloatingCart() {
                   <div className="flex justify-between text-lg font-bold text-gray-800">
                     <span>Total</span>
                     <span className="text-primary-600">
-                      ₱{getTotalPrice().toFixed(2)}
+                      ?{getTotalPrice().toFixed(2)}
                     </span>
                   </div>
 
@@ -261,7 +261,7 @@ export default function FloatingCart() {
                       {deleteModal.item?.name}
                     </p>
                     <p className="text-primary-600 font-bold text-xs">
-                      ₱{parseFloat(deleteModal.item?.price || 0).toFixed(2)} ×{" "}
+                      ?{parseFloat(deleteModal.item?.price || 0).toFixed(2)} �{" "}
                       {deleteModal.item?.quantity}
                     </p>
                   </div>

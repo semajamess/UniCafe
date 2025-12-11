@@ -10,7 +10,6 @@ import {
   Banknote,
   X,
   Check,
-  Coffee,
   UtensilsCrossed,
   Receipt,
   RefreshCw,
@@ -432,7 +431,7 @@ const POS = () => {
             <div className="flex bg-white rounded-xl border-2 border-slate-200 overflow-hidden shadow-sm">
               {[
                 { value: "all", label: "All Products", icon: Package },
-                { value: "Drinks", label: "Beverages", icon: Coffee },
+                { value: "Drinks", label: "Beverages", icon: UtensilsCrossed },
                 { value: "Food", label: "Food Items", icon: UtensilsCrossed },
               ].map((cat) => (
                 <button
@@ -512,7 +511,7 @@ const POS = () => {
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             {product.product_category === "Drinks" ? (
-                              <Coffee className="w-16 h-16 text-slate-300" />
+                              <UtensilsCrossed className="w-16 h-16 text-slate-300" />
                             ) : (
                               <UtensilsCrossed className="w-16 h-16 text-slate-300" />
                             )}
@@ -732,7 +731,7 @@ const POS = () => {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Coffee className="w-7 h-7 text-slate-300" />
+                          <UtensilsCrossed className="w-7 h-7 text-slate-300" />
                         </div>
                       )}
                     </div>
@@ -994,7 +993,7 @@ const POS = () => {
               <div className="bg-white rounded-xl p-5 mb-4 border-2 border-dashed border-slate-300">
                 <div className="text-center mb-5 pb-4 border-b-2 border-dashed border-slate-200">
                   <div className="bg-amber-500 w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center shadow-lg">
-                    <Coffee className="w-8 h-8 text-white" />
+                    <UtensilsCrossed className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="font-bold text-xl mb-1">UniCafé</h3>
                   <p className="text-sm text-slate-500 font-medium">

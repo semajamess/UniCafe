@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
-  Coffee,
+  UtensilsCrossed,
   Facebook,
   Instagram,
   Twitter,
@@ -73,13 +73,13 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center space-x-2 mb-4">
-              <Coffee className="h-8 w-8 text-amber-500" />
+              <UtensilsCrossed className="h-8 w-8 text-amber-500" />
               <span className="text-2xl font-bold">
                 {storeSettings.store_name}
               </span>
             </div>
             <p className="text-gray-400 text-sm">
-              Your favorite campus cafe serving quality coffee, delicious food,
+              Your favorite campus cafe serving quality food, delicious meals,
               and creating memorable moments.
             </p>
             <div className="flex space-x-4 mt-4">

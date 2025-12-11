@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { useNavigate } from 'react-router-dom'
-import { User, Mail, Phone, Lock, LogOut, Edit2, Check, X, AlertCircle, Package, ChevronDown, ChevronUp, Receipt, Coffee, RefreshCw, Camera, Trash2 } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { User, Mail, Phone, Lock, LogOut, Edit2, Check, X, AlertCircle, Package, ChevronDown, ChevronUp, Receipt, UtensilsCrossed, RefreshCw, Camera, Trash2, Search } from 'lucide-react'
 import CafeBackground from '../components/CafeBackground'
 import { motion } from 'framer-motion'
 
@@ -16,26 +16,24 @@ const AVATAR_STYLES = [
 
 const OrderStatusBadge = ({ status }) => {
   const statusStyles = {
-    preparing: "bg-blue-100 text-blue-800 border-blue-200",
+    processing: "bg-blue-100 text-blue-800 border-blue-200",
     ready: "bg-green-100 text-green-800 border-green-200",
     completed: "bg-gray-100 text-gray-800 border-gray-200",
-    pending: "bg-yellow-100 text-yellow-800 border-yellow-200"
   };
 
   const statusIcons = {
-    preparing: <Coffee className="w-4 h-4" />,
+    processing: <UtensilsCrossed className="w-4 h-4" />,
     ready: <Check className="w-4 h-4" />,
     completed: <Check className="w-4 h-4" />,
-    pending: <AlertCircle className="w-4 h-4" />
   };
 
   return (
     <span
       className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border ${
-        statusStyles[status] || statusStyles.pending
+        statusStyles[status] || statusStyles.processing
       }`}
     >
-      {statusIcons[status] || statusIcons.pending}
+      {statusIcons[status] || statusIcons.processing}
       {status?.charAt(0).toUpperCase() + status?.slice(1)}
     </span>
   );
@@ -142,19 +140,25 @@ const OrderCard = ({ order }) => {
 const Profile = () => {
   const { user, logout, token } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [activeTab, setActiveTab] = useState('profile')
+  const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'profile')
   const [orders, setOrders] = useState([])
+  const [filteredOrders, setFilteredOrders] = useState([])
   const [ordersLoading, setOrdersLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
   const [showAvatarModal, setShowAvatarModal] = useState(false)
   const [selectedAvatarStyle, setSelectedAvatarStyle] = useState('avataaars')
   const [avatarSeed, setAvatarSeed] = useState(Date.now().toString())
   const [avatarOptions, setAvatarOptions] = useState([])
   const [selectedAvatar, setSelectedAvatar] = useState(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deactivateConfirmText, setDeactivateConfirmText] = useState('')
+  const [showDeactivatedSuccessModal, setShowDeactivatedSuccessModal] = useState(false)
   const [formData, setFormData] = useState({
     username: '',
     phone: '',
@@ -194,6 +198,32 @@ const Profile = () => {
     setAvatarOptions(options);
   }, [selectedAvatarStyle, avatarSeed]);
 
+  useEffect(() => {
+    if (orders.length === 0) return;
+
+    let filtered = [...orders];
+
+    // Filter by status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(order => order.order_status === statusFilter);
+    }
+
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(order =>
+        order.order_id.toString().includes(query) ||
+        order.items?.some(item =>
+          (item.order_item_product_name || item.product_name || item.name || '')
+            .toLowerCase()
+            .includes(query)
+        )
+      );
+    }
+
+    setFilteredOrders(filtered);
+  }, [searchQuery, statusFilter, orders]);
+
   const fetchOrders = async () => {
     try {
       setOrdersLoading(true)
@@ -208,6 +238,7 @@ const Profile = () => {
           (a, b) => new Date(b.order_created_at) - new Date(a.order_created_at)
         )
         setOrders(sortedOrders)
+        setFilteredOrders(sortedOrders)
       }
     } catch (error) {
       console.error('Error fetching orders:', error)
@@ -385,28 +416,37 @@ const Profile = () => {
       setLoading(true)
       setError('')
       
+      console.log('Token before delete:', token ? 'exists' : 'missing')
+      
+      if (!token) {
+        throw new Error('No authentication token available')
+      }
+      
       const response = await fetch('http://localhost:3000/api/customer/settings/account', {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       })
+
+      console.log('Delete response status:', response.status)
 
       if (!response.ok) {
         const data = await response.json()
         throw new Error(data.error || 'Failed to delete account')
       }
 
-      // Account deleted successfully, logout and redirect
-      logout()
-      navigate('/login', { 
-        state: { message: 'Your account has been deactivated successfully' }
-      })
+      // Account deleted successfully, show success modal
+      setShowDeleteModal(false)
+      setDeactivateConfirmText('')
+      setShowDeactivatedSuccessModal(true)
     } catch (err) {
+      console.error('Delete account error:', err)
       setError(err.message)
+      setShowDeleteModal(false)
     } finally {
       setLoading(false)
-      setShowDeleteModal(false)
     }
   }
 
@@ -706,7 +746,7 @@ const Profile = () => {
                     Deactivate Account
                   </button>
                   <p className="text-xs text-gray-500 text-center mt-2">
-                    This will permanently deactivate your account
+                    This will deactivate your account
                   </p>
                 </div>
               </div>
@@ -717,6 +757,38 @@ const Profile = () => {
             {/* Orders Tab */}
             {activeTab === 'orders' && (
               <div>
+                {/* Search and Filter Bar */}
+                <div className="mb-6 space-y-4">
+                  {/* Search */}
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="text"
+                      placeholder="Search orders by ID or item name..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  {/* Status Filters */}
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {['all', 'processing', 'ready', 'completed'].map((status) => (
+                      <button
+                        key={status}
+                        onClick={() => setStatusFilter(status)}
+                        className={`px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all ${
+                          statusFilter === status
+                            ? 'bg-amber-500 text-white shadow-lg'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {ordersLoading ? (
                   <div className="flex items-center justify-center py-12">
                     <div className="animate-spin">
@@ -729,11 +801,21 @@ const Profile = () => {
                     <p className="text-gray-500 text-lg">No orders yet</p>
                     <p className="text-gray-400">Start ordering from the menu!</p>
                   </div>
+                ) : filteredOrders.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 text-lg">No orders found</p>
+                    <p className="text-gray-400">Try adjusting your search or filter</p>
+                  </div>
                 ) : (
                   <div className="space-y-4">
-                    {orders.map((order) => (
+                    {filteredOrders.map((order) => (
                       <OrderCard key={order.order_id} order={order} />
                     ))}
+                    {/* Order count */}
+                    <div className="text-center text-gray-500 text-sm pt-2">
+                      Showing {filteredOrders.length} of {orders.length} orders
+                    </div>
                   </div>
                 )}
               </div>
@@ -877,9 +959,19 @@ const Profile = () => {
                 <AlertCircle className="w-8 h-8 text-red-600" />
               </div>
               <h3 className="text-2xl font-bold text-gray-800 mb-2">Deactivate Account?</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 mb-4">
                 Are you sure you want to deactivate your account? This action will prevent you from logging in and accessing your data.
               </p>
+              <p className="text-sm text-gray-500 mb-2">
+                Type <span className="font-bold text-red-600">DEACTIVATE</span> to confirm
+              </p>
+              <input
+                type="text"
+                value={deactivateConfirmText}
+                onChange={(e) => setDeactivateConfirmText(e.target.value)}
+                placeholder="Type DEACTIVATE"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-center"
+              />
             </div>
 
             {error && (
@@ -890,7 +982,10 @@ const Profile = () => {
 
             <div className="flex gap-3">
               <button
-                onClick={() => setShowDeleteModal(false)}
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  setDeactivateConfirmText('')
+                }}
                 disabled={loading}
                 className="flex-1 px-6 py-3 rounded-xl font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-50"
               >
@@ -898,8 +993,8 @@ const Profile = () => {
               </button>
               <button
                 onClick={handleDeleteAccount}
-                disabled={loading}
-                className="flex-1 px-6 py-3 rounded-xl font-semibold bg-red-600 text-white hover:bg-red-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                disabled={loading || deactivateConfirmText !== 'DEACTIVATE'}
+                className="flex-1 px-6 py-3 rounded-xl font-semibold bg-red-600 text-white hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
                   'Deactivating...'
@@ -909,6 +1004,37 @@ const Profile = () => {
                     Deactivate
                   </>
                 )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Deactivation Success Modal */}
+      {showDeactivatedSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+          >
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Check className="w-8 h-8 text-green-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">Account Successfully Deactivated</h3>
+              <p className="text-gray-600 mb-6">
+                Your account has been deactivated. You can reactivate it anytime by logging in again.
+              </p>
+              <button
+                onClick={() => {
+                  setShowDeactivatedSuccessModal(false)
+                  logout()
+                  navigate('/login', { replace: true })
+                }}
+                className="w-full px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 transition-all"
+              >
+                OK
               </button>
             </div>
           </motion.div>

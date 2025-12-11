@@ -7,12 +7,13 @@ import {
   LogIn,
   User,
   UserPlus,
-  Coffee,
+  UtensilsCrossed,
   ArrowRight,
   Phone,
   CheckCircle,
   Eye,
   EyeOff,
+  AlertCircle,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -21,7 +22,7 @@ const GOOGLE_CLIENT_ID =
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, register, googleLogin, isAuthenticated } = useAuth();
+  const { login, register, googleLogin, isAuthenticated, setToken, setUser } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     username: "",
@@ -39,6 +40,9 @@ const Login = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const googleButtonRef = useRef(null);
   const [justRegistered, setJustRegistered] = useState(false);
+  const [showReactivateModal, setShowReactivateModal] = useState(false);
+  const [reactivateData, setReactivateData] = useState(null);
+  const [reactivateConfirmText, setReactivateConfirmText] = useState('');
 
   // Redirect logged-in users away from login page
   useEffect(() => {
@@ -106,6 +110,14 @@ const Login = () => {
         // Existing user - navigate directly
         navigate("/menu");
       }
+    } else if (result.accountDeactivated) {
+      // Show reactivation modal for deactivated Google accounts
+      setReactivateData({
+        userId: result.userId,
+        email: result.email,
+        isGoogleAccount: true
+      });
+      setShowReactivateModal(true);
     } else {
       setError(result.error);
     }
@@ -154,6 +166,14 @@ const Login = () => {
       const result = await login(formData.email, formData.password);
       if (result.success) {
         navigate("/menu");
+      } else if (result.accountDeactivated) {
+        // Show reactivation modal
+        setReactivateData({
+          email: formData.email,
+          password: formData.password
+        });
+        setShowReactivateModal(true);
+        setError('');
       } else {
         setError(result.error);
       }
@@ -197,6 +217,56 @@ const Login = () => {
     setJustRegistered(false); // Clear the flag
     // Navigate to profile selection page to choose avatar
     navigate("/profile-selection");
+  };
+
+  const handleReactivate = async () => {
+    if (reactivateConfirmText !== 'REACTIVATE') {
+      setError('Please type REACTIVATE to confirm');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('http://localhost:3000/api/customer/auth/reactivate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: reactivateData.email,
+          password: reactivateData.password,
+          confirmText: reactivateConfirmText,
+          isGoogleAccount: reactivateData.isGoogleAccount || false
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Reactivation failed');
+      }
+
+      // Store token and user data
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      // Update auth context
+      if (setToken && setUser) {
+        setToken(data.token);
+        setUser(data.user);
+      }
+
+      // Close modal and navigate
+      setShowReactivateModal(false);
+      setReactivateConfirmText('');
+      navigate('/menu');
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -279,11 +349,11 @@ const Login = () => {
             <div className="relative z-10">
               <div className="flex items-center space-x-3 mb-8">
                 <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-sm">
-                  <Coffee className="w-12 h-12" />
+                  <UtensilsCrossed className="w-12 h-12" />
                 </div>
                 <div>
                   <h1 className="text-4xl font-bold">UniCafe</h1>
-                  <p className="text-white/90">Your Campus Coffee Haven</p>
+                  <p className="text-white/90">Your Campus Dining Experience</p>
                 </div>
               </div>
 
@@ -330,7 +400,7 @@ const Login = () => {
               }`}
             >
               <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl mb-3">
-                <Coffee className="w-8 h-8 text-white" />
+                <UtensilsCrossed className="w-8 h-8 text-white" />
               </div>
               <h1 className="text-2xl font-bold gradient-text">UniCafe</h1>
             </div>
@@ -635,9 +705,75 @@ const Login = () => {
                 onClick={handleGoogleWelcomeClose}
                 className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-3 rounded-xl font-bold hover:from-amber-600 hover:to-orange-700 transition-all transform hover:scale-[1.02] flex items-center justify-center space-x-2"
               >
-                <Coffee className="w-5 h-5" />
+                <UtensilsCrossed className="w-5 h-5" />
                 <span>Browse Menu</span>
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Reactivate Account Modal */}
+      <AnimatePresence>
+        {showReactivateModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl"
+            >
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-8 h-8 text-amber-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">Account Deactivated</h3>
+                <p className="text-gray-600 mb-4">
+                  Your account was deactivated. Do you want to reactivate it?
+                </p>
+                <p className="text-sm text-gray-500 mb-2">
+                  Type <span className="font-bold text-amber-600">REACTIVATE</span> to confirm
+                </p>
+                <input
+                  type="text"
+                  value={reactivateConfirmText}
+                  onChange={(e) => setReactivateConfirmText(e.target.value)}
+                  placeholder="Type REACTIVATE"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-center"
+                />
+              </div>
+
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-600 text-sm">{error}</p>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowReactivateModal(false);
+                    setReactivateConfirmText('');
+                    setError('');
+                  }}
+                  disabled={loading}
+                  className="flex-1 px-6 py-3 rounded-xl font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleReactivate}
+                  disabled={loading || reactivateConfirmText !== 'REACTIVATE'}
+                  className="flex-1 px-6 py-3 rounded-xl font-semibold bg-amber-600 text-white hover:bg-amber-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {loading ? 'Reactivating...' : 'Reactivate'}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

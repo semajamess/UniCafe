@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
-  Coffee,
+  UtensilsCrossed,
   ShoppingCart,
   Filter,
   Phone,
@@ -562,7 +562,7 @@ const Menu = () => {
             </div>
           ) : filteredProducts.length === 0 ? (
             <div className="text-center py-20">
-              <Coffee className="w-24 h-24 text-gray-300 mx-auto mb-4" />
+              <UtensilsCrossed className="w-24 h-24 text-gray-300 mx-auto mb-4" />
               <h3 className="text-2xl font-bold text-gray-600 mb-2">
                 No products found
               </h3>

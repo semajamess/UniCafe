@@ -136,10 +136,8 @@ const Settings = () => {
               <input
                 type="text"
                 value={settings.storeName}
-                onChange={(e) =>
-                  setSettings({ ...settings, storeName: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                readOnly
+                className="w-full px-4 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-600 cursor-not-allowed"
               />
             </div>
 
@@ -150,10 +148,8 @@ const Settings = () => {
               <input
                 type="email"
                 value={settings.email}
-                onChange={(e) =>
-                  setSettings({ ...settings, email: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                readOnly
+                className="w-full px-4 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-600 cursor-not-allowed"
               />
             </div>
 
@@ -164,10 +160,8 @@ const Settings = () => {
               <input
                 type="tel"
                 value={settings.phone}
-                onChange={(e) =>
-                  setSettings({ ...settings, phone: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                readOnly
+                className="w-full px-4 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-600 cursor-not-allowed"
               />
             </div>
 
@@ -178,21 +172,10 @@ const Settings = () => {
               <textarea
                 rows="3"
                 value={settings.address}
-                onChange={(e) =>
-                  setSettings({ ...settings, address: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+                readOnly
+                className="w-full px-4 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-600 cursor-not-allowed resize-none"
               ></textarea>
             </div>
-
-            <button
-              type="submit"
-              disabled={saving}
-              className="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-6 py-3 rounded-lg font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Save className="w-5 h-5" />
-              <span>{saving ? "Saving..." : "Save Changes"}</span>
-            </button>
           </form>
         </div>
       </div>

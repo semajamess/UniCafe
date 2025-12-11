@@ -50,6 +50,15 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.error || "Login failed");
       }
 
+      // Check if account is deactivated
+      if (data.accountDeactivated) {
+        return { 
+          success: false, 
+          accountDeactivated: true,
+          message: data.message 
+        };
+      }
+
       // Store token and user data
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
@@ -124,6 +133,18 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.error || "Google login failed");
       }
 
+      // Check if account is deactivated
+      if (data.accountDeactivated) {
+        return { 
+          success: false, 
+          accountDeactivated: true,
+          message: data.message,
+          userId: data.userId,
+          email: data.email,
+          isGoogleAccount: true
+        };
+      }
+
       // Store token and user data
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
@@ -185,6 +206,8 @@ export const AuthProvider = ({ children }) => {
     updatePhone,
     needsPhoneNumber,
     isAuthenticated: !!token,
+    setToken,
+    setUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

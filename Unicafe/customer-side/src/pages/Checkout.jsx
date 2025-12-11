@@ -14,6 +14,9 @@ const Checkout = () => {
   const [orderCompleted, setOrderCompleted] = useState(false); // Prevent redirect after successful order
   const [otpModal, setOtpModal] = useState({ open: false, requestId: null });
   const [otpValue, setOtpValue] = useState("");
+  const [errorModal, setErrorModal] = useState({ open: false, message: "" });
+  const [phoneModal, setPhoneModal] = useState({ open: false });
+  const [phoneInput, setPhoneInput] = useState("");
   const [successModal, setSuccessModal] = useState({
     open: false,
     orderData: null,
@@ -100,7 +103,13 @@ const Checkout = () => {
           const err = await initiateResp.json();
           if (err && err.error) msg = err.error;
         } catch (e) {}
-        alert(msg);
+        
+        // Check if error is about missing phone number
+        if (msg.includes("Phone number required") || msg.includes("phone")) {
+          setPhoneModal({ open: true });
+        } else {
+          setErrorModal({ open: true, message: msg });
+        }
         setLoading(false);
         return;
       }
@@ -116,7 +125,7 @@ const Checkout = () => {
       });
     } catch (error) {
       console.error("Error placing order:", error);
-      alert("An error occurred. Please try again.");
+      setErrorModal({ open: true, message: "An error occurred. Please try again." });
     } finally {
       setLoading(false);
     }
@@ -148,7 +157,7 @@ const Checkout = () => {
           const err = await resp.json();
           if (err && err.error) msg = err.error;
         } catch (e) {}
-        alert(msg);
+        setErrorModal({ open: true, message: msg });
         setLoading(false);
         return;
       }
@@ -288,7 +297,7 @@ const Checkout = () => {
       navigate("/order-confirmation", { state: testState });
     } catch (err) {
       console.error("OTP confirm error:", err);
-      alert("An error occurred verifying OTP. Please try again.");
+      setErrorModal({ open: true, message: "An error occurred verifying OTP. Please try again." });
     } finally {
       setLoading(false);
     }
@@ -305,6 +314,42 @@ const Checkout = () => {
   const handleModalContinue = () => {
     setSuccessModal({ open: false, orderData: null, orderId: null });
     navigate("/");
+  };
+
+  const handlePhoneSubmit = async () => {
+    if (!phoneInput.trim()) {
+      setErrorModal({ open: true, message: "Please enter a valid phone number" });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch("http://localhost:3000/api/customer/auth/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ phone: phoneInput }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to update phone number");
+      }
+
+      // Close phone modal and retry order
+      setPhoneModal({ open: false });
+      setPhoneInput("");
+      
+      // Retry the order submission
+      await handleSubmit(new Event('submit'));
+    } catch (error) {
+      console.error("Error updating phone:", error);
+      setErrorModal({ open: true, message: error.message || "Failed to update phone number" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (cart.length === 0 && !orderCompleted) {
@@ -543,24 +588,6 @@ const Checkout = () => {
                 </p>
               </div>
 
-              {otpModal.channel === "sms" && (
-                <motion.div 
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-6 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-xl"
-                >
-                  <p className="text-sm font-semibold text-yellow-800 mb-1">
-                    Demo Mode Active
-                  </p>
-                  <p className="text-xs text-yellow-700">
-                    For testing purposes, use code:{" "}
-                    <code className="bg-yellow-100 px-2 py-1 rounded font-mono font-bold text-yellow-900">
-                      123456
-                    </code>
-                  </p>
-                </motion.div>
-              )}
-
               <form onSubmit={handleOtpSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -619,6 +646,132 @@ const Checkout = () => {
           </motion.div>
         </motion.div>
       )}
+      
+      {/* Phone Number Modal */}
+      <AnimatePresence>
+        {phoneModal.open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.3 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-gradient-to-r from-amber-500 to-orange-600 p-6">
+                <div className="flex items-center justify-center w-16 h-16 mx-auto bg-white/20 backdrop-blur-lg rounded-full">
+                  <Smartphone className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-center text-white mt-4">Phone Number Required</h3>
+                <p className="text-amber-50 text-center text-sm mt-2">
+                  E-Wallet payments require a phone number for SMS verification
+                </p>
+              </div>
+              
+              <div className="p-6">
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <Smartphone className="w-4 h-4 inline mr-2" />
+                    Philippine Mobile Number
+                  </label>
+                  <input
+                    type="tel"
+                    value={phoneInput}
+                    onChange={(e) => setPhoneInput(e.target.value.replace(/[^0-9+]/g, ''))}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-amber-500 focus:ring-4 focus:ring-amber-200 transition-all outline-none"
+                    placeholder="+639123456789 or 09123456789"
+                    maxLength="13"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Format: +639XXXXXXXXX or 09XXXXXXXXX
+                  </p>
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setPhoneModal({ open: false });
+                      setPhoneInput("");
+                    }}
+                    className="flex-1 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 font-semibold text-gray-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handlePhoneSubmit}
+                    disabled={loading || !phoneInput.trim()}
+                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Saving...
+                      </span>
+                    ) : (
+                      "Save & Continue"
+                    )}
+                  </button>
+                </div>
+                
+                <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                  <p className="text-xs text-amber-800">
+                    <strong>Note:</strong> Your phone number will be saved to your profile and used for future E-Wallet transactions.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Error Modal */}
+      <AnimatePresence>
+        {errorModal.open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setErrorModal({ open: false, message: "" })}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.3 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-gradient-to-r from-red-500 to-red-600 p-6">
+                <div className="flex items-center justify-center w-16 h-16 mx-auto bg-white rounded-full">
+                  <AlertCircle className="w-8 h-8 text-red-500" />
+                </div>
+              </div>
+              
+              <div className="p-6 text-center">
+                <h3 className="text-2xl font-bold text-gray-800 mb-3">Oops!</h3>
+                <p className="text-gray-600 mb-6 leading-relaxed">
+                  {errorModal.message}
+                </p>
+                
+                <button
+                  onClick={() => setErrorModal({ open: false, message: "" })}
+                  className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
+                >
+                  OK
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Success Modal (shown after OTP confirmation) */}
       {successModal.open && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

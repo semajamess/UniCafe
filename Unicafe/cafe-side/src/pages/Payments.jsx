@@ -157,7 +157,7 @@ const Payments = () => {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search payments, methods, customers..."
+              placeholder="Search by payment ID or customer name..."
               className="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
@@ -227,7 +227,7 @@ const Payments = () => {
                     <td className="py-4 font-medium text-blue-600">
                       {p.paymentRef || p.orderRef}
                     </td>
-                    <td className="py-4">{p.customer_name}</td>
+                    <td className="py-4 font-bold">{p.customer_name}</td>
                     <td className="py-4">
                       <span
                         className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${

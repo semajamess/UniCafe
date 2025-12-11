@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Search, Edit2, Trash2, X, Coffee, Loader, Link as LinkIcon, Upload } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, X, UtensilsCrossed, Loader, Link as LinkIcon, Upload } from "lucide-react";
 
 const API_URL = "http://localhost:3000/api/cafe";
 
@@ -682,7 +682,7 @@ const Products = () => {
 
       {filteredProducts.length === 0 && !loading && (
         <div className="text-center py-20">
-          <Coffee className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+          <UtensilsCrossed className="w-16 h-16 text-slate-300 mx-auto mb-4" />
           <p className="text-slate-500 text-lg">No products found</p>
         </div>
       )}

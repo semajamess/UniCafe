@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Coffee, User, Lock, Eye, EyeOff, LogIn } from "lucide-react";
+import { UtensilsCrossed, User, Lock, Eye, EyeOff, LogIn } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "../App";
 import CafeBackground from "../components/CafeBackground";
@@ -73,7 +73,7 @@ const Login = () => {
             whileHover={{ scale: 1.1, rotate: 5 }}
             className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-amber-500 via-orange-600 to-amber-700 rounded-3xl shadow-2xl mb-6"
           >
-            <Coffee className="w-12 h-12 text-white" />
+            <UtensilsCrossed className="w-12 h-12 text-white" />
           </motion.div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-2">
             UniCafé Admin

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Coffee,
+  UtensilsCrossed,
   ShoppingCart,
   Menu,
   X,
@@ -157,7 +157,7 @@ export default function Navbar() {
         <div className="w-full px-4 sm:px-8 lg:px-16 xl:px-24">
           <div className="flex justify-between items-center h-16 relative">
             <Link to="/" className="flex items-center space-x-2 group z-10">
-              <Coffee className="h-8 w-8 text-amber-600 group-hover:rotate-12 transition-transform" />
+              <UtensilsCrossed className="h-8 w-8 text-amber-600 group-hover:rotate-12 transition-transform" />
               <span className="text-2xl font-bold gradient-text">
                 {storeName}
               </span>
@@ -326,7 +326,8 @@ export default function Navbar() {
                           <div className="px-4 py-2 bg-gray-50 border-t border-gray-100">
                             <div className="flex justify-between items-center">
                               <Link
-                                to="/orders"
+                                to="/profile"
+                                state={{ activeTab: 'orders' }}
                                 onClick={() => setShowNotifications(false)}
                                 className="text-sm text-amber-600 hover:text-amber-700 font-medium"
                               >
@@ -525,7 +526,8 @@ export default function Navbar() {
                           <div className="px-4 py-2 bg-gray-50 border-t border-gray-100">
                             <div className="flex justify-between items-center">
                               <Link
-                                to="/orders"
+                                to="/profile"
+                                state={{ activeTab: 'orders' }}
                                 onClick={() => setShowNotifications(false)}
                                 className="text-sm text-amber-600 hover:text-amber-700 font-medium"
                               >

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Coffee, ShoppingCart, Star, ArrowRight, Sparkles } from "lucide-react";
+import { UtensilsCrossed, ShoppingCart, Star, ArrowRight, Sparkles } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import CafeBackground from "../components/CafeBackground";
 import { useAuth } from "../context/AuthContext";
@@ -101,7 +101,7 @@ const Homepage = () => {
             <div className="flex items-center justify-center mb-4 sm:mb-6">
               <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-primary-600 animate-pulse" />
               <span className="ml-2 text-primary-700 font-semibold uppercase tracking-wider text-xs sm:text-sm">
-                Premium Coffee Experience
+                Premium Dining Experience
               </span>
             </div>
 
@@ -110,7 +110,7 @@ const Homepage = () => {
             </h1>
 
             <p className="text-base sm:text-xl md:text-2xl text-gray-700 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
-              Your campus destination for artisanal coffee, delicious treats,
+              Your destination for delicious food, amazing flavors,
               and unforgettable moments
             </p>
 
@@ -144,7 +144,7 @@ const Homepage = () => {
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
           className="hidden xl:block absolute top-32 right-20 opacity-15 pointer-events-none"
         >
-          <Coffee className="w-40 h-40 text-primary-600" />
+          <UtensilsCrossed className="w-40 h-40 text-primary-600" />
         </motion.div>
         <motion.div
           animate={{ y: [0, -15, 0], rotate: [0, -5, 0] }}
@@ -156,7 +156,7 @@ const Homepage = () => {
           }}
           className="hidden xl:block absolute bottom-32 left-20 opacity-15 pointer-events-none"
         >
-          <Coffee className="w-32 h-32 text-primary-600" />
+          <UtensilsCrossed className="w-32 h-32 text-primary-600" />
         </motion.div>
         <motion.div
           animate={{ y: [0, -10, 0], rotate: [0, 3, 0] }}
@@ -168,7 +168,7 @@ const Homepage = () => {
           }}
           className="hidden lg:block xl:hidden absolute top-24 right-8 opacity-10 pointer-events-none"
         >
-          <Coffee className="w-28 h-28 text-primary-600" />
+          <UtensilsCrossed className="w-28 h-28 text-primary-600" />
         </motion.div>
         <motion.div
           animate={{ y: [0, -12, 0], rotate: [0, -3, 0] }}
@@ -180,7 +180,7 @@ const Homepage = () => {
           }}
           className="hidden lg:block xl:hidden absolute bottom-24 left-8 opacity-10 pointer-events-none"
         >
-          <Coffee className="w-24 h-24 text-primary-600" />
+          <UtensilsCrossed className="w-24 h-24 text-primary-600" />
         </motion.div>
       </section>
 
@@ -249,7 +249,7 @@ const Homepage = () => {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Coffee className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 text-primary-600 group-hover:rotate-12 transition-transform duration-300" />
+                          <UtensilsCrossed className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 text-primary-600 group-hover:rotate-12 transition-transform duration-300" />
                         </div>
                       )}
                       <div className="absolute top-3 sm:top-4 right-3 sm:right-4 bg-primary-600 text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold flex items-center space-x-1">
@@ -318,10 +318,10 @@ const Homepage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {[
               {
-                icon: <Coffee className="w-12 h-12" />,
+                icon: <UtensilsCrossed className="w-12 h-12" />,
                 title: "Premium Quality",
                 description:
-                  "Sourced from the finest coffee beans, freshly roasted daily",
+                  "Sourced from the finest ingredients, freshly prepared daily",
               },
               {
                 icon: <Star className="w-12 h-12" />,
