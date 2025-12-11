@@ -71,12 +71,40 @@ router.post("/register", async (req, res) => {
     }
 
     const existingUser = await db.getAsync(
-      "SELECT * FROM users WHERE (user_email = ? OR user_username = ?) AND user_deleted_at IS NULL",
+      "SELECT * FROM users WHERE (user_email = ? OR user_username = ?)",
       [email, username]
     );
     console.log("[auth:register] existingUser:", existingUser);
 
     if (existingUser) {
+      // If user is deleted, reactivate and update their info
+      if (existingUser.user_deleted_at) {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await db.runAsync(
+          "UPDATE users SET user_password = ?, user_phone = ?, user_deleted_at = NULL WHERE user_id = ?",
+          [hashedPassword, normalizedPhone, existingUser.user_id]
+        );
+        console.log(`✅ Reactivated deleted user account: ${existingUser.user_email}`);
+        
+        const token = jwt.sign(
+          { id: existingUser.user_id, email: existingUser.user_email, username: existingUser.user_username, phone: normalizedPhone },
+          JWT_SECRET,
+          { expiresIn: "7d" }
+        );
+        
+        return res.status(201).json({
+          message: "Account reactivated successfully",
+          token,
+          user: {
+            id: existingUser.user_id,
+            username: existingUser.user_username,
+            email: existingUser.user_email,
+            phone: normalizedPhone,
+          },
+        });
+      }
+      
+      // Active user exists - show error
       if (existingUser.user_email === email)
         return res.status(400).json({ error: "Email already registered" });
       if (existingUser.user_username === username)
@@ -147,7 +175,8 @@ router.post("/login", async (req, res) => {
     if (!emailRegex.test(email))
       return res.status(400).json({ error: "Invalid email format" });
 
-    const user = await db.getAsync("SELECT * FROM users WHERE user_email = ? AND user_deleted_at IS NULL", [
+    // Find user (including deleted ones)
+    const user = await db.getAsync("SELECT * FROM users WHERE user_email = ?", [
       email,
     ]);
     if (!user)
@@ -156,6 +185,15 @@ router.post("/login", async (req, res) => {
     const isValidPassword = await bcrypt.compare(password, user.user_password);
     if (!isValidPassword)
       return res.status(401).json({ error: "Invalid email or password" });
+
+    // If user is deleted, reactivate their account
+    if (user.user_deleted_at) {
+      await db.runAsync(
+        "UPDATE users SET user_deleted_at = NULL WHERE user_id = ?",
+        [user.user_id]
+      );
+      console.log(`✅ Reactivated user account: ${user.user_email}`);
+    }
 
     const token = jwt.sign(
       {
@@ -189,7 +227,7 @@ router.post("/login", async (req, res) => {
 router.get("/profile", authenticateToken, async (req, res) => {
   try {
     const user = await db.getAsync(
-      "SELECT user_id, user_username, user_email, user_phone, user_profile_image, user_google_id, user_created_at FROM users WHERE user_id = ? AND user_deleted_at IS NULL",
+      "SELECT user_id, user_username, user_email, user_phone, user_profile_image, user_google_id, user_created_at FROM users WHERE user_id = ?",
       [req.user.id]
     );
     if (!user) return res.status(404).json({ error: "User not found" });
@@ -227,26 +265,45 @@ router.post("/google", async (req, res) => {
     const name = payload["name"];
     const picture = payload["picture"] || null;
 
+    // Find user by Google ID (including deleted)
     let user = await db.getAsync(
-      "SELECT * FROM users WHERE user_google_id = ? AND user_deleted_at IS NULL",
+      "SELECT * FROM users WHERE user_google_id = ?",
       [googleId]
     );
     let isNewUser = false;
 
     if (!user) {
-      user = await db.getAsync("SELECT * FROM users WHERE user_email = ? AND user_deleted_at IS NULL", [
+      // Find user by email (including deleted)
+      user = await db.getAsync("SELECT * FROM users WHERE user_email = ?", [
         email,
       ]);
       if (user) {
-        // Update existing user with Google ID and use Google's profile image
-        await db.runAsync(
-          "UPDATE users SET user_google_id = ?, user_profile_image = ? WHERE user_id = ?",
-          [googleId, picture, user.user_id]
-        );
+        // Reactivate if deleted
+        if (user.user_deleted_at) {
+          await db.runAsync(
+            "UPDATE users SET user_google_id = ?, user_profile_image = ?, user_deleted_at = NULL WHERE user_id = ?",
+            [googleId, picture, user.user_id]
+          );
+          console.log(`✅ Reactivated user account via Google: ${user.user_email}`);
+        } else {
+          // Update existing active user with Google ID and use Google's profile image
+          await db.runAsync(
+            "UPDATE users SET user_google_id = ?, user_profile_image = ? WHERE user_id = ?",
+            [googleId, picture, user.user_id]
+          );
+        }
         user = await db.getAsync("SELECT * FROM users WHERE user_id = ?", [
           user.user_id,
         ]);
       }
+    } else if (user.user_deleted_at) {
+      // Reactivate deleted user who's logging in with Google
+      await db.runAsync(
+        "UPDATE users SET user_deleted_at = NULL WHERE user_id = ?",
+        [user.user_id]
+      );
+      console.log(`✅ Reactivated user account via Google: ${user.user_email}`);
+      user.user_deleted_at = null;
     }
 
     if (!user) {

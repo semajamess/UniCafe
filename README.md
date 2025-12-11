@@ -67,6 +67,10 @@ The system follows a client-server architecture with three main components:
 - **Avatar System**: 6 different avatar styles (Cartoon, Robots, Pixel Art, Lorelei, Notionists, Open Peeps)
 - **Phone Number Verification**: One-time phone number addition with validation
 - **Session Persistence**: Auto-login on browser return
+- **Account Deactivation**: Soft delete with automatic reactivation on re-login
+  - Deactivated accounts can be reactivated by logging in (password or Google OAuth)
+  - Deactivated accounts can re-register with the same credentials
+  - Order history and data fully preserved during deactivation
 
 #### Menu & Ordering
 - **Category Filtering**: Browse products by category (Coffee, Snacks, Desserts, Beverages, Meals)
@@ -122,10 +126,15 @@ The system follows a client-server architecture with three main components:
 - **Order Timeline**: Track order progression
 
 #### Customer Management
-- **Customer Database**: View all registered customers
+- **Customer Database**: View all registered customers (including deactivated)
 - **Customer Details**: Profile information, order history, total spent
 - **Avatar Display**: Visual customer identification
 - **Registration Date**: Track customer acquisition
+- **Deactivation Indicators**: Visual badges and red styling for deactivated accounts
+  - Red "Deactivated" badge on customer list
+  - Red background styling on orders from deactivated users
+  - POS search displays deactivated status
+  - Revenue and order history fully preserved from deactivated users
 
 #### Payment Tracking
 - **Payment History**: All transactions with details
@@ -690,6 +699,11 @@ UniCafe/
 - **File upload restrictions** (type and size)
 - **OTP expiration** for payment verification
 - **Role-based authorization** for admin routes
+- **Soft delete implementation** for user accounts
+  - Deleted users excluded from duplicate checks (allows username/email reuse)
+  - Auto-reactivation on successful authentication
+  - Admin accounts cannot be reactivated (security measure)
+  - Revenue and order data fully preserved
 
 ---
 
@@ -767,6 +781,32 @@ UniCafe/
 - [ ] Employee management
 - [ ] Receipt printer integration
 - [ ] Dark mode support
+- [x] **Account deactivation/soft delete** (Implemented Dec 12, 2025)
+  - Users can deactivate their accounts
+  - Automatic reactivation on login
+  - Visual indicators in admin dashboard
+  - Full data preservation
+
+---
+
+## 📝 Recent Updates
+
+### December 12, 2025 - Account Deactivation Feature
+**New Features:**
+- ✅ Customer account deactivation with soft delete
+- ✅ Auto-reactivation on login (password or Google OAuth)
+- ✅ Auto-reactivation on re-registration with same credentials
+- ✅ Visual indicators for deactivated accounts in admin dashboard
+- ✅ Red styling and badges on customer list and orders
+- ✅ Full preservation of order history and revenue data
+- ✅ Customer count statistics exclude deactivated users
+
+**Technical Implementation:**
+- Added `user_deleted_at` column to users table
+- Modified 5 backend files (auth, orders, payments, POS, profile service)
+- Updated 4 frontend files (Customers, Orders, POS, Profile pages)
+- Comprehensive query pattern updates for data consistency
+- Security measures: Admin accounts cannot be reactivated
 
 ---
 

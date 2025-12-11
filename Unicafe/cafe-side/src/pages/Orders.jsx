@@ -88,6 +88,7 @@ const Orders = () => {
           name: order.user_username || "Guest",
           email: order.user_email || "",
           id: order.user_id || null,
+          isDeactivated: !!order.user_deleted_at,
         },
         // items array may not be included in list endpoint; use count when available
         items: order.items || [],
@@ -346,7 +347,11 @@ const Orders = () => {
               {paginatedOrders.map((order) => (
                 <tr
                   key={order.id}
-                  className="hover:bg-slate-50 transition-colors"
+                  className={`hover:bg-slate-50 transition-colors ${
+                    order.customer.isDeactivated
+                      ? "bg-red-50 border-l-4 border-red-400"
+                      : ""
+                  }`}
                 >
                   <td className="py-4 px-6">
                     <span className="font-medium text-blue-600">
@@ -357,6 +362,11 @@ const Orders = () => {
                     <div>
                       <p className="font-medium text-slate-900">
                         {order.customer.name}
+                        {order.customer.isDeactivated && (
+                          <span className="ml-2 text-xs px-2 py-1 bg-red-100 text-red-700 rounded-full font-semibold">
+                            Deactivated
+                          </span>
+                        )}
                       </p>
                       <p className="text-sm text-slate-500">
                         {order.customer.email}

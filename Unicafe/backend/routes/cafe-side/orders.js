@@ -42,7 +42,7 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const order = await db.getAsync(
-      "SELECT o.*, u.user_username, u.user_email FROM orders o LEFT JOIN users u ON o.user_id = u.user_id WHERE o.order_id = ?",
+      "SELECT o.*, u.user_username, u.user_email, u.user_deleted_at FROM orders o LEFT JOIN users u ON o.user_id = u.user_id WHERE o.order_id = ?",
       [req.params.id]
     );
 

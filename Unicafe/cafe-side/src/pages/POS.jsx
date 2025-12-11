@@ -620,6 +620,11 @@ const POS = () => {
                         >
                           <p className="font-bold text-slate-800">
                             {customer.user_username}
+                            {customer.user_deleted_at && (
+                              <span className="ml-2 text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded-full font-semibold">
+                                Deactivated
+                              </span>
+                            )}
                           </p>
                           <p className="text-xs text-slate-500">
                             {customer.user_email}

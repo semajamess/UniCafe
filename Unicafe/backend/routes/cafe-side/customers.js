@@ -15,12 +15,13 @@ router.get("/", async (req, res) => {
         u.user_email,
         u.user_created_at,
         u.user_profile_image,
+        u.user_deleted_at,
         COUNT(DISTINCT o.order_id) as totalOrders,
         COALESCE(SUM(o.order_total), 0) as totalSpent,
         MAX(o.order_created_at) as lastOrder
       FROM users u
       LEFT JOIN orders o ON u.user_id = o.user_id
-      WHERE u.user_deleted_at IS NULL
+      WHERE u.user_role = 'customer'
     `;
     const params = [];
 
@@ -29,7 +30,7 @@ router.get("/", async (req, res) => {
       params.push(`%${search}%`, `%${search}%`);
     }
 
-    query += " GROUP BY u.user_id, u.user_username, u.user_email, u.user_created_at, u.user_profile_image ORDER BY totalSpent DESC";
+    query += " GROUP BY u.user_id, u.user_username, u.user_email, u.user_created_at, u.user_profile_image, u.user_deleted_at ORDER BY totalSpent DESC";
 
     const customers = await db.allAsync(query, params);
     res.json(customers);
@@ -42,7 +43,7 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const customer = await db.getAsync(
-      "SELECT user_id, user_username, user_email, user_created_at FROM users WHERE user_id = ? AND user_deleted_at IS NULL",
+      "SELECT user_id, user_username, user_email, user_created_at, user_deleted_at FROM users WHERE user_id = ?",
       [req.params.id]
     );
 

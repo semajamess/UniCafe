@@ -144,6 +144,11 @@ const Customers = () => {
                             {customer.user_username ||
                               customer.username ||
                               "Unknown"}
+                            {customer.user_deleted_at && (
+                              <span className="ml-2 text-xs px-2 py-1 bg-red-100 text-red-700 rounded-full font-semibold">
+                                Deactivated
+                              </span>
+                            )}
                           </p>
                           <p className="text-sm text-slate-500 flex items-center">
                             <MapPin className="w-3 h-3 mr-1" />

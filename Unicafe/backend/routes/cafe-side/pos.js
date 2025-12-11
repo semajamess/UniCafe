@@ -20,10 +20,11 @@ router.get("/customers/search", async (req, res) => {
         user_username,
         user_email,
         user_phone,
+        user_deleted_at,
         (SELECT COUNT(*) FROM orders WHERE user_id = users.user_id) as order_count,
         (SELECT COALESCE(SUM(order_total), 0) FROM orders WHERE user_id = users.user_id AND order_status != 'cancelled') as total_spent
       FROM users
-      WHERE (user_username LIKE ? OR user_email LIKE ? OR user_phone LIKE ?) AND user_deleted_at IS NULL
+      WHERE (user_username LIKE ? OR user_email LIKE ? OR user_phone LIKE ?) AND user_role = 'customer'
       LIMIT 10
     `,
       [`%${q}%`, `%${q}%`, `%${q}%`]
@@ -166,7 +167,7 @@ router.post("/order", async (req, res) => {
     // Fetch the complete order for receipt
     const order = await db.getAsync(
       `
-      SELECT o.*, u.user_username, u.user_email as registered_email
+      SELECT o.*, u.user_username, u.user_email as registered_email, u.user_deleted_at
       FROM orders o
       LEFT JOIN users u ON o.user_id = u.user_id
       WHERE o.order_id = ?

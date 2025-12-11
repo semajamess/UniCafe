@@ -19,7 +19,7 @@ router.post("/login", async (req, res) => {
 
     // Check user credentials - must have admin role
     const user = await db.getAsync(
-      "SELECT * FROM users WHERE (user_username = ? OR user_email = ?) AND user_role = 'admin'",
+      "SELECT * FROM users WHERE (user_username = ? OR user_email = ?) AND user_role = 'admin' AND user_deleted_at IS NULL",
       [username, username]
     );
 
