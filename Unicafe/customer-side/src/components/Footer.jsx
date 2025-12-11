@@ -13,10 +13,10 @@ import {
 
 export default function Footer() {
   const [storeSettings, setStoreSettings] = useState({
-    store_name: "UniCafe",
+    store_name: "UniCafé",
     store_email: "hello@unicafe.com",
-    store_phone: "+63 123 456 7890",
-    store_address: "123 Main Street, Downtown District",
+    store_phone: "+63 912 345 6789",
+    store_address: "San Nicolas, Lapaz, Iloilo City",
   });
 
   // Fetch store settings on mount and window focus
@@ -34,9 +34,9 @@ export default function Footer() {
           setStoreSettings({
             store_name: data.store_name || "UniCafe",
             store_email: data.store_email || "hello@unicafe.com",
-            store_phone: data.store_phone || "+63 123 456 7890",
+            store_phone: data.store_phone || "+63 912 345 6789",
             store_address:
-              data.store_address || "123 Main Street, Downtown District",
+              data.store_address || "San Nicolas, Lapaz, Iloilo City",
           });
 
           // Save to cache for other components

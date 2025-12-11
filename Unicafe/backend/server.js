@@ -29,6 +29,7 @@ import cafePosRoutes from "./routes/cafe-side/pos.js";
 import cafeAuthRoutes from "./routes/cafe-side/auth.js";
 import cafeSettingsRoutes from "./routes/cafe-side/settings.js";
 import cafeNotificationsRoutes from "./routes/cafe-side/notifications.js";
+import cafeUploadRoutes from "./routes/cafe-side/upload.js";
 
 dotenv.config();
 
@@ -83,6 +84,9 @@ app.use(cors()); // Allow frontend to connect
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve uploaded images statically
+app.use("/uploads", express.static("uploads"));
+
 // Request logging
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path}`);
@@ -119,6 +123,7 @@ app.use("/api/cafe/stats", cafeStatsRoutes);
 app.use("/api/cafe/pos", cafePosRoutes);
 app.use("/api/cafe/settings", cafeSettingsRoutes);
 app.use("/api/cafe/notifications", cafeNotificationsRoutes);
+app.use("/api/cafe", cafeUploadRoutes);
 
 // Seed database endpoint (for initial setup)
 app.post("/api/seed", async (req, res) => {

@@ -1,10 +1,12 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Phone, MapPin, Send, Clock, CheckCircle } from "lucide-react";
 import CafeBackground from "../components/CafeBackground";
 import SuccessModal from "../components/SuccessModal";
+import { useAuth } from "../context/AuthContext";
 
 const Contact = () => {
+  const { user, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -14,6 +16,17 @@ const Contact = () => {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [messageId, setMessageId] = useState(null);
+
+  // Prefill form with user data if logged in
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      setFormData((prev) => ({
+        ...prev,
+        name: user.username || "",
+        email: user.email || "",
+      }));
+    }
+  }, [isAuthenticated, user]);
 
   const handleInputChange = (e) => {
     setFormData({
@@ -65,6 +78,25 @@ const Contact = () => {
 
   return (
     <div className="pt-20 min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
+      {/* Loading Overlay */}
+      <AnimatePresence>
+        {loading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center"
+          >
+            <div className="bg-white rounded-2xl p-8 shadow-2xl text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary-600 mx-auto mb-4"></div>
+              <p className="text-gray-700 font-semibold text-lg">
+                Sending your message...
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <section className="relative bg-gradient-to-br from-primary-100 via-orange-50 to-amber-100 py-20 overflow-hidden">
         <CafeBackground />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
@@ -117,11 +149,9 @@ const Contact = () => {
                   <div>
                     <h3 className="font-bold text-gray-800 mb-1">Visit Us</h3>
                     <p className="text-gray-600">
-                      123 Main Street
+                      San Nicolas, Lapaz
                       <br />
-                      Downtown District, Ground Floor
-                      <br />
-                      City, State 12345
+                      Iloilo City
                     </p>
                   </div>
                 </motion.div>
@@ -219,7 +249,10 @@ const Contact = () => {
                       value={formData.name}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      disabled={isAuthenticated}
+                      className={`w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                        isAuthenticated ? "bg-gray-100 cursor-not-allowed" : ""
+                      }`}
                       placeholder="John Doe"
                     />
                   </div>
@@ -234,7 +267,10 @@ const Contact = () => {
                       value={formData.email}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      disabled={isAuthenticated}
+                      className={`w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                        isAuthenticated ? "bg-gray-100 cursor-not-allowed" : ""
+                      }`}
                       placeholder="john@example.com"
                     />
                   </div>
@@ -304,14 +340,25 @@ const Contact = () => {
             viewport={{ once: true }}
             className="glass-effect rounded-2xl overflow-hidden shadow-2xl"
           >
-            <div className="h-96 bg-gradient-to-br from-primary-100 to-orange-100 flex items-center justify-center">
-              <div className="text-center">
-                <MapPin className="w-24 h-24 text-primary-600 mx-auto mb-4" />
-                <p className="text-2xl font-bold text-gray-700">
-                  Find Us on Campus
+            <div className="h-96 bg-gradient-to-br from-primary-100 to-orange-100 flex items-center justify-center relative overflow-hidden">
+              {/* Decorative elements */}
+              <div className="absolute top-10 left-10 w-32 h-32 bg-orange-200 rounded-full opacity-30 blur-2xl"></div>
+              <div className="absolute bottom-10 right-10 w-40 h-40 bg-amber-200 rounded-full opacity-30 blur-2xl"></div>
+              
+              <div className="text-center relative z-10">
+                <div className="relative inline-block mb-6">
+                  <div className="absolute inset-0 bg-primary-500 rounded-full blur-xl opacity-40 animate-pulse"></div>
+                  <MapPin className="w-24 h-24 text-primary-600 mx-auto relative" />
+                </div>
+                <p className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-orange-600 bg-clip-text text-transparent mb-3">
+                  Visit Our Café
                 </p>
-                <p className="text-gray-600 mt-2">
-                  Building A, Ground Floor • Next to the Main Library
+                <p className="text-gray-700 text-lg font-semibold mb-2">
+                  San Nicolas, Lapaz, Iloilo City
+                </p>
+                <p className="text-gray-600 mt-2 flex items-center justify-center gap-2">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                  Open Now • Serving Fresh Coffee Daily
                 </p>
               </div>
             </div>

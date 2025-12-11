@@ -20,7 +20,7 @@ import Orders from "./pages/Orders";
 import Profile from "./pages/Profile";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
-import Login from "./pages/Login";
+import Auth from "./pages/Auth";
 import ProfileSelection from "./pages/ProfileSelection";
 import { useAuth } from "./context/AuthContext";
 import { useEffect, useState } from "react";
@@ -69,7 +69,8 @@ function App() {
               <main className="flex-grow">
                 <Routes>
                   <Route path="/" element={<Homepage />} />
-                  <Route path="/login" element={<Login />} />
+                  <Route path="/login" element={<Auth />} />
+                  <Route path="/auth" element={<Auth />} />
                   <Route
                     path="/profile-selection"
                     element={<ProfileSelection />}

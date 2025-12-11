@@ -45,19 +45,19 @@ const About = () => {
               <div className="space-y-4 text-gray-700 text-lg">
                 <p>
                   UniCafé was born from a simple idea: everyone deserves great
-                  coffee at affordable prices. Founded in 2020, we started as a
-                  small coffee shop and quickly became the heartbeat of our
+                  food and coffee at affordable prices. Founded in 2025, we started as a
+                  cafe with a diverse range of food offerings and quickly became the heartbeat of our
                   community.
                 </p>
                 <p>
                   Today, we're proud to serve thousands of customers every week,
-                  providing not just exceptional coffee, but a welcoming space
+                  providing not just exceptional coffee and delicious meals, but a welcoming space
                   where ideas flow and friendships flourish.
                 </p>
                 <p>
-                  Every cup we serve is crafted with care, using ethically
-                  sourced beans and sustainable practices. Because we believe
-                  great coffee should also do great things for our community and
+                  Every dish and cup we serve is crafted with care, using quality
+                  ingredients and sustainable practices. Because we believe
+                  great food and coffee should also do great things for our community and
                   planet.
                 </p>
               </div>
@@ -143,36 +143,6 @@ const About = () => {
                 <p className="text-gray-600">{value.description}</p>
               </motion.div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="glass-effect rounded-2xl p-12 shadow-2xl">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
-              {[
-                { number: "10K+", label: "Happy Customers" },
-                { number: "50K+", label: "Cups Served" },
-                { number: "4.9/5", label: "Average Rating" },
-                { number: "24/7", label: "Customer Support" },
-              ].map((stat, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <div className="text-5xl font-bold gradient-text mb-2">
-                    {stat.number}
-                  </div>
-                  <div className="text-gray-600 font-semibold">
-                    {stat.label}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
           </div>
         </div>
       </section>

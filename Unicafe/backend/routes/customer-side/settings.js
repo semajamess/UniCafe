@@ -15,9 +15,9 @@ router.get("/", async (req, res) => {
       return res.json({
         setting_id: 1,
         store_name: "UniCafé",
-        store_email: "admin@unicafe.com",
-        store_phone: "+1 234 567 8900",
-        store_address: "123 Coffee Street, University District",
+        store_email: "lukegabriel.arrieta@wvsu.edu.ph",
+        store_phone: "+63 912 345 6789",
+        store_address: "San Nicolas, Lapaz, Iloilo City",
         order_notifications: true,
       });
     }

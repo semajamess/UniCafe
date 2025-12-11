@@ -28,7 +28,7 @@ const setupAdminAndSettings = async () => {
       CREATE TABLE IF NOT EXISTS store_settings (
         setting_id INTEGER PRIMARY KEY,
         store_name TEXT DEFAULT 'UniCafé',
-        store_email TEXT DEFAULT 'admin@unicafe.com',
+        store_email TEXT DEFAULT 'lukegabriel.arrieta@wvsu.edu.ph',
         store_phone TEXT DEFAULT '+1 234 567 8900',
         store_address TEXT DEFAULT '123 Coffee Street, University District',
         order_notifications BOOLEAN DEFAULT 1,
@@ -76,7 +76,7 @@ const setupAdminAndSettings = async () => {
       console.log("📋 Creating default store settings...");
       await db.runAsync(
         `INSERT INTO store_settings (setting_id, store_name, store_email, store_phone, store_address, order_notifications) 
-         VALUES (1, 'UniCafé', 'admin@unicafe.com', '+1 234 567 8900', '123 Coffee Street, University District', 1)`
+         VALUES (1, 'UniCafé', 'lukegabriel.arrieta@wvsu.edu.ph', '+1 234 567 8900', '123 Coffee Street, University District', 1)`
       );
       console.log("✅ Default store settings created");
     } else {

@@ -1,14 +1,19 @@
 import { motion } from "framer-motion";
+import { useMemo } from "react";
 
 const CafeBackground = () => {
-  // Generate coffee beans
-  const coffeeElements = Array.from({ length: 30 }, (_, i) => ({
-    id: i,
-    emoji: i % 5 === 0 ? "☕" : i % 5 === 1 ? "🥐" : i % 5 === 2 ? "🍰" : i % 5 === 3 ? "🧁" : "🍪",
-    x: Math.random() * 100,
-    delay: Math.random() * 5,
-    duration: 15 + Math.random() * 10,
-  }));
+  // Memoize coffee elements so they don't regenerate on every render
+  const coffeeElements = useMemo(
+    () =>
+      Array.from({ length: 30 }, (_, i) => ({
+        id: i,
+        emoji: i % 5 === 0 ? "☕" : i % 5 === 1 ? "🥐" : i % 5 === 2 ? "🍰" : i % 5 === 3 ? "🧁" : "🍪",
+        x: Math.random() * 100,
+        delay: Math.random() * 5,
+        duration: 15 + Math.random() * 10,
+      })),
+    [] // Empty dependency array means this only runs once
+  );
 
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
