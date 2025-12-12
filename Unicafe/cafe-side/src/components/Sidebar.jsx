@@ -10,6 +10,7 @@ import {
   CreditCard,
   Monitor,
   LogOut,
+  CheckCircle,
 } from "lucide-react";
 import { useAuth } from "../App";
 import { useState, useEffect } from "react";
@@ -19,6 +20,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
   const navigate = useNavigate();
   const [storeName, setStoreName] = useState("UniCafé");
   const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [showLogoutSuccessModal, setShowLogoutSuccessModal] = useState(false);
 
   // Fetch and cache store settings with 5-minute TTL
   useEffect(() => {
@@ -75,9 +77,12 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
   }, []);
 
   const handleLogout = () => {
-    logout();
-    navigate("/login");
     setShowSignOutModal(false);
+    setShowLogoutSuccessModal(true);
+    setTimeout(() => {
+      logout();
+      navigate("/login");
+    }, 1500);
   };
 
   const navigation = [
@@ -191,6 +196,19 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
                 Sign Out
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Logout Success Modal */}
+      {showLogoutSuccessModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-10 h-10 text-green-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">Logged Out Successfully!</h3>
+            <p className="text-gray-600">See you next time!</p>
           </div>
         </div>
       )}

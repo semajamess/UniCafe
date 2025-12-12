@@ -302,20 +302,6 @@ const Dashboard = () => {
               >
                 <stat.icon className="w-7 h-7 text-white" />
               </div>
-              <div
-                className={`flex items-center space-x-1 px-3 py-1 rounded-full text-sm font-semibold ${
-                  stat.trend === "up"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-red-100 text-red-700"
-                }`}
-              >
-                {stat.trend === "up" ? (
-                  <ArrowUpRight className="w-4 h-4" />
-                ) : (
-                  <ArrowDownRight className="w-4 h-4" />
-                )}
-                <span>{stat.change}</span>
-              </div>
             </div>
             <h3 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
               {stat.value}

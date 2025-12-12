@@ -573,22 +573,10 @@ const Orders = () => {
 
               {/* Order Summary */}
               <div className="border-t border-slate-200 pt-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-slate-600">Subtotal:</span>
-                  <span className="font-medium text-slate-900">
-                    ₱{selectedOrder.total.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-slate-600">Tax (10%):</span>
-                  <span className="font-medium text-slate-900">
-                    ₱{(selectedOrder.total * 0.1).toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-lg font-bold pt-2 border-t border-slate-200">
+                <div className="flex justify-between items-center text-lg font-bold">
                   <span className="text-slate-900">Total:</span>
                   <span className="text-amber-600">
-                    ₱{(selectedOrder.total * 1.1).toFixed(2)}
+                    ₱{selectedOrder.total.toFixed(2)}
                   </span>
                 </div>
               </div>

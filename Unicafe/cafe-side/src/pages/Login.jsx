@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { UtensilsCrossed, User, Lock, Eye, EyeOff, LogIn } from "lucide-react";
+import { UtensilsCrossed, User, Lock, LogIn, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "../App";
 import CafeBackground from "../components/CafeBackground";
@@ -10,9 +10,9 @@ const API_URL = "http://localhost:3000/api";
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -41,11 +41,20 @@ const Login = () => {
         throw new Error(data.error || "Login failed");
       }
 
-      login(data.token, data.user);
-      navigate("/dashboard");
+      // Show success modal FIRST, before setting auth state
+      setLoading(false);
+      setShowSuccessModal(true);
+      
+      // Store credentials temporarily
+      const credentials = { token: data.token, user: data.user };
+      
+      // Navigate after showing modal and THEN set auth state
+      setTimeout(() => {
+        login(credentials.token, credentials.user);
+        navigate("/dashboard");
+      }, 2000);
     } catch (err) {
-      setError(err.message || "Login failed. Please check your credentials.");
-    } finally {
+      setError(err.message);
       setLoading(false);
     }
   };
@@ -127,26 +136,15 @@ const Login = () => {
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-amber-500" />
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type="password"
                   required
                   value={formData.password}
                   onChange={(e) =>
                     setFormData({ ...formData, password: e.target.value })
                   }
-                  className="w-full pl-12 pr-14 py-4 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all text-slate-900 font-medium"
+                  className="w-full pl-12 pr-4 py-4 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all text-slate-900 font-medium"
                   placeholder="Enter your password"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-amber-600 transition-colors"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
-                </button>
               </div>
             </div>
 
@@ -180,6 +178,28 @@ const Login = () => {
           &copy; {new Date().getFullYear()} UniCafé. All rights reserved.
         </motion.p>
       </motion.div>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+          style={{ zIndex: 9999 }}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center"
+          >
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-10 h-10 text-green-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">Login Successful!</h3>
+            <p className="text-gray-600">Welcome back to UniCafé Admin</p>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 };

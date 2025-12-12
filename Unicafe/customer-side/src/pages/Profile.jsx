@@ -479,13 +479,15 @@ const Profile = () => {
                     <User className="w-10 h-10 sm:w-12 sm:h-12" />
                   </div>
                 )}
-                <button
-                  onClick={handleChangeAvatar}
-                  className="absolute bottom-0 right-0 w-8 h-8 sm:w-10 sm:h-10 bg-white text-amber-600 rounded-full shadow-lg hover:bg-amber-50 transition-all flex items-center justify-center group-hover:scale-110"
-                  title="Change avatar"
-                >
-                  <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
-                </button>
+                {!isGoogleUser && (
+                  <button
+                    onClick={handleChangeAvatar}
+                    className="absolute bottom-0 right-0 w-8 h-8 sm:w-10 sm:h-10 bg-white text-amber-600 rounded-full shadow-lg hover:bg-amber-50 transition-all flex items-center justify-center group-hover:scale-110"
+                    title="Change avatar"
+                  >
+                    <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </button>
+                )}
               </div>
               <div className="text-center sm:text-left">
                 <h1 className="text-2xl sm:text-3xl font-bold text-white">{user.username}</h1>

@@ -89,20 +89,6 @@ const ProductCard = ({ product, onAddToCart }) => {
             {product.product_description || "Freshly made and delicious"}
           </p>
 
-          <div className="mb-3 flex items-center gap-2">
-            <div
-              className={`text-xs font-semibold px-2 sm:px-3 py-1 rounded-full ${
-                product.product_stock > 5
-                  ? "bg-green-100 text-green-700"
-                  : product.product_stock > 0
-                  ? "bg-yellow-100 text-yellow-700"
-                  : "bg-red-100 text-red-700"
-              }`}
-            >
-              Stock: {product.product_stock} available
-            </div>
-          </div>
-
           <div className="flex items-center justify-between mt-auto">
             <span className="text-xl sm:text-2xl font-bold text-primary-600">
               ₱{parseFloat(product.product_price).toFixed(2)}

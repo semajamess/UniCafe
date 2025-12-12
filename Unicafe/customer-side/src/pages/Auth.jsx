@@ -43,6 +43,7 @@ const Login = () => {
   const [showReactivateModal, setShowReactivateModal] = useState(false);
   const [reactivateData, setReactivateData] = useState(null);
   const [reactivateConfirmText, setReactivateConfirmText] = useState('');
+  const [showLoginSuccessModal, setShowLoginSuccessModal] = useState(false);
 
   // Redirect logged-in users away from login page
   useEffect(() => {
@@ -165,7 +166,10 @@ const Login = () => {
     if (isLogin) {
       const result = await login(formData.email, formData.password);
       if (result.success) {
-        navigate("/menu");
+        setShowLoginSuccessModal(true);
+        setTimeout(() => {
+          navigate("/menu");
+        }, 1500);
       } else if (result.accountDeactivated) {
         // Show reactivation modal
         setReactivateData({
@@ -778,6 +782,27 @@ const Login = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Login Success Modal */}
+      {showLoginSuccessModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center"
+          >
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-10 h-10 text-green-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">Welcome Back!</h3>
+            <p className="text-gray-600">Login successful. Redirecting to menu...</p>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 };
