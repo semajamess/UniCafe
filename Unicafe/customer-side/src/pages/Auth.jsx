@@ -204,10 +204,8 @@ const Login = () => {
 
       const result = await register(registerData);
       if (result.success) {
-        // Set flag to prevent automatic redirect to menu
-        setJustRegistered(true);
-        // Show success modal then navigate to profile selection
-        setShowSuccessModal(true);
+        // Immediately navigate to profile selection after registration
+        navigate("/profile-selection");
       } else {
         setError(result.error);
       }
@@ -218,9 +216,9 @@ const Login = () => {
 
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
-    setJustRegistered(false); // Clear the flag
+    // Don't clear the flag yet - keep it until after profile selection
     // Navigate to profile selection page to choose avatar
-    navigate("/profile-selection");
+    navigate("/profile-selection", { state: { fromRegistration: true } });
   };
 
   const handleReactivate = async () => {

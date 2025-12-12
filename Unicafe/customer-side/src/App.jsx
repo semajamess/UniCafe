@@ -26,10 +26,11 @@ import { useAuth } from "./context/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
 
 function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -39,9 +40,18 @@ function ProtectedRoute({ children }) {
         navigate("/login", { state: { from: location.pathname } });
       }, 1500);
     }
-  }, [isAuthenticated, loading, location, navigate]);
+    // If authenticated but no profile image (normal registration), force avatar selection
+    else if (!loading && isAuthenticated && user && !user.profile_image && !user.google_id) {
+      setShowAvatarModal(true);
+      setTimeout(() => {
+        setShowAvatarModal(false);
+        navigate("/profile-selection", { state: { required: true } });
+      }, 2000);
+    }
+  }, [isAuthenticated, loading, user, location, navigate]);
 
   if (loading) return null;
+  
   if (!isAuthenticated) {
     return showModal ? (
       <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
@@ -54,18 +64,43 @@ function ProtectedRoute({ children }) {
       </div>
     ) : null;
   }
+
+  // Block menu access if no avatar selected (normal registration only)
+  if (isAuthenticated && user && !user.profile_image && !user.google_id) {
+    return showAvatarModal ? (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          <h2 className="text-xl font-bold mb-2">Choose Your Avatar</h2>
+          <p className="text-gray-600">
+            Please select a profile picture before accessing the menu.
+          </p>
+        </div>
+      </div>
+    ) : null;
+  }
+  
   return children;
 }
 
 function App() {
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(() => {
+    // Only show splash on very first load (when sessionStorage is empty)
+    const hasShownSplash = sessionStorage.getItem('splashShown');
+    if (!hasShownSplash) {
+      sessionStorage.setItem('splashShown', 'true');
+      return true;
+    }
+    return false;
+  });
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
+    if (showSplash) {
+      const timer = setTimeout(() => {
+        setShowSplash(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSplash]);
 
   if (showSplash) {
     return <SplashScreen />;

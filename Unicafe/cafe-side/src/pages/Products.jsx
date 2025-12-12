@@ -43,6 +43,13 @@ const Products = () => {
   useEffect(() => {
     fetchProducts();
     fetchCategories();
+
+    // Poll for product updates every 5 seconds
+    const pollInterval = setInterval(() => {
+      fetchProducts();
+    }, 5000);
+
+    return () => clearInterval(pollInterval);
   }, []);
 
   useEffect(() => {

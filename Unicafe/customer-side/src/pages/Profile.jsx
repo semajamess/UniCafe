@@ -182,6 +182,14 @@ const Profile = () => {
     
     if (activeTab === 'orders') {
       fetchOrders()
+      
+      // Poll for order updates every 5 seconds when on orders tab
+      const pollInterval = setInterval(() => {
+        fetchOrders()
+      }, 5000)
+      
+      // Cleanup interval when tab changes or component unmounts
+      return () => clearInterval(pollInterval)
     }
   }, [user, navigate, activeTab])
 

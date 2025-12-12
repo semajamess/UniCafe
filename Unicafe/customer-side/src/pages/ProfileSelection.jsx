@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Check, RefreshCw, User, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -20,6 +20,7 @@ const ProfileSelection = () => {
   console.log('🎯🎯🎯 PROFILESELECTION COMPONENT IS RENDERING!!! 🎯🎯🎯');
   
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, token } = useAuth();
   const [selectedStyle, setSelectedStyle] = useState('avataaars');
   const [seed, setSeed] = useState(Date.now().toString());
@@ -101,12 +102,18 @@ const ProfileSelection = () => {
   };
 
   const handleSkip = () => {
+    // Check if avatar selection is required (from registration)
+    const isRequired = location.state?.required;
+    if (isRequired) {
+      alert('Please select an avatar to continue');
+      return;
+    }
     navigate('/menu');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 flex items-center justify-center py-20 px-4">
+      <div className="max-w-4xl w-full">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

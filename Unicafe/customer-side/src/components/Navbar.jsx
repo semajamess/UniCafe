@@ -130,10 +130,12 @@ export default function Navbar() {
   const handleLogoutConfirm = () => {
     setShowLogoutModal(false);
     setShowLogoutSuccessModal(true);
+    
     setTimeout(() => {
       logout();
       setShowLogoutSuccessModal(false);
-      navigate("/");
+      // Force full page reload to homepage
+      window.location.href = "/";
     }, 1500);
   };
 

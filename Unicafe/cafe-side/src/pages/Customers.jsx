@@ -24,6 +24,13 @@ const Customers = () => {
 
   useEffect(() => {
     fetchCustomers();
+
+    // Poll for customer updates every 5 seconds
+    const pollInterval = setInterval(() => {
+      fetchCustomers();
+    }, 5000);
+
+    return () => clearInterval(pollInterval);
   }, []);
 
   useEffect(() => {
