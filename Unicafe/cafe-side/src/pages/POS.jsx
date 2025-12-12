@@ -412,7 +412,7 @@ const POS = () => {
         </div>
       </div>
 
-      <div className="flex h-[calc(100vh-105px)]">
+      <div className="flex h-[calc(100vh-105px)] overflow-hidden">
         {/* Products Section - Enhanced */}
         <div className="flex-1 p-6 overflow-hidden flex flex-col bg-slate-50">
           {/* Search and Filter Bar */}
@@ -472,17 +472,17 @@ const POS = () => {
                       key={product.product_id}
                       onClick={() => addToCart(product)}
                       disabled={isOutOfStock}
-                      className={`group relative bg-white rounded-2xl p-4 text-left transition-all duration-200 ${
+                      className={`group relative bg-white rounded-2xl p-4 text-left transition-all duration-200 overflow-visible ${
                         isOutOfStock
                           ? "border-2 border-slate-200 opacity-60 cursor-not-allowed"
                           : inCart
-                          ? "border-2 border-amber-400 shadow-xl shadow-amber-100 scale-[1.02]"
-                          : "border-2 border-slate-200 hover:border-amber-300 hover:shadow-lg hover:scale-[1.02]"
+                          ? "border-2 border-amber-400 shadow-xl shadow-amber-100 scale-[1.02] z-10"
+                          : "border-2 border-slate-200 hover:border-amber-300 hover:shadow-lg hover:scale-[1.02] hover:z-10"
                       }`}
                     >
                       {/* Stock Badge - Top Right */}
                       <div
-                        className={`absolute top-3 right-3 px-2.5 py-1 rounded-lg text-xs font-bold shadow-sm ${
+                        className={`absolute top-3 right-3 px-2.5 py-1 rounded-lg text-xs font-bold shadow-sm z-20 ${
                           isOutOfStock
                             ? "bg-red-500 text-white"
                             : product.product_stock <= 5
